@@ -1,0 +1,14 @@
+{
+    "name": "heathdutton/mautic-extended-fields",
+    "description": "Extend Mautic custom fields for scalability and HIPAA/PCI compliance.",
+    "type": "mautic-plugin",
+    "license": "GPL v3",
+    "authors": [
+        {
+            "name": "heathdutton",
+            "email": "heathdutton@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
