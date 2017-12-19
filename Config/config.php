@@ -11,7 +11,7 @@
 
 return [
     'name'        => 'Mautic Extended Fields',
-    'description' => 'Store new custom fields in separate tables for scalability and compliance.',
-    'version'     => '1.0',
+    'description' => 'Extend Mautic custom fields for scalability and HIPAA/PCI compliance.',
+    'version'     => '0.1',
     'author'      => 'Mautic',
 ];
