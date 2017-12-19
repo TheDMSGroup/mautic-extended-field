@@ -10,5 +10,11 @@
         }
     ],
     "minimum-stability": "dev",
-    "require": {}
+    "require": {},
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/heathdutton/mautic-extended-fields"
+        }
+    ]
 }
