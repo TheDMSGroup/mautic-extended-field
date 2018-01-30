@@ -1,20 +1,24 @@
 {
-    "name": "heathdutton/mautic-extended-fields",
+    "name": "thedmsgroup/mautic-extended-fields",
     "description": "Extend Mautic custom fields for scalability and HIPAA/PCI compliance.",
+    "keywords": ["mautic","marketing","marketing automation","plugin"],
     "type": "mautic-plugin",
-    "license": "GPL v3",
+    "require": {
+        "mautic/composer-plugin": "^1.0"
+    },
+    "license": "GPL-3.0-only",
     "authors": [
         {
-            "name": "heathdutton",
-            "email": "heathdutton@gmail.com"
-        }
-    ],
-    "minimum-stability": "dev",
-    "require": {},
-    "repositories": [
+            "name": "Nicholai Bush",
+            "email": "nicholaibush@yahoo.com"
+        },
         {
-            "type": "vcs",
-            "url": "https://github.com/heathdutton/mautic-extended-fields"
+            "name": "Scott Shipman",
+            "email": "K.scott.shipman@gmail.com"
+        },
+        {
+            "name": "Heath Dutton",
+            "email": "heathdutton@gmail.com"
         }
     ]
 }
