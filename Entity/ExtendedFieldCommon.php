@@ -9,20 +9,48 @@
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-namespace MauticPlugin\MauticExtendedFieldsBundle\Entity;
+namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Mautic\ApiBundle\Serializer\Driver\ApiMetadataDriver;
 use Mautic\CoreBundle\Doctrine\Mapping\ClassMetadataBuilder;
+use Mautic\CoreBundle\Entity\CommonEntity;
+use Mautic\LeadBundle\Model\FieldModel;
 use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Entity\LeadField;
+use Mautic\CoreBundle\Entity\FormEntity;
+use Mautic\LeadBundle\Entity\CustomFieldEntityTrait;
+use Mautic\LeadBundle\Entity\CustomFieldEntityInterface;
+use Mautic\LeadBundle\Entity\CustomFieldRepositoryInterface;
 
 /**
  * Class ExtendedFieldCommon.
  *
  * Allow custom fields to be stored in EAV tables by doctrine data types.
  */
-class ExtendedFieldCommon
+abstract class ExtendedFieldCommon extends CommonEntity implements CustomFieldEntityInterface
 {
+use CustomFieldEntityTrait;
+
+    const FIELD_ALIAS = 'extendedField';
+
+  /**
+   * @var int
+   */
+  private $lead_foo;
+
+  /**
+   * @var string
+   */
+  private $leadField;
+
+  /**
+   * @var string
+   */
+  private $value;
+
+
+
 
     /**
      * @param ORM\ClassMetadata $metadata
@@ -38,6 +66,7 @@ class ExtendedFieldCommon
      */
     public static function loadMetadataCommon(ORM\ClassMetadata $metadata, $dataType = null, $secure = false)
     {
+      array_push(FieldModel::$coreFields, 'extendedField');
         $builder = new ClassMetadataBuilder($metadata);
         if ($dataType) {
             $builder
@@ -60,6 +89,7 @@ class ExtendedFieldCommon
             $builder->createField('value', $dataType)
                 ->columnName('value')
                 ->build();
+
         } else {
             $builder->addId();
         }
@@ -70,9 +100,18 @@ class ExtendedFieldCommon
      */
     public function getId()
     {
-        return $this->id;
+        return $this->lead . '@' . $this->leadField;
     }
 
+  /**
+   * Get the primary identifier for the extendedField.
+   *
+   * @return string
+   */
+  public function getPrimaryIdentifier()
+  {
+    return $this->lead . '@' . $this->leadField;;  // I dont know what this should be right now, so for now using this
+  }
     /**
      * @return Lead
      */

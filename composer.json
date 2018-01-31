@@ -14,7 +14,7 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/heathdutton/mautic-extended-fields"
+            "url": "https://github.com/TheDMSGroup/mautic-extended-fields"
         }
     ]
 }
