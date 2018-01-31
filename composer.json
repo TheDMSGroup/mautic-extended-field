@@ -1,5 +1,5 @@
 {
-    "name": "thedmsgroup/mautic-extended-fields",
+    "name": "thedmsgroup/mautic-extended-fields-bundle",
     "description": "Extend Mautic custom fields for scalability and HIPAA/PCI compliance.",
     "keywords": ["mautic","marketing","marketing automation","plugin"],
     "type": "mautic-plugin",
