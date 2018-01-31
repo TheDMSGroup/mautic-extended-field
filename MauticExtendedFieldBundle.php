@@ -11,34 +11,32 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle;
 
-use Doctrine\DBAL\Schema\Schema;
 use Mautic\PluginBundle\Bundle\PluginBundleBase;
-use Mautic\CoreBundle\Factory\MauticFactory;
-use Mautic\PluginBundle\Entity\Plugin;
-use Symfony\Component\HttpKernel\Bundle\Bundle;
+use MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler\OverrideFieldModelPass;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 class MauticExtendedFieldBundle extends PluginBundleBase
 {
+/*
+ * Implements Compiler Passes to Override the Lead Bundle FieldModel
+ * https://symfony.com/doc/2.8/service_container/compiler_passes.html
+ *
+ * allows to add a custom extendedField object value
+ */
 
-    /**
-     * Called by PluginController::reloadAction when adding a new plugin that's not already installed
-     *
-     * @param \Mautic\PluginBundle\Entity\Plugin $plugin
-     * @param \Mautic\CoreBundle\Factory\MauticFactory $factory
-     * @param null $metadata
-     * @param null $installedSchema
-     */
-    static public function onPluginInstall(Plugin $plugin, MauticFactory $factory, $metadata = null, $installedSchema = null)
-    {
-        if ($metadata !== null) {
-
-          // do something
-        }
-
-    }
-
-  public function getParent()
+  public function build(ContainerBuilder $container)
   {
-    return 'MauticLeadBundle';
+    parent::build($container);
+
+    $container->addCompilerPass(new OverrideFieldModelPass());
   }
+
 }
+
+/*
+ *  where to put this:
+ * //  array_push(FieldModel::$coreFields, 'extendedField');
+ *
+ * to add our custom fields to the coreFields array so they attach to Custom fields
+ *
+ */

@@ -37,7 +37,7 @@ use CustomFieldEntityTrait;
   /**
    * @var int
    */
-  private $lead_foo;
+  private $lead;
 
   /**
    * @var string
@@ -66,7 +66,6 @@ use CustomFieldEntityTrait;
      */
     public static function loadMetadataCommon(ORM\ClassMetadata $metadata, $dataType = null, $secure = false)
     {
-      array_push(FieldModel::$coreFields, 'extendedField');
         $builder = new ClassMetadataBuilder($metadata);
         if ($dataType) {
             $builder

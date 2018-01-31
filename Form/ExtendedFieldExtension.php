@@ -16,6 +16,7 @@ use Mautic\LeadBundle\Form\Type\FieldType;
 use Symfony\Component\Form\ChoiceList\View\ChoiceView;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\FormBuilderInterface;
 
 class ExtendedFieldExtension extends AbstractTypeExtension {
   /**
@@ -32,16 +33,32 @@ class ExtendedFieldExtension extends AbstractTypeExtension {
   /*
    * Add a custom 'object' type to write to a corresponding table for that new custom value
    */
-  public function finishView(FormView $view, FormInterface $form, array $options)
+
+
+  public function buildForm(FormBuilderInterface $builder, array $options)
   {
-    foreach($view->children as $child){
-       if ($child->vars['name'] == 'object' && isset($child->vars['choices'])) {
-         $choices = $child->vars['choices'];
-         $data = $form->getViewData();
-         $newChoice = new ChoiceView($data->getObject(), 'extendedField', 'Extended Field', array());
-         $choices[] = $newChoice;
-         $child->vars['choices'] = $choices;
-       }
-    }
+    $disabled = (!empty($options['data'])) ? $options['data']->isFixed() : false;
+    $new         = (!empty($options['data']) && $options['data']->getAlias()) ? false : true;
+    $builder->add(
+      'object',
+      'choice',
+      [
+        'choices' => [
+          'mautic.lead.contact'    => 'lead',
+          'mautic.company.company' => 'company',
+          'Extended Field' => 'extendedField',
+        ],
+        'choices_as_values' => true,
+        'expanded'          => false,
+        'multiple'          => false,
+        'label'             => 'mautic.lead.field.object',
+        'empty_value'       => false,
+        'attr'              => [
+          'class' => 'form-control',
+        ],
+        'required' => false,
+        'disabled' => ($disabled || !$new),
+      ]
+    );
   }
 }
