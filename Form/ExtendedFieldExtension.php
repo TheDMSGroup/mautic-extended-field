@@ -46,7 +46,8 @@ class ExtendedFieldExtension extends AbstractTypeExtension {
         'choices' => [
           'mautic.lead.contact'    => 'lead',
           'mautic.company.company' => 'company',
-          'Extended Field' => 'extendedField',
+          'mautic.lead.extendedField' => 'extendedField',
+          'mautic.lead.extendedFieldSecure' => 'extendedFieldSecure',
         ],
         'choices_as_values' => true,
         'expanded'          => false,

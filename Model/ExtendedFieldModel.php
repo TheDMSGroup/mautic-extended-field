@@ -49,14 +49,15 @@ class ExtendedFieldModel extends FieldModel {
     //set some defaults
     // custom table names
     $dataType = $entity->getType();
-    $secure = NULL; // for now its null until I can find a way to know what it should be
+    $secure = ($entity->getObject() == 'extendedFieldSecure') ? TRUE : FALSE;
     $tableName = 'lead_fields_leads_' . $dataType . ($secure ? '_secure' : '') . '_xref';
 
     $this->setTimestamps($entity, $isNew, $unlock);
     $objects = [
       'lead' => 'leads',
       'company' => 'companies',
-      'extendedField' => $tableName
+      'extendedField' => $tableName,
+      'extendedFieldSecure' => $tableName
     ];
     $alias = $entity->getAlias();
     $object = $objects[$entity->getObject()];
@@ -107,9 +108,10 @@ class ExtendedFieldModel extends FieldModel {
       $this->getRepository()->saveEntity($entity);
       $this->dispatchEvent('post_save', $entity, $isNew, $event);
     }
+
     // Create the field as its own column in the leads table.
-    // dont do this for extendedField object types
-    if ($entity->getObject != 'extendedField') {
+    // dont do this for extendedField or extendedFieldSecure object types
+    if (!$this->isExtendedField($entity)) {
       /** @var ColumnSchemaHelper $leadsSchema */
       $leadsSchema = $this->schemaHelperFactory->getSchemaHelper('column', $object);
       $isUnique = $entity->getIsUniqueIdentifier();
@@ -134,7 +136,42 @@ class ExtendedFieldModel extends FieldModel {
           }
         }
       }
+      // Update the unique_identifier_search index and add an index for this field
+      /** @var \Mautic\CoreBundle\Doctrine\Helper\IndexSchemaHelper $modifySchema */
+      $modifySchema = $this->schemaHelperFactory->getSchemaHelper('index', $object);
+
+      if ('string' == $schemaDefinition['type']) {
+        try {
+          $modifySchema->addIndex([$alias], $alias . '_search');
+          $modifySchema->allowColumn($alias);
+
+          if ($isUnique) {
+            // Get list of current uniques
+            $uniqueIdentifierFields = $this->getUniqueIdentifierFields();
+
+            // Always use email
+            $indexColumns = ['email'];
+            $indexColumns = array_merge($indexColumns, array_keys($uniqueIdentifierFields));
+            $indexColumns[] = $alias;
+
+            // Only use three to prevent max key length errors
+            $indexColumns = array_slice($indexColumns, 0, 3);
+            $modifySchema->addIndex($indexColumns, 'unique_identifier_search');
+          }
+
+          $modifySchema->executeChanges();
+        } catch (DriverException $e) {
+          if ($e->getErrorCode() === 1069 /* ER_TOO_MANY_KEYS */) {
+            $this->logger->addWarning($e->getMessage());
+          }
+          else {
+            throw $e;
+          }
+        }
+      }
     }
+
+
     // If this is a new contact field, and it was successfully added to the contacts table, save it
     if ($isNew === TRUE) {
       $event = $this->dispatchEvent('pre_save', $entity, $isNew);
@@ -142,43 +179,16 @@ class ExtendedFieldModel extends FieldModel {
       $this->dispatchEvent('post_save', $entity, $isNew, $event);
     }
 
-    // Update the unique_identifier_search index and add an index for this field
-    /** @var \Mautic\CoreBundle\Doctrine\Helper\IndexSchemaHelper $modifySchema */
-    $modifySchema = $this->schemaHelperFactory->getSchemaHelper('index', $object);
-
-    if ('string' == $schemaDefinition['type']) {
-      try {
-        $modifySchema->addIndex([$alias], $alias . '_search');
-        $modifySchema->allowColumn($alias);
-
-        if ($isUnique) {
-          // Get list of current uniques
-          $uniqueIdentifierFields = $this->getUniqueIdentifierFields();
-
-          // Always use email
-          $indexColumns = ['email'];
-          $indexColumns = array_merge($indexColumns, array_keys($uniqueIdentifierFields));
-          $indexColumns[] = $alias;
-
-          // Only use three to prevent max key length errors
-          $indexColumns = array_slice($indexColumns, 0, 3);
-          $modifySchema->addIndex($indexColumns, 'unique_identifier_search');
-        }
-
-        $modifySchema->executeChanges();
-      } catch (DriverException $e) {
-        if ($e->getErrorCode() === 1069 /* ER_TOO_MANY_KEYS */) {
-          $this->logger->addWarning($e->getMessage());
-        }
-        else {
-          throw $e;
-        }
-      }
-    }
-
 
     // Update order of the other fields.
     $this->reorderFieldsByEntity($entity);
+
+  }
+
+  public function isExtendedField($entity) {
+    $pos = strpos($entity->getObject(), 'extendedField');
+    return (is_integer($pos)) ? TRUE : FALSE;
+
   }
 
 }
