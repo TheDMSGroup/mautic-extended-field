@@ -10,6 +10,7 @@
  */
 use MauticPlugin\MauticExtendedFieldBundle\ExtendedFieldExtension;
 use Mautic\LeadBundle\Form\Type\FieldType;
+use Mautic\LeadBundle\Form\Type\LeadType;
 use Symfony\Component\DependencyInjection\ContainerBuilde;
 
 return [
@@ -25,6 +26,14 @@ return [
           'tag'          => 'form.type_extension',
           'tagArguments' => [
             'extended_type' => FieldType::class,
+          ],
+        ],
+        'mautic.form.extension.extended_lead' => [
+          'class'     => 'MauticPlugin\MauticExtendedFieldBundle\Form\LeadTypeExtension',
+          'arguments' => ['mautic.factory', 'mautic.lead.model.company'],
+          'tag'          => 'form.type_extension',
+          'tagArguments' => [
+            'extended_type' => LeadType::class,
           ],
         ],
       ],

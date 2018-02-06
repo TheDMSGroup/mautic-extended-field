@@ -33,10 +33,3 @@ class MauticExtendedFieldBundle extends PluginBundleBase
 
 }
 
-/*
- *  where to put this:
- * //  array_push(FieldModel::$coreFields, 'extendedField');
- *
- * to add our custom fields to the coreFields array so they attach to Custom fields
- *
- */

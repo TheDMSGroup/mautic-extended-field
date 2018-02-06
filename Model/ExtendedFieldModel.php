@@ -32,6 +32,18 @@ use Mautic\LeadBundle\Model\FieldModel as FieldModel;
  */
 class ExtendedFieldModel extends FieldModel {
 
+
+//  /**
+//   * {@inheritdoc}
+//   *
+//   * @return string
+//   */
+//  public function getPermissionBase()
+//  {
+//    return 'lead:leads';
+//  }
+
+
   /**
    * @param   $entity
    * @param   $unlock
@@ -189,6 +201,179 @@ class ExtendedFieldModel extends FieldModel {
     $pos = strpos($entity->getObject(), 'extendedField');
     return (is_integer($pos)) ? TRUE : FALSE;
 
+  }
+
+
+  /**
+   * @return array
+   */
+  public function getExtendedFieldFields() {
+    $extendedFieldFields = $this->getEntities([
+      'filter' => [
+        'force' => [
+          [
+            'column' => 'f.object',
+            'expr' => 'like',
+            'value' => 'extendedField',
+          ],
+        ],
+      ],
+    ]);
+
+    return $extendedFieldFields;
+  }
+
+  /**
+   * @return array
+   */
+  public function getExtendedFieldSecureFields() {
+    $extendedFieldSecureFields = $this->getEntities([
+      'filter' => [
+        'force' => [
+          [
+            'column' => 'f.object',
+            'expr' => 'like',
+            'value' => 'extendedFieldSecure',
+          ],
+        ],
+      ],
+    ]);
+
+    return $extendedFieldSecureFields;
+  }
+
+  /**
+   * @return array
+   */
+  public function getAllExtendedFields() {
+    $extendedFieldSecureFields = $this->getExtendedFieldSecureFields();
+    $extendedFieldFields = $this->getExtendedFieldFields();
+
+    $allExtendedFields = array_merge($extendedFieldFields, $extendedFieldSecureFields);
+
+    return $allExtendedFields;
+  }
+
+  /**
+   * @return array
+   */
+  public function getLeadFields()
+  {
+    $leadFields = parent::getLeadFields();
+
+    if(TRUE){ // TODO change this to a permission base
+      // get extended and extendedSecure
+      $extendedFields = $this->getAllExtendedFields();
+    } else {
+      //only get extendedFieldFields (Not secure)
+      $extendedFields = $this->getExtendedFieldFields();
+    }
+
+    array_merge($leadFields, $extendedFields);
+
+    return $leadFields;
+  }
+
+  /**
+   * @param bool|true $byGroup
+   * @param bool|true $alphabetical
+   * @param array $filters
+   *
+   * @return array
+   */
+  public function getFieldList($byGroup = TRUE, $alphabetical = TRUE, $filters = ['isPublished' => TRUE,
+    //'object' => 'lead'  instead, get all non-company fields (lead, extendedField, extendedFieldSecure)
+  ]) {
+    $forceFilters = [];
+    foreach ($filters as $col => $val) {
+      $forceFilters[] = [
+        'column' => "f.{$col}",
+        'expr' => 'eq',
+        'value' => $val,
+      ];
+    }
+    // Get a list of custom form fields
+    $fields = $this->getEntities([
+      'filter' => [
+        'force' => $forceFilters,
+      ],
+      'orderBy' => 'f.order',
+      'orderByDir' => 'asc',
+    ]);
+
+    $leadFields = [];
+
+    foreach ($fields as $f) {
+      if ($byGroup) {
+        $fieldName = $this->translator->trans('mautic.lead.field.group.' . $f->getGroup());
+        $leadFields[$fieldName][$f->getAlias()] = $f->getLabel();
+      }
+      else {
+        $leadFields[$f->getAlias()] = $f->getLabel();
+      }
+    }
+
+    if ($alphabetical) {
+      // Sort the groups
+      uksort($leadFields, 'strnatcmp');
+
+      if ($byGroup) {
+        // Sort each group by translation
+        foreach ($leadFields as $group => &$fieldGroup) {
+          uasort($fieldGroup, 'strnatcmp');
+        }
+      }
+    }
+
+    return $leadFields;
+  }
+
+  /**
+   * @param string $object
+   *
+   * @return array
+   */
+  public function getPublishedFieldArrays($object = 'lead')
+  {
+    // if object is lead, get all objects except company else get the requested object
+    if($object=='lead') {
+      $value = 'company';
+      $expr = 'neq';
+    } else {
+      $value = $object;
+      $expr = 'eq';
+    }
+    return $this->getEntities(
+      [
+        'filter' => [
+          'force' => [
+            [
+              'column' => 'f.isPublished',
+              'expr'   => 'eq',
+              'value'  => true,
+            ],
+            [
+              'column' => 'f.object',
+              'expr'   => $expr,
+              'value'  => $value,
+            ],
+          ],
+        ],
+        'hydration_mode' => 'HYDRATE_ARRAY',
+      ]
+    );
+  }
+
+  /**
+   * Returns lead custom fields.
+   *
+   * @param $args
+   *
+   * @return array
+   */
+  public function getEntities(array $args = [])
+  {
+    return $this->em->getRepository(LeadField::class)->getEntities($args);
   }
 
 }

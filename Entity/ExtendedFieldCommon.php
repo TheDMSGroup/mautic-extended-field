@@ -34,6 +34,8 @@ use CustomFieldEntityTrait;
 
     const FIELD_ALIAS = 'extendedField';
 
+   // public static $coreFields = array_push($coreFields, array_push($this->getAllExtendedFields()));
+
   /**
    * @var int
    */
