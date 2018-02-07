@@ -18,7 +18,7 @@ use Mautic\LeadBundle\Entity\CustomFieldRepositoryTrait;
 use Mautic\LeadBundle\Entity\CustomFieldRepositoryInterface;
 
 /**
- * Class CompanyRepository.
+ * Class ExtendedFieldRepository.
  */
 class ExtendedFieldRepository extends CommonRepository implements CustomFieldRepositoryInterface
 {
@@ -32,7 +32,7 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
      * @return mixed|null
      */
     public function getEntity($id = 0)
-    { // TODO: break ID into the two fields lead and leadField explode on seperator
+    {
         try {
             $q = $this->createQueryBuilder($this->getTableAlias());
             if (is_array($id)) {
