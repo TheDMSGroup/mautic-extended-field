@@ -347,7 +347,8 @@ class OverrideLeadModel extends LeadModel
 
   public function getExtendedEntities(array $args = [])
   {
-    $alias= 'lead_fields';//= $this->getTableAlias();
+    //TODO check for perms of user to see if object should include extendedFieldSecure
+
     $fq = $this->em->getConnection()->createQueryBuilder();
     $fq->select('*')
       ->from(MAUTIC_TABLE_PREFIX . 'lead_fields', 'f')

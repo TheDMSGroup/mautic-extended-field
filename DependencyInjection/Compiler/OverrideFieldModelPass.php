@@ -12,7 +12,6 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler;
 
-use Mautic\LeadBundle\Model\FieldModel;
 use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
 use MauticPlugin\MauticExtendedFieldBundle\Model\OverrideLeadModel;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
@@ -32,8 +31,8 @@ class OverrideFieldModelPass implements CompilerPassInterface
     $definition3 = $container->getDefinition('mautic.lead.model.lead');
     $definition3->setClass(OverrideLeadModel::class);
 
-    $definition3 = $container->getDefinition('mautic.lead.repository.lead');
-    $definition3->setClass(OverrideLeadRepository::class);
+    $definition4 = $container->getDefinition('mautic.lead.repository.lead');
+    $definition4->setClass(OverrideLeadRepository::class);
   }
 
 }
