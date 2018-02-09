@@ -11,6 +11,7 @@
 use MauticPlugin\MauticExtendedFieldBundle\ExtendedFieldExtension;
 use Mautic\LeadBundle\Form\Type\FieldType;
 use Mautic\LeadBundle\Form\Type\LeadType;
+use Mautic\LeadBundle\Form\Type\ListType;
 use Symfony\Component\DependencyInjection\ContainerBuilde;
 
 return [
@@ -34,6 +35,23 @@ return [
           'tag'          => 'form.type_extension',
           'tagArguments' => [
             'extended_type' => LeadType::class,
+          ],
+        ],
+        'mautic.form.extension.extended_list' => [
+          'class'     => 'MauticPlugin\MauticExtendedFieldBundle\Form\ListTypeExtension',
+          'arguments' => [
+            'translator',
+            'mautic.lead.model.list',
+            'mautic.email.model.email',
+            'mautic.security',
+            'mautic.lead.model.lead',
+            'mautic.stage.model.stage',
+            'mautic.category.model.category',
+            'mautic.helper.user',
+          ],
+          'tag'          => 'form.type_extension',
+          'tagArguments' => [
+            'extended_type' => ListType::class,
           ],
         ],
       ],
