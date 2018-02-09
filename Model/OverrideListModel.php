@@ -2,11 +2,13 @@
 
 /*
  * @copyright   2014 Mautic Contributors. All rights reserved
- * @author      Mautic
+ * @author      Scott Shipman
  *
  * @link        http://mautic.org
  *
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
+ *
+ * Overrides the LeadBundle ListModel.php to handle extendedField filter types
  */
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;

@@ -31,12 +31,11 @@ class OverrideLeadListRepository extends LeadListRepository
   protected $extendedFieldTableSchema;
 
 
-  /**
-   * @var bool
-   */
-  protected $listFiltersInnerJoinExtendedField = false;
 
   /**
+   * Overrides the LeadBundle LeadListRepository.php getLeadsByList method
+   * adds left joins for extendedField xref tables when needed
+   *
    * @param       $lists
    * @param array $args
    *
@@ -242,7 +241,7 @@ class OverrideLeadListRepository extends LeadListRepository
           $q->resetQueryPart('groupBy');
         }
 
-        $realQuery = $q->getSql();
+        $realQuery = $q->getSql(); // for debug purposes only
         $results = $q->execute()->fetchAll();
 
         foreach ($results as $r) {
@@ -318,6 +317,10 @@ class OverrideLeadListRepository extends LeadListRepository
   /**
    * This is a public method that can be used by 3rd party.
    * Do not change the signature.
+   *
+   * This instance overrides the LeadBundle LeadListRepository instance
+   * to handle inclusion of extendedField filter types by altering the schema for
+   * each instance of the field filters of extendedField type to use different column/value structure.
    *
    * @param              $filters
    * @param              $parameters
@@ -1711,7 +1714,15 @@ class OverrideLeadListRepository extends LeadListRepository
     return $fields;
   }
 
-
+  /**
+   * Get an extendedField list.
+   *
+   * @param $filters  an array of filters (fields and values)
+   * @param $extendedFieldList  an array of all extendedFields and paramters
+   * @param $q  current state of the queryBuilder object
+   *
+   * called by getLeadsByList() for each extendedField Filter type.
+   */
   public function addExtendedFieldJoins($filters, $extendedFieldList, $q) {
     foreach($filters as $k => $details) {
       // get extendedField Filters first

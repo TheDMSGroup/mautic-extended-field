@@ -2,11 +2,13 @@
 
 /*
  * @copyright   2014 Mautic Contributors. All rights reserved
- * @author      Mautic
+ * @author      Scott Shipman
  *
  * @link        http://mautic.org
  *
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
+ *
+ *
  */
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
@@ -56,6 +58,9 @@ class OverrideLeadModel extends LeadModel
   }
 
   /**
+   * Overrides the LeadBundle LeadModel.php instance of saveEntity
+   * prevents calling parent:: and replaces with custom doSave() method
+   *
    * {@inheritdoc}
    *
    * @param Lead $entity
@@ -119,6 +124,8 @@ class OverrideLeadModel extends LeadModel
 
   /**
    * Create/edit entity.
+   * forces the OverrideLeadRepository repo instance to use custom sql
+   * for extendedField schema handling
    *
    * @param object $entity
    * @param bool   $unlock
@@ -136,6 +143,9 @@ class OverrideLeadModel extends LeadModel
   }
 
   /**
+   * Overrides the LeadBundle LeadModel.php instance of getRepository()
+   * forces using the OverrideLeadRepository instead.
+   *
    * {@inheritdoc}
    *
    * @return \MauticPlugin\Mautic ExtendedFieldBundle\Entity\OverrideLeadRepository
@@ -221,7 +231,7 @@ class OverrideLeadModel extends LeadModel
       // Lead is new or they haven't been populated so let's build the fields now
       static $flatFields, $fields;
       if (empty($flatFields)) {
-
+        // modified line below to get Extended Field Entities too.
         $flatFields = $this->getExtendedEntities();
         $fields = $this->organizeFieldsByGroup($flatFields);
       }
@@ -312,35 +322,6 @@ class OverrideLeadModel extends LeadModel
     }
 
     $lead->setFields($fieldValues);
-  }
-
-
-  /**
-   * Overrides the LeadModel instance of modifyCompanies()
-   *
-   * Modify companies for lead.
-   *
-   * @param Lead $lead
-   * @param $companies
-   */
-  public function modifyCompanies(Lead $lead, $companies)
-  {
-    // See which companies belong to the lead already
-    $leadCompanies = $this->companyModel->getCompanyLeadRepository()->getCompaniesByLeadId($lead->getId());
-
-    foreach ($leadCompanies as $key => $leadCompany) {
-      if (array_search($leadCompany['company_id'], $companies) === false) {
-        $this->companyModel->removeLeadFromCompany([$leadCompany['company_id']], $lead);
-      }
-    }
-
-    if (!empty($companies)) { // used to say count($companies) but a count of 0 is a false positive
-      $this->companyModel->addLeadToCompany($companies, $lead);
-    } else {
-      // update the lead's company name to nothing
-      $lead->addUpdatedField('company', '');
-      $this->saveEntity($lead);
-    }
   }
 
 
