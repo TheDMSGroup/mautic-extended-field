@@ -41,11 +41,18 @@ The following services were redefined using this methid:
     `mautic.lead.repository.lead`
     `mautic.lead.model.list`
     
+## Installation & Usage
+
+Currently being tested with Mautic `2.12.x`.
+If you have success/issues with other versions please report.
+
+1. Install by running `composer require thedmsgroup/mautic-extended-field-bundle` or by unpacking this repository's contents into a folder named `/plugins/MauticExtendedFieldBundle`
+2. Go to `/s/plugins` and click `Install/Upgrade Plugins` the Extended Fields plugin should show up. Installation is complete.
+3. When creating new custom fields `/s/contacts/fields/new` select Object "Extended" or "Extended Secure".
+
 ## TODO
 
 #### Permissions for Secure types
 
 Need to implement Permission pass methods for any ExtendedFieldSecure data type
 display, edit or retreival.
-
-
