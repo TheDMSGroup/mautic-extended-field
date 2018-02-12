@@ -12,7 +12,7 @@ use MauticPlugin\MauticExtendedFieldBundle\ExtendedFieldExtension;
 use Mautic\LeadBundle\Form\Type\FieldType;
 use Mautic\LeadBundle\Form\Type\LeadType;
 use Mautic\LeadBundle\Form\Type\ListType;
-use Symfony\Component\DependencyInjection\ContainerBuilde;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 return [
     'name'        => 'Extended Fields',
@@ -24,6 +24,7 @@ return [
         // Form extensions
         'mautic.form.extension.extended_field' => [
           'class'     => 'MauticPlugin\MauticExtendedFieldBundle\Form\ExtendedFieldExtension',
+          'arguments' => ['mautic.factory'],
           'tag'          => 'form.type_extension',
           'tagArguments' => [
             'extended_type' => FieldType::class,
