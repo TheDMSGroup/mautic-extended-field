@@ -12,19 +12,13 @@
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 
 use Doctrine\DBAL\DBALException;
+use Mautic\CoreBundle\Doctrine\Helper\SchemaHelperFactory;
 use Doctrine\DBAL\Exception\DriverException;
 use Mautic\CoreBundle\Doctrine\Helper\ColumnSchemaHelper;
-use Mautic\CoreBundle\Doctrine\Helper\SchemaHelperFactory;
-use Mautic\CoreBundle\Helper\InputHelper;
-use Mautic\CoreBundle\Model\FormModel;
 use Mautic\LeadBundle\Entity\LeadField;
-use Mautic\LeadBundle\Entity\LeadFieldRepository;
-use Mautic\LeadBundle\Event\LeadFieldEvent;
-use Mautic\LeadBundle\Helper\FormFieldHelper;
-use Mautic\LeadBundle\LeadEvents;
-use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Mautic\LeadBundle\Model\FieldModel as FieldModel;
+
 
 /**
  * Class ExtendedFieldModel
@@ -33,11 +27,11 @@ use Mautic\LeadBundle\Model\FieldModel as FieldModel;
 class ExtendedFieldModel extends FieldModel {
 
 
-//  /**
-//   * {@inheritdoc}
-//   *
-//   * @return string
-//   */
+  /**
+   * {@inheritdoc}
+   *
+   * @return string
+   */
 //  public function getPermissionBase()
 //  {
 //    return 'lead:leads';
@@ -362,18 +356,6 @@ class ExtendedFieldModel extends FieldModel {
         'hydration_mode' => 'HYDRATE_ARRAY',
       ]
     );
-  }
-
-  /**
-   * Returns lead custom fields.
-   *
-   * @param $args
-   *
-   * @return array
-   */
-  public function getEntities(array $args = [])
-  {
-    return $this->em->getRepository(LeadField::class)->getEntities($args);
   }
 
 }
