@@ -95,5 +95,12 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
       // just nothing
     }
 
+  /**
+   * @return array|void
+   */
+
+    public function getFieldGroups() {
+      // TODO: Implement getFieldGroups() method.
+    }
 
 }
