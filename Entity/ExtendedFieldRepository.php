@@ -71,5 +71,29 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
         return $this->getEntitiesWithCustomFields('extendedField', $args);
     }
 
+  /**
+   * @return \Doctrine\DBAL\Query\QueryBuilder|void
+   */
+    public function getEntitiesDbalQueryBuilder() {
+      // jusat nothing
+    }
+
+
+  /**
+   * @param $order
+   * @return QueryBuilder|void
+   */
+    public function getEntitiesOrmQueryBuilder($order){
+      // jusat nothing
+    }
+
+  /**
+   * @return mixed|string|void
+   */
+    public function getTableAlias()
+    {
+      // just nothing
+    }
+
 
 }
