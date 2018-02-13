@@ -30,6 +30,8 @@ class OverrideLeadListRepository extends LeadListRepository
    */
   protected $extendedFieldTableSchema;
 
+  protected $hasExtendedFieldFilter = FALSE;
+
 
 
   /**
@@ -83,10 +85,16 @@ class OverrideLeadListRepository extends LeadListRepository
 
       $parameters = [];
 
+      foreach($filters as $filter) {
+        if (in_array($filter['field'], array_keys($extendedFieldList))) {
+          $this->hasExtendedFieldFilter = TRUE;
+        }
+      }
+
       if ($dynamic && count($filters)) {
         $q = $this->getEntityManager()->getConnection()->createQueryBuilder();
         if ($countOnly) {
-          $count  = ($this->hasCompanyFilter) ? 'count(distinct(l.id))' : 'count(l.id)';
+          $count  = ($this->hasCompanyFilter || $this->hasExtendedFieldFilter) ? 'count(distinct(l.id))' : 'count(l.id)';
           $select = $count.' as lead_count, max(l.id) as max_id';
           if ($withMinId) {
             $select .= ', min(l.id) as min_id';
@@ -116,7 +124,7 @@ class OverrideLeadListRepository extends LeadListRepository
 
         if ($newOnly || !$nonMembersOnly) { // !$nonMembersOnly is mainly used for tests as we just want a live count
           $expr = $this->generateSegmentExpression($filters, $parameters, $q, null, $id);
-          if (!$this->hasCompanyFilter && !$expr->count()) {
+          if ((!$this->hasCompanyFilter && !$this->hasExtendedFieldFilter) && !$expr->count()) {
             // Treat this as if it has no filters since all the filters are now invalid (fields were deleted)
             $return[$id] = [];
             if ($countOnly) {
@@ -1335,7 +1343,7 @@ class OverrideLeadListRepository extends LeadListRepository
             }
           }
           if($isExtendedField){
-            $fieldNameColumn = $tableName.'lead_field_id';
+            $fieldNameColumn = $tableName.'.lead_field_id';
             $fieldNameValue = $extendedFieldList[$details['field']]['id'];
             switch ($func) {
               case 'between':
