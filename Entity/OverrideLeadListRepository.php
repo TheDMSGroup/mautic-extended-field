@@ -386,7 +386,7 @@ class OverrideLeadListRepository extends LeadListRepository
 
       if ($isExtendedField) {
         $dataType = $extendedFieldList[$details['field']]['type'];
-        $secure = strpos($extendedFieldList[$details['field']]['original_object'], '_secure') !==FALSE ? "Secure" : "";
+        $secure = strpos($object, 'Secure') !==FALSE ? "_secure" : "";
         $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
         $this->extendedFieldTableSchema = $schema->listTableColumns(MAUTIC_TABLE_PREFIX.$tableName);
       }
@@ -1683,6 +1683,13 @@ class OverrideLeadListRepository extends LeadListRepository
    */
   public function getExtendedFieldList($secure = true)
   {
+
+    //TODO Actually implement the Permission Pass
+    if(!$secure) {
+      $secure=TRUE; // do a real permission check here instead.
+    }
+    // finish TODO
+
     $object = 'extendedField';
 
     $q = $this->getEntityManager()->createQueryBuilder()
@@ -1693,7 +1700,7 @@ class OverrideLeadListRepository extends LeadListRepository
         ->andWhere($q->expr()->eq('l.object', ':object'))
         ->setParameter('object',  $object);
     } else {
-      $q->select('*')
+      $q->select('partial l.{id, label, alias, object, type}')
         ->andWhere($q->expr()->like('l.object', ':object'))
         ->setParameter('object',  "%$object%");
     }

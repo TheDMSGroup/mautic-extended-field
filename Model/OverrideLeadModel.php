@@ -18,6 +18,10 @@ use Mautic\LeadBundle\MauticLeadBundle;
 use Mautic\LeadBundle\Model\LeadModel as LeadModel;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository as OverrideLeadRepository;
 use Mautic\LeadBundle\Entity\Lead as Lead;
+use Mautic\LeadBundle\LeadEvents;
+use Mautic\LeadBundle\Event\LeadChangeCompanyEvent;
+use Mautic\LeadBundle\Entity\CompanyLead as CompanyLead;
+use Mautic\LeadBundle\Helper\IdentifyCompanyHelper as IdentifyCompanyHelper;
 use Mautic\CoreBundle\Model\FormModel;
 use Doctrine\ORM\EntityManager as MyDoctrineEM;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldRepositoryTrait as ExtendedFieldRepositoryTrait;
@@ -31,7 +35,7 @@ class OverrideLeadModel extends LeadModel
 
   use ExtendedFieldRepositoryTrait;
 
-
+  public $companyWasUpdated = FALSE;
   /**
    * Get a specific entity or generate a new one if id is empty.
    *
@@ -113,9 +117,11 @@ class OverrideLeadModel extends LeadModel
 
     $this->doSaveEntity($entity, $unlock);
 
-    if (!empty($company)) {
+    if (!empty($company) && !$this->companyWasUpdated) {
       // Save after the lead in for new leads created through the API and maybe other places
       $this->companyModel->addLeadToCompany($companyEntity, $entity);
+      $this->companyWasUpdated = True;
+
       $this->setPrimaryCompany($companyEntity->getId(), $entity->getId());
     }
 
@@ -394,5 +400,216 @@ class OverrideLeadModel extends LeadModel
     return $array;
   }
 
+  /**
+   * Overrides LeadBundle version of modifyCompanies
+   * to remove extended fields from list before adding companies to prevent
+   * recursive saves that fail
+   *
+   * Modify companies for lead.
+   *
+   * @param Lead $lead
+   * @param $companies
+   */
+  public function modifyCompanies(Lead $lead, $companies)
+  {
+    // See which companies belong to the lead already
+    $leadCompanies = $this->companyModel->getCompanyLeadRepository()->getCompaniesByLeadId($lead->getId());
+
+    foreach ($leadCompanies as $key => $leadCompany) {
+      if (array_search($leadCompany['company_id'], $companies) === false) {
+        $this->companyModel->removeLeadFromCompany([$leadCompany['company_id']], $lead);
+      }
+    }
+
+    if (count($companies)) {
+      $this->addLeadToCompany($companies, $lead);
+    } else {
+      // update the lead's company name to nothing
+      $lead->addUpdatedField('company', '');
+      $this->getRepository()->saveEntity($lead);
+    }
+  }
+
+  /** Add lead to company
+   * @param array|Company $companies
+   * @param array|Lead    $lead
+   *
+   * @return bool
+   *
+   * @throws \Doctrine\ORM\ORMException
+   */
+  public function addLeadToCompany($companies, $lead)
+  {
+    // Primary company name to be peristed to the lead's contact company field
+    $companyName        = '';
+    $companyLeadAdd     = [];
+    $searchForCompanies = [];
+
+    $dateManipulated = new \DateTime();
+
+    if (!$lead instanceof Lead) {
+      $leadId = (is_array($lead) && isset($lead['id'])) ? $lead['id'] : $lead;
+      $lead   = $this->em->getReference('MauticLeadBundle:Lead', $leadId);
+    }
+
+    if ($companies instanceof Company) {
+      $companyLeadAdd[$companies->getId()] = $companies;
+      $companies                           = [$companies->getId()];
+    } elseif (!is_array($companies)) {
+      $companies = [$companies];
+    }
+
+    //make sure they are ints
+    foreach ($companies as $k => &$l) {
+      $l = (int) $l;
+
+      if (!isset($companyLeadAdd[$l])) {
+        $searchForCompanies[] = $l;
+      }
+    }
+
+    if (!empty($searchForCompanies)) {
+      $companyEntities = $this->em->getRepository('MauticLeadBundle:Company')->getEntities([
+        'filter' => [
+          'force' => [
+            [
+              'column' => 'comp.id',
+              'expr'   => 'in',
+              'value'  => $searchForCompanies,
+            ],
+          ],
+        ],
+      ]);
+
+      foreach ($companyEntities as $company) {
+        $companyLeadAdd[$company->getId()] = $company;
+      }
+    }
+
+    unset($companyEntities, $searchForCompanies);
+
+    $persistCompany = [];
+    $dispatchEvents = [];
+    $contactAdded   = false;
+    foreach ($companies as $companyId) {
+      if (!isset($companyLeadAdd[$companyId])) {
+        // List no longer exists in the DB so continue to the next
+        continue;
+      }
+
+      $companyLead = $this->em->getRepository('MauticLeadBundle:CompanyLead')->findOneBy(
+        [
+          'lead'    => $lead,
+          'company' => $companyLeadAdd[$companyId],
+        ]
+      );
+
+      if ($companyLead != null) {
+        // @deprecated support to be removed in 3.0
+        if ($companyLead->wasManuallyRemoved()) {
+          $companyLead->setManuallyRemoved(false);
+          $companyLead->setManuallyAdded(false);
+          $contactAdded     = true;
+          $persistCompany[] = $companyLead;
+          $dispatchEvents[] = $companyId;
+          $companyName      = $companyLeadAdd[$companyId]->getName();
+        } else {
+          // Detach from Doctrine
+          $this->em->detach($companyLead);
+
+          continue;
+        }
+      } else {
+        $companyLead = new CompanyLead();
+        $companyLead->setCompany($companyLeadAdd[$companyId]);
+        $companyLead->setLead($lead);
+        $companyLead->setDateAdded($dateManipulated);
+        $contactAdded     = true;
+        $persistCompany[] = $companyLead;
+        $dispatchEvents[] = $companyId;
+        $companyName      = $companyLeadAdd[$companyId]->getName();
+      }
+    }
+
+    if (!empty($persistCompany)) {
+      $this->em->getRepository('MauticLeadBundle:CompanyLead')->saveEntities($persistCompany);
+    }
+
+    if (!empty($companyName)) {
+      $currentCompanyName = $lead->getCompany();
+      if ($currentCompanyName !== $companyName) {
+        $lead->addUpdatedField('company', $companyName)
+          ->setDateModified(new \DateTime());
+        $this->saveEntity($lead);
+      }
+    }
+
+    if (!empty($dispatchEvents) && ($this->dispatcher->hasListeners(LeadEvents::LEAD_COMPANY_CHANGE))) {
+      foreach ($dispatchEvents as $companyId) {
+        $event = new LeadChangeCompanyEvent($lead, $companyLeadAdd[$companyId]);
+        $this->dispatcher->dispatch(LeadEvents::LEAD_COMPANY_CHANGE, $event);
+
+        unset($event);
+      }
+    }
+
+    // Clear CompanyLead entities from Doctrine memory
+    $this->em->clear(CompanyLead::class);
+
+    return $contactAdded;
+  }
+
+  /**
+   * @param $companyId
+   * @param $leadId
+   *
+   * @return array
+   */
+  public function setPrimaryCompany($companyId, $leadId)
+  {
+    $companyArray      = [];
+    $oldPrimaryCompany = $newPrimaryCompany = false;
+
+    $lead = $this->getEntity($leadId);
+
+    $companyLeads = $this->companyModel->getCompanyLeadRepository()->getEntitiesByLead($lead);
+
+    /** @var CompanyLead $companyLead */
+    foreach ($companyLeads as $companyLead) {
+      $company = $companyLead->getCompany();
+
+      if ($companyLead) {
+        if ($companyLead->getPrimary() && !$oldPrimaryCompany) {
+          $oldPrimaryCompany = $companyLead->getCompany()->getId();
+        }
+        if ($company->getId() === (int) $companyId) {
+          $companyLead->setPrimary(true);
+          $newPrimaryCompany = $companyId;
+          $lead->addUpdatedField('company', $company->getName());
+        } else {
+          $companyLead->setPrimary(false);
+        }
+        $companyArray[] = $companyLead;
+      }
+    }
+
+    if (!$newPrimaryCompany) {
+      $latestCompany = $this->companyModel->getCompanyLeadRepository()->getLatestCompanyForLead($leadId);
+      if (!empty($latestCompany)) {
+        $lead->addUpdatedField('company', $latestCompany['companyname'])
+          ->setDateModified(new \DateTime());
+      }
+    }
+
+    if (!empty($companyArray)) {
+      $this->saveEntity($lead);
+      $this->companyModel->getCompanyLeadRepository()->saveEntities($companyArray, false);
+    }
+
+    // Clear CompanyLead entities from Doctrine memory
+    $this->em->clear(CompanyLead::class);
+
+    return ['oldPrimary' => $oldPrimaryCompany, 'newPrimary' => $companyId];
+  }
 
 }
