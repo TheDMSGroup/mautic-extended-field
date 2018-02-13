@@ -17,7 +17,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 return [
     'name'        => 'Extended Fields',
     'description' => 'Extend Mautic custom fields for scalability and HIPAA/PCI compliance.',
-    'version'     => '0.1',
+    'version'     => '0.3',
     'author'      => 'Mautic',
     'services'   => [
       'other' => [
