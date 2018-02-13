@@ -2,13 +2,18 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
+use Mautic\LeadBundle\Entity\CustomFieldEntityTrait;
 use Mautic\LeadBundle\Helper\CustomFieldHelper;
 use Doctrine\DBAL\Query\QueryBuilder;
+use Mautic\LeadBundle\Tests\Entity\CustomFieldRepositoryTrait;
 
 
 trait ExtendedFieldRepositoryTrait
 {
 
+  use CustomFieldEntityTrait {
+   // CustomFieldEntityTrait::saveEntity as parentSaveEntity;
+  }
   /**
    * @var array
    */
@@ -193,17 +198,15 @@ trait ExtendedFieldRepositoryTrait
     $entityConfig = $entity->getFields();
     foreach($fields as $fieldname=>$formData) {
       foreach ($entityConfig as $group) {
-        foreach ($group as $field => $config) {
-          if ($field === $fieldname && isset($config['object']) && strpos($config['object'], 'extendedField') !== FALSE) {
+          if (isset($group[$fieldname]) && isset($group[$fieldname]['object']) && strpos($group[$fieldname]['object'], 'extendedField') !== FALSE) {
             $extendedFields[$fieldname]['value'] = $formData;
-            $extendedFields[$fieldname]['type'] = $config['type'];
-            $extendedFields[$fieldname]['id'] = $config['id'];
+            $extendedFields[$fieldname]['type'] = $group[$fieldname]['type'];
+            $extendedFields[$fieldname]['id'] = $group[$fieldname]['id'];
             $extendedFields[$fieldname]['name'] = $fieldname;
-            $extendedFields[$fieldname]['secure'] = strpos($config['object'], 'Secure') !== FALSE ? TRUE : FALSE;
+            $extendedFields[$fieldname]['secure'] = strpos($group[$fieldname]['object'], 'Secure') !== FALSE ? TRUE : FALSE;
             unset($fields[$fieldname]);
-            break 2;
+            break;
           }
-        }
       }
     }
 
@@ -244,7 +247,42 @@ trait ExtendedFieldRepositoryTrait
     $this->postSaveEntity($entity);
   }
 
+  /**
+   * {@inheritdoc}
+   *
+   * @param $entity
+   * @param $flush
+   */
+  public function saveEntity($entity, $flush = true)
+  {
+    $this->preSaveEntity($entity);
 
+    $this->getEntityManager()->persist($entity);
+
+    if ($flush) {
+      $this->getEntityManager()->flush($entity);
+    }
+
+    // Includes prefix
+    $table  = $this->getEntityManager()->getClassMetadata($this->getClassName())->getTableName();
+    $fields = $entity->getUpdatedFields();
+    if (method_exists($entity, 'getChanges')) {
+      $changes = $entity->getChanges();
+
+      // remove the fields that are part of changes as they were already saved via a setter
+      $fields = array_diff_key($fields, $changes);
+      // Overriden to check a deeper recursion in changes since fields may already have been saved that
+      // are not company fields, IE - extended fields and extended fields secure
+      $fields = array_diff_key($fields, $changes['fields']);
+    }
+
+    if (!empty($fields)) {
+      $this->prepareDbalFieldsForSave($fields);
+      $this->getEntityManager()->getConnection()->update($table, $fields, ['id' => $entity->getId()]);
+    }
+
+    $this->postSaveEntity($entity);
+  }
 
 
 }
