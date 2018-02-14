@@ -27,9 +27,6 @@ class OverrideFieldModelPass implements CompilerPassInterface
     $definition = $container->getDefinition('mautic.lead.model.field');
     $definition->setClass(ExtendedFieldModel::class);
 
-//    $definition2 = $container->getDefinition('mautic.form.type.leadfield');
-//    $definition2->setClass(ExtendedFieldModel::class);
-
     $definition3 = $container->getDefinition('mautic.lead.model.lead');
     $definition3->setClass(OverrideLeadModel::class);
 

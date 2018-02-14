@@ -12,12 +12,14 @@
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 
 use Doctrine\DBAL\DBALException;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Mautic\CoreBundle\Doctrine\Helper\SchemaHelperFactory;
 use Doctrine\DBAL\Exception\DriverException;
 use Mautic\CoreBundle\Doctrine\Helper\ColumnSchemaHelper;
 use Mautic\LeadBundle\Entity\LeadField;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Mautic\LeadBundle\Model\FieldModel as FieldModel;
+use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadFieldRepository;
 
 
 /**
@@ -36,6 +38,15 @@ class ExtendedFieldModel extends FieldModel {
 //  {
 //    return 'lead:leads';
 //  }
+
+  /**
+   * @return OverrideLeadFieldRepository
+   */
+  public function getRepository()
+  {
+    $metastart = new ClassMetadata(LeadField::class);
+    return new OverrideLeadFieldRepository($this->em, $metastart);
+  }
 
 
   /**

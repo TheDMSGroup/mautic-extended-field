@@ -144,4 +144,42 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     return $entity;
   }
 
+  /**
+   * **********   NOT USED YET  ***********************
+   *
+   * Overrides LeadBundle instance of getLeadIdsByUniqueFields
+   * to handle extended field table schema differences from lead table
+   * IE - needs a join and pivot on columns
+   *
+   * Get list of lead Ids by unique field data.
+   *
+   * @param $uniqueFieldsWithData is an array of columns & values to filter by
+   * @param int $leadId is the current lead id. Added to query to skip and find other leads
+   *
+   * @return array
+   */
+  public function getLeadIdsByUniqueFields($uniqueFieldsWithData, $leadId = null)
+  {
+    $q = $this->getEntityManager()->getConnection()->createQueryBuilder()
+      ->select('l.id')
+      ->from(MAUTIC_TABLE_PREFIX.'leads', 'l');
+
+    // loop through the fields and
+    foreach ($uniqueFieldsWithData as $col => $val) {
+      $q->orWhere("l.$col = :".$col)
+        ->setParameter($col, $val);
+    }
+
+    // if we have a lead ID lets use it
+    if (!empty($leadId)) {
+      // make sure that its not the id we already have
+      $q->andWhere('l.id != '.$leadId);
+    }
+
+    $results = $q->execute()->fetchAll();
+
+    return $results;
+  }
+
+
 }
