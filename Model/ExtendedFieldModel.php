@@ -212,69 +212,26 @@ class ExtendedFieldModel extends FieldModel {
   /**
    * @return array
    */
-  public function getExtendedFieldFields() {
-    $extendedFieldFields = $this->getEntities([
-      'filter' => [
-        'force' => [
-          [
-            'column' => 'f.object',
-            'expr' => 'like',
-            'value' => 'extendedField',
-          ],
-        ],
-      ],
-    ]);
-
-    return $extendedFieldFields;
-  }
-
-  /**
-   * @return array
-   */
-  public function getExtendedFieldSecureFields() {
-    $extendedFieldSecureFields = $this->getEntities([
-      'filter' => [
-        'force' => [
-          [
-            'column' => 'f.object',
-            'expr' => 'like',
-            'value' => 'extendedFieldSecure',
-          ],
-        ],
-      ],
-    ]);
-
-    return $extendedFieldSecureFields;
-  }
-
-  /**
-   * @return array
-   */
-  public function getAllExtendedFields() {
-    $extendedFieldSecureFields = $this->getExtendedFieldSecureFields();
-    $extendedFieldFields = $this->getExtendedFieldFields();
-
-    $allExtendedFields = array_merge($extendedFieldFields, $extendedFieldSecureFields);
-
-    return $allExtendedFields;
-  }
-
-  /**
-   * @return array
-   */
   public function getLeadFields()
   {
-    $leadFields = parent::getLeadFields();
 
-    if(TRUE){ // TODO change this to a permission base
-      // get extended and extendedSecure
-      $extendedFields = $this->getAllExtendedFields();
+    if(FALSE){ // TODO change this to a permission base
+      // get extended and lead ONLY
+      $expr = array(
+        'filter' => array(
+          'force' =>array (
+              'column' => 'f.object',
+              'expr'   => 'neq',
+              'value'  => 'extendedFieldSecure',
+          ),
+        ),
+      );
     } else {
-      //only get extendedFieldFields (Not secure)
-      $extendedFields = $this->getExtendedFieldFields();
+      //get all of 'em (no filters)
+    $expr = array();
     }
 
-    array_merge($leadFields, $extendedFields);
+    $leadFields = $this->getEntities($expr);
 
     return $leadFields;
   }

@@ -15,6 +15,7 @@ use Mautic\PluginBundle\Bundle\PluginBundleBase;
 use MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler\OverrideFieldModelPass;
 use MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler\OverrideListModelPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Mautic\LeadBundle;
 
 class MauticExtendedFieldBundle extends PluginBundleBase
 {
