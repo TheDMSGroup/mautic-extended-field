@@ -14,7 +14,6 @@
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
-use Mautic\LeadBundle\MauticLeadBundle;
 use Mautic\LeadBundle\Model\LeadModel as LeadModel;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository as OverrideLeadRepository;
 use Mautic\LeadBundle\Entity\Lead as Lead;
@@ -23,7 +22,6 @@ use Mautic\LeadBundle\Event\LeadChangeCompanyEvent;
 use Mautic\LeadBundle\Entity\CompanyLead as CompanyLead;
 use Mautic\LeadBundle\Helper\IdentifyCompanyHelper as IdentifyCompanyHelper;
 use Mautic\CoreBundle\Model\FormModel;
-use Doctrine\ORM\EntityManager as MyDoctrineEM;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldRepositoryTrait as ExtendedFieldRepositoryTrait;
 
 /**
@@ -36,6 +34,9 @@ class OverrideLeadModel extends LeadModel
   use ExtendedFieldRepositoryTrait;
 
   public $companyWasUpdated = FALSE;
+  public $extendedFieldsAdded = FALSE;
+
+
   /**
    * Get a specific entity or generate a new one if id is empty.
    *
@@ -60,6 +61,7 @@ class OverrideLeadModel extends LeadModel
 
     return $entity;
   }
+
 
   /**
    * Overrides the LeadBundle LeadModel.php instance of saveEntity
@@ -331,6 +333,12 @@ class OverrideLeadModel extends LeadModel
   }
 
 
+  /**
+   * Gets array of extended Field config
+   *
+   * @param array $args
+   * @return array
+   */
 
   public function getExtendedEntities(array $args = [])
   {
@@ -611,5 +619,6 @@ class OverrideLeadModel extends LeadModel
 
     return ['oldPrimary' => $oldPrimaryCompany, 'newPrimary' => $companyId];
   }
+
 
 }

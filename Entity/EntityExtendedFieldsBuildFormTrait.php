@@ -24,22 +24,22 @@ trait EntityExtendedFieldsBuildFormTrait
     $mapped = !$isObject;
 
     foreach ($options['fields'] as $field) {
-      if ($field['isPublished'] === false ) {
+      if (isset($field['isPublished']) && $field['isPublished'] === false ) {
         continue;
       }
       $attr       = ['class' => 'form-control'];
       $properties = $field['properties'];
       $type       = $field['type'];
-      $required   = ($isObject) ? $field['isRequired'] : false;
+      $required   = ($isObject) && isset($field['isRequired']) ? $field['isRequired'] : false;
       $alias      = $field['alias'];
-      $group      = $field['group'];
+      $group      = isset($field['group']) ? $field['group'] : 'core';
 
-      if ($field['isUniqueIdentifer']) {
+      if (isset($field['isUniqueIdentifer']) && $field['isUniqueIdentifer']) {
         $attr['data-unique-identifier'] = $field['alias'];
       }
 
       if ($isObject) {
-        $value = (isset($fieldValues[$group][$alias]['value'])) ?
+        $value = (isset($fieldValues[$group][$alias]['value']) || isset($field['defaultValue'])) ?
           $fieldValues[$group][$alias]['value'] : $field['defaultValue'];
       } else {
         $value = (isset($fieldValues[$alias])) ? $fieldValues[$alias] : '';
@@ -260,7 +260,7 @@ trait EntityExtendedFieldsBuildFormTrait
             $alias,
             $type,
             [
-              'required'   => $field['isRequired'],
+              'required'   => isset($field['isRequired']) ? $field['isRequired'] : false,
               'label'      => $field['label'],
               'label_attr' => ['class' => 'control-label'],
 

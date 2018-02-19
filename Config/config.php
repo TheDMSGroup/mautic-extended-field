@@ -13,6 +13,11 @@ use Mautic\LeadBundle\Form\Type\FieldType;
 use Mautic\LeadBundle\Form\Type\LeadType;
 use Mautic\LeadBundle\Form\Type\ListType;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use MauticPlugin\MauticExtendedFieldBundle\EventListener\ExtendedLeadListener;
+
+//$container
+//  ->register('mautic.extendedfield.lead.listener', ExtendedLeadListener::class)
+//  ->addTag('doctrine.event_listener', array('event' => 'postLoad'));
 
 return [
     'name'        => 'Extended Fields',

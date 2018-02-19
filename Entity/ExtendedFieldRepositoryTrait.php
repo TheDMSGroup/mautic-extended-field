@@ -4,16 +4,18 @@ namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
 use Mautic\LeadBundle\Entity\CustomFieldEntityTrait;
 use Mautic\LeadBundle\Helper\CustomFieldHelper;
+//use Doctrine\ORM\QueryBuilder;
 use Doctrine\DBAL\Query\QueryBuilder;
-use Mautic\LeadBundle\Tests\Entity\CustomFieldRepositoryTrait;
+use Mautic\CoreBundle\Entity\CommonRepository as CommonRepository;
+use Mautic\LeadBundle\Entity\CustomFieldRepositoryTrait;
+use Mautic\LeadBundle\Entity\Lead as Lead;
 
 
 trait ExtendedFieldRepositoryTrait
 {
 
-  use CustomFieldEntityTrait {
-   // CustomFieldEntityTrait::saveEntity as parentSaveEntity;
-  }
+  use CustomFieldEntityTrait;
+
   /**
    * @var array
    */
@@ -23,6 +25,11 @@ trait ExtendedFieldRepositoryTrait
    * @var array
    */
   protected $customExtendedFieldSecureList = [];
+
+  /**
+   * @var array
+   */
+  protected $customLeadFieldList = [];
 
 
   /**
@@ -36,18 +43,40 @@ trait ExtendedFieldRepositoryTrait
    *
    * @return array [$fields, $fixedFields]
    */
-  public function getExtendedCustomFieldList($object)
+  public function getCustomFieldList($object)
   {
-    $thisList = $object == 'extendedField' ? $this->customExtendedFieldList : $this->customExtendedFieldSecureList;
+    if($object=='lead'){
+      $thisList = $this->customLeadFieldList;
+    } else {
+      $thisList = $object == 'extendedField' ? $this->customExtendedFieldList : $this->customExtendedFieldSecureList;
+    }
+
     if (empty($thisList)) {
       //Get the list of custom fields
-      $fq = $this->getEntityManager()->getConnection()->createQueryBuilder();
+      if($this->em) {
+        $fq = $this->em->getConnection()->createQueryBuilder();
+
+      } else {
+        $fq = $this->getEntityManager()->getConnection()->createQueryBuilder();
+
+      }
+
+      // if object==lead we really want everything but company
+      if($object=='lead'){
+        $objectexpr = 'company';
+        $expr = 'neq';
+      } else {
+        $expr = 'eq';
+        $objectexpr = $object;
+      }
+
+
       $fq->select('f.id, f.label, f.alias, f.type, f.field_group as "group", f.object, f.is_fixed')
         ->from(MAUTIC_TABLE_PREFIX.'lead_fields', 'f')
         ->where('f.is_published = :published')
-        ->andWhere($fq->expr()->eq('object', ':object'))
+        ->andWhere($fq->expr()->$expr('object', ':object'))
         ->setParameter('published', true, 'boolean')
-        ->setParameter('object', $object);
+        ->setParameter('object', $objectexpr);
       $results = $fq->execute()->fetchAll();
 
       $fields      = [];
@@ -64,9 +93,12 @@ trait ExtendedFieldRepositoryTrait
       if($object=='extendedField') {
         $this->customExtendedFieldList = [$fields, $fixedFields];
         $thisList = $this->customExtendedFieldList;
-      } else {
+      } elseif ($object =='extendedFieldSecure') {
         $this->customExtendedFieldSecureList = [$fields, $fixedFields];
         $thisList = $this->customExtendedFieldSecureList;
+      } else {
+        $this->customLeadFieldList = [$fields, $fixedFields];
+        $thisList = $this->customLeadFieldList;
       }
     }
 
@@ -86,7 +118,7 @@ trait ExtendedFieldRepositoryTrait
   {
     //use DBAL to get entity fields
 
-    $customExtendedFieldList = $this->getExtendedCustomFieldList($object);
+    $customExtendedFieldList = $this->getCustomFieldList($object);
     $fields=[];
     // the 0 key is the list of fields ;  the 1 key is the list of is_fixed fields
     foreach($customExtendedFieldList[0] as $key => $customExtendedField) {
@@ -117,7 +149,7 @@ trait ExtendedFieldRepositoryTrait
    * @return array
    */
   protected function formatExtendedFieldValues($values, $byGroup = true, $object = 'extendedField') {
-    list($fields, $fixedFields) = $this->getExtendedCustomFieldList($object);
+    list($fields, $fixedFields) = $this->getCustomFieldList($object);
 
     $this->removeNonFieldColumns($values, $fixedFields);
 
@@ -285,4 +317,194 @@ trait ExtendedFieldRepositoryTrait
   }
 
 
+  /**
+   * @param      $object
+   * @param      $args
+   * @param null $resultsCallback
+   *
+   * @return array
+   */
+  public function getEntitiesWithCustomFields($object, $args, $resultsCallback = null)
+  {
+    list($fields, $fixedFields) = $this->getCustomFieldList($object);
+    $extendedFieldList = [];
+    foreach($fields as $k =>$field){
+      if (strpos($field['object'], "extended") !==FALSE) {
+        $extendedFieldList[$k] = $field;
+      }
+    }
+
+    //Fix arguments if necessary
+    $args = $this->convertOrmProperties($this->getClassName(), $args);
+
+    //DBAL
+    /** @var QueryBuilder $dq */
+    $dq = isset($args['qb']) ? $args['qb'] : $this->getEntitiesDbalQueryBuilder();
+
+    // Generate where clause first to know if we need to use distinct on primary ID or not
+    $this->useDistinctCount = false;
+    $this->buildWhereClause($dq, $args);
+
+    // Distinct is required here to get the correct count when group by is used due to applied filters
+    $countSelect = ($this->useDistinctCount) ? 'COUNT(DISTINCT('.$this->getTableAlias().'.id))' : 'COUNT('.$this->getTableAlias().'.id)';
+    $dq->select($countSelect.' as count');
+
+    // Advanced search filters may have set a group by and if so, let's remove it for the count.
+    if ($groupBy = $dq->getQueryPart('groupBy')) {
+      $dq->resetQueryPart('groupBy');
+    }
+
+    //get a total count
+    $result = $dq->execute()->fetchAll();
+    $total  = ($result) ? $result[0]['count'] : 0;
+
+    if (!$total) {
+      $results = [];
+    } else {
+      if ($groupBy) {
+        $dq->groupBy($groupBy);
+      }
+      //now get the actual paginated results
+
+      $this->buildOrderByClause($dq, $args);
+      $this->buildLimiterClauses($dq, $args);
+
+      $dq->resetQueryPart('select');
+      $this->buildSelectClause($dq, $args);
+
+      $results = $dq->execute()->fetchAll();
+
+      //loop over results to put fields in something that can be assigned to the entities
+      $fieldValues = [];
+      $groups      = $this->getFieldGroups();
+      $lead_ids = array_map('reset', $results);
+      $extendedFieldValues = $this->getExtendedFieldValuesMultiple($extendedFieldList, $lead_ids);
+
+      foreach ($results as $result) {
+        $id = $result['id'];
+        //unset all the columns that are not fields
+        $this->removeNonFieldColumns($result, $fixedFields);
+
+        foreach ($result as $k => $r) {
+          if (isset($fields[$k])) {
+            $fieldValues[$id][$fields[$k]['group']][$fields[$k]['alias']]          = $fields[$k];
+            $fieldValues[$id][$fields[$k]['group']][$fields[$k]['alias']]['value'] = $r;
+          }
+          // And...add the extended field to result if the current lead has that field value
+          foreach($extendedFieldList as $fieldToAdd=>$e_config){
+            // todo Apply filters from extended fields
+            $e_value = isset($extendedFieldValues[$id][$fieldToAdd]) ? $extendedFieldValues[$id][$fieldToAdd] : null;
+            $fieldValues[$id][$fields[$fieldToAdd]['group']][$fields[$fieldToAdd]['alias']] = $fields[$fieldToAdd];
+            $fieldValues[$id][$fields[$fieldToAdd]['group']][$fields[$fieldToAdd]['alias']]['value'] = $e_value;
+          }
+
+        }
+
+        //make sure each group key is present
+        foreach ($groups as $g) {
+          if (!isset($fieldValues[$id][$g])) {
+            $fieldValues[$id][$g] = [];
+          }
+        }
+      }
+
+      unset($results, $fields);
+
+      //get an array of IDs for ORM query
+      $ids = array_keys($fieldValues);
+
+      if (count($ids)) {
+        //ORM
+
+        //build the order by id since the order was applied above
+        //unfortunately, doctrine does not have a way to natively support this and can't use MySQL's FIELD function
+        //since we have to be cross-platform; it's way ugly
+
+        //We should probably totally ditch orm for leads
+        $order = '(CASE';
+        foreach ($ids as $count => $id) {
+          $order .= ' WHEN '.$this->getTableAlias().'.id = '.$id.' THEN '.$count;
+          ++$count;
+        }
+        $order .= ' ELSE '.$count.' END) AS HIDDEN ORD';
+
+        //ORM - generates lead entities
+        $q = $this->getEntitiesOrmQueryBuilder($order);
+        $this->buildSelectClause($dq, $args);
+
+        //only pull the leads as filtered via DBAL
+        $q->where(
+          $q->expr()->in($this->getTableAlias().'.id', ':entityIds')
+        )->setParameter('entityIds', $ids);
+
+        $q->orderBy('ORD', 'ASC');
+
+        $results = $q->getQuery()
+          ->getResult();
+
+        //assign fields
+        foreach ($results as $r) {
+          $id = $r->getId();
+          $r->setFields($fieldValues[$id]);
+
+          if (is_callable($resultsCallback)) {
+            $resultsCallback($r);
+          }
+        }
+      } else {
+        $results = [];
+      }
+    }
+    return (!empty($args['withTotalCount'])) ?
+      [
+        'count'   => $total,
+        'results' => $results,
+      ] : $results;
+  }
+
+
+
+  /**
+   * @param array $extendedFieldList
+   * @return mixed
+   */
+  function getExtendedFieldValuesMultiple($extendedFieldList= array(), $lead_ids = array()){
+
+    // get a query builder for extendedField values to get.
+    if($this->em) {
+      $eq = $this->em->getConnection();
+
+    } else {
+      $eq = $this->getEntityManager()->getConnection();
+
+    }
+    $extendedTables = [];
+    $ex_expr="";
+    $ids_str = implode(',', $lead_ids);
+    $where_in = !empty($lead_ids) ? "Where lead_id IN ($ids_str)" : "";
+    foreach($extendedFieldList as $k => $details) {
+      // get extendedField Filters first
+      // its an extended field, build a join expressions
+      $secure = strpos($details['alias'], "Secure")!==False ? "_secure" : "";
+      $tableName = "lead_fields_leads_" . $details['type'] . $secure . "_xref";
+      if(!isset($extendedTables[$tableName])){
+        $count = count($extendedTables);
+        $union = $count >0 ? " UNION" : "";
+        $extendedTables[] = $tableName; //array of tables to query now
+
+        $ex_expr .= "$union SELECT t$count.lead_id, t$count.lead_field_id, t$count.value, lf.alias FROM $tableName t$count LEFT JOIN lead_fields lf ON t$count.lead_field_id = lf.id $where_in";
+      }
+    }
+    $ex_query = $eq->prepare($ex_expr);
+    $ex_query->execute();
+    $results = $ex_query->fetchAll();
+    // group results by lead_id
+    $leads = array();
+    foreach($results as $result){
+      $leads[$result['lead_id']][$result['alias']] = $result['value'];
+    }
+
+    return $leads;
+
+  }
 }

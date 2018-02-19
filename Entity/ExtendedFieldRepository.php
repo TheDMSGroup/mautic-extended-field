@@ -68,14 +68,19 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
      */
     public function getEntities(array $args = [])
     {
-        return $this->getEntitiesWithCustomFields('extendedField', $args);
+        return $this->getLeadsWithCustomFields('lead', $args);
     }
 
   /**
    * @return \Doctrine\DBAL\Query\QueryBuilder|void
    */
     public function getEntitiesDbalQueryBuilder() {
-      // jusat nothing
+      $alias = 'l';
+      $dq    = $this->getEntityManager()->getConnection()->createQueryBuilder()
+        ->from(MAUTIC_TABLE_PREFIX.'leads', $alias)
+        ->leftJoin($alias, MAUTIC_TABLE_PREFIX.'users', 'u', 'u.id = '.$alias.'.owner_id');
+
+      return $dq;
     }
 
 

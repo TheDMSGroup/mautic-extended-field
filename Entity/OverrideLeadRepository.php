@@ -18,6 +18,7 @@ use Mautic\LeadBundle\Entity\OperatorListTrait;
 use Mautic\LeadBundle\Entity\CustomFieldRepositoryInterface;
 use Mautic\LeadBundle\Entity\CustomFieldRepositoryTrait;
 use Mautic\LeadBundle\Entity\ExpressionHelperTrait;
+use Mautic\LeadBundle\Entity\Lead;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldRepositoryTrait;
 
 /**
@@ -99,6 +100,97 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     }
 
     return $entity;
+  }
+
+  /**
+   * Get a list of leads.
+   *
+   * @param array $args
+   *
+   * @return array
+   */
+  public function getEntities(array $args = [])
+  {
+
+    $contacts = $this->getEntitiesWithCustomFields(
+      'lead',
+      $args,
+      function ($r) {
+        if (!empty($this->triggerModel)) {
+          $r->setColor($this->triggerModel->getColorForLeadPoints($r->getPoints()));
+        }
+        $r->setAvailableSocialFields($this->availableSocialFields);
+      }
+    );
+
+    $contactCount = isset($contacts['results']) ? count($contacts['results']) : count($contacts);
+    if ($contactCount && (!empty($args['withPrimaryCompany']) || !empty($args['withChannelRules']))) {
+      $withTotalCount = (array_key_exists('withTotalCount', $args) && $args['withTotalCount']);
+      /** @var Lead[] $tmpContacts */
+      $tmpContacts = ($withTotalCount) ? $contacts['results'] : $contacts;
+
+      $withCompanies   = !empty($args['withPrimaryCompany']);
+      $withPreferences = !empty($args['withChannelRules']);
+      $contactIds      = array_keys($tmpContacts);
+
+      if ($withCompanies) {
+        $companies = $this->getEntityManager()->getRepository('MauticLeadBundle:Company')->getCompaniesForContacts($contactIds);
+      }
+
+      if ($withPreferences) {
+        /** @var FrequencyRuleRepository $frequencyRepo */
+        $frequencyRepo  = $this->getEntityManager()->getRepository('MauticLeadBundle:FrequencyRule');
+        $frequencyRules = $frequencyRepo->getFrequencyRules(null, $contactIds);
+
+        /** @var DoNotContactRepository $dncRepository */
+        $dncRepository = $this->getEntityManager()->getRepository('MauticLeadBundle:DoNotContact');
+        $dncRules      = $dncRepository->getChannelList(null, $contactIds);
+      }
+
+      foreach ($contactIds as $id) {
+        if ($withCompanies && isset($companies[$id]) && !empty($companies[$id])) {
+          $primary = null;
+
+          // Try to find the primary company
+          foreach ($companies[$id] as $company) {
+            if ($company['is_primary'] == 1) {
+              $primary = $company;
+            }
+          }
+
+          // If no primary was found, just grab the first
+          if (empty($primary)) {
+            $primary = $companies[$id][0];
+          }
+
+          if (is_array($tmpContacts[$id])) {
+            $tmpContacts[$id]['primaryCompany'] = $primary;
+          } elseif ($tmpContacts[$id] instanceof Lead) {
+            $tmpContacts[$id]->setPrimaryCompany($primary);
+          }
+        }
+
+        if ($withPreferences) {
+          $contactFrequencyRules = (isset($frequencyRules[$id])) ? $frequencyRules[$id] : [];
+          $contactDncRules       = (isset($dncRules[$id])) ? $dncRules[$id] : [];
+
+          $channelRules = Lead::generateChannelRules($contactFrequencyRules, $contactDncRules);
+          if (is_array($tmpContacts[$id])) {
+            $tmpContacts[$id]['channelRules'] = $channelRules;
+          } elseif ($tmpContacts[$id] instanceof Lead) {
+            $tmpContacts[$id]->setChannelRules($channelRules);
+          }
+        }
+      }
+
+      if ($withTotalCount) {
+        $contacts['results'] = $tmpContacts;
+      } else {
+        $contacts = $tmpContacts;
+      }
+    }
+
+    return $contacts;
   }
 
 
