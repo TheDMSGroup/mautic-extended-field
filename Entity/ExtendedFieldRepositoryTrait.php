@@ -9,7 +9,8 @@ use Doctrine\DBAL\Query\QueryBuilder;
 use Mautic\CoreBundle\Entity\CommonRepository as CommonRepository;
 use Mautic\LeadBundle\Entity\CustomFieldRepositoryTrait;
 use Mautic\LeadBundle\Entity\Lead as Lead;
-
+use Mautic\CoreBundle\Helper\SearchStringHelper;
+use MauticPlugin\MauticExtendedFieldBundle\Helper\ExtendedSearchStringHelper;
 
 trait ExtendedFieldRepositoryTrait
 {
@@ -36,6 +37,13 @@ trait ExtendedFieldRepositoryTrait
    * @var array
    */
   protected $fields = [];
+
+  /**
+   * Stores the parsed columns and their negate status for addAdvancedSearchWhereClause().
+   *
+   * @var array
+   */
+  protected $advancedFilterCommands = [];
 
 
   /**
@@ -336,6 +344,8 @@ trait ExtendedFieldRepositoryTrait
 
     //Fix arguments if necessary
     $args = $this->convertOrmProperties($this->getClassName(), $args);
+    list($args, $extendedArgs) = $this->removeExtendedFieldFilters($extendedFieldList, $args);
+
 
     //DBAL
     /** @var QueryBuilder $dq */
@@ -505,6 +515,102 @@ trait ExtendedFieldRepositoryTrait
     }
 
     return $leads;
+
+  }
+
+  /**
+   * Added so that the assumed filtering management process doesnt error when trying
+   * to build a filter expression for extended Fields against the lead table (which
+   * it always assumes is the table alias)
+   *
+   * @param array $extendedFieldList
+   * @param array $args
+   * @return array
+   */
+  public function removeExtendedFieldFilters($extendedFieldList = array(), &$args=array())
+  {
+    $extendedArgs              = [];
+    $filter                    = array_key_exists('filter', $args) ? $args['filter'] : '';
+    $filterHelper              = new SearchStringHelper();
+    $advancedFilters           = new \stdClass();
+    $advancedFilters->root     = [];
+    $advancedFilters->commands = [];
+    // Reset advanced filter commands to be used in search query building
+    $this->advancedFilterCommands = [];
+    $advancedFilterStrings        = [];
+    $queryParameters              = [];
+    $queryExpression              = $q->expr()->andX();
+
+    if (!empty($filter)) {
+      if (is_array($filter)) {
+        if (!empty($filter['where'])) {
+          // build clauses from array
+          $foo = '';
+        }
+        elseif (!empty($filter['criteria']) || !empty($filter['force'])) {
+          $criteria = !empty($filter['criteria']) ? $filter['criteria'] : $filter['force'];
+          if (is_array($criteria)) {
+            //defined columns with keys of column, expr, value
+            foreach ($criteria as $index=>$criterion) {
+              if ($criterion instanceof Query\Expr || $criterion instanceof CompositeExpression) {
+                // What todo here?
+                $foo = '';
+              }
+              elseif (is_array($criterion)) {
+                $foo = '';
+
+
+              } else {
+                //string so parse as advanced search
+                $advancedFilterStrings[] = $criterion;
+              }
+            }
+          } else {
+            //string so parse as advanced search
+            $advancedFilterStrings[] = $criteria;
+          }
+        }
+
+        if (!empty($filter['string'])) {
+          $advancedFilterStrings[] = $filter['string'];
+        }
+      } else {
+        $advancedFilterStrings[] = $filter;
+      }
+
+      if (!empty($advancedFilterStrings)) {
+        foreach ($advancedFilterStrings as $parseString) {
+          $parsed = $filterHelper->parseString($parseString);
+
+          $advancedFilters->root = array_merge($advancedFilters->root, $parsed->root);
+          $filterHelper->mergeCommands($advancedFilters, $parsed->commands);
+        }
+        $this->advancedFilterCommands = $advancedFilters->commands;
+
+        list($expr, $parameters) = $this->addAdvancedSearchWhereClause($q, $advancedFilters);
+        $this->appendExpression($queryExpression, $expr);
+
+        if (is_array($parameters)) {
+          $queryParameters = array_merge($queryParameters, $parameters);
+        }
+      }
+    }
+
+    return array($args, $extendedArgs);
+  }
+
+  /**
+   * @param $filterString
+   * @return bool
+   */
+  public function hasExtendedFieldInFilter($filterString, $extendedFieldList)
+  {
+  foreach($extendedFieldList as $field) {
+    if (strpos($filterString, $field['alias']) !== FALSE) {
+      return TRUE;
+    }
+  }
+  return FALSE;
 
   }
 }
