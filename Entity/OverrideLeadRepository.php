@@ -20,6 +20,7 @@ use Mautic\LeadBundle\Entity\CustomFieldRepositoryTrait;
 use Mautic\LeadBundle\Entity\ExpressionHelperTrait;
 use Mautic\LeadBundle\Entity\Lead;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldRepositoryTrait;
+use Mautic\CoreBundle\Helper\SearchStringHelper;
 
 /**
  * OverrideLeadRepository.
@@ -53,6 +54,12 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
    * @var TriggerModel
    */
   private $triggerModel;
+  /**
+   * Stores a boolean if args has extended field filters.
+   *
+   * @var array
+   */
+  protected $extendedFieldFilters = [];
 
 
   /**
@@ -271,6 +278,387 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     $results = $q->execute()->fetchAll();
 
     return $results;
+  }
+
+  /**
+   * @param \Doctrine\ORM\QueryBuilder $q
+   * @param array                      $args
+   */
+  protected function ExtendedBuildWhereClause($q, array $args, array $extendedFieldFilters)
+  {
+    $filter                    = array_key_exists('filter', $args) ? $args['filter'] : '';
+    $filterHelper              = new SearchStringHelper();
+    $advancedFilters           = new \stdClass();
+    $advancedFilters->root     = [];
+    $advancedFilters->commands = [];
+    // Reset advanced filter commands to be used in search query building
+    $this->advancedFilterCommands = [];
+    $advancedFilterStrings        = [];
+    $queryParameters              = [];
+    $queryExpression              = $q->expr()->andX();
+    $this->extendedFieldFilters   = $extendedFieldFilters;
+
+
+
+    if (isset($args['ids'])) {
+      $ids = array_map('intval', $args['ids']);
+      if ($q instanceof QueryBuilder) {
+        $param = $this->generateRandomParameterName();
+        $queryExpression->add(
+          $q->expr()->in($this->getTableAlias().'.id', ':'.$param)
+        );
+        $queryParameters[$param] = $ids;
+      } else {
+        $queryExpression->add(
+          $q->expr()->in($this->getTableAlias().'.id', $ids)
+        );
+      }
+    } elseif (!empty($args['ownedBy'])) {
+      $queryExpression->add(
+        $q->expr()->in($this->getTableAlias().'.'.$args['ownedBy'][0], (int) $args['ownedBy'][1])
+      );
+    }
+
+    if (!empty($filter)) {
+      if (is_array($filter)) {
+        if (!empty($filter['where'])) {
+          // build clauses from array
+          $this->buildExtendedWhereClauseFromArray($q, $filter['where']);
+        }
+        elseif (!empty($filter['criteria']) || !empty($filter['force'])) {
+          $criteria = !empty($filter['criteria']) ? $filter['criteria'] : $filter['force'];
+          if (is_array($criteria)) {
+            //defined columns with keys of column, expr, value
+            foreach ($criteria as $criterion) {
+              if ($criterion instanceof Query\Expr || $criterion instanceof CompositeExpression) {
+                $queryExpression->add($criterion);
+
+                if (isset($criterion->parameters) && is_array($criterion->parameters)) {
+                  $queryParameters = array_merge($queryParameters, $criterion->parameters);
+                  unset($criterion->parameters);
+                }
+              } elseif (is_array($criterion)) {
+                list($expr, $parameters) = $this->getFilterExpr($q, $criterion);
+                $queryExpression->add($expr);
+                if (is_array($parameters)) {
+                  $queryParameters = array_merge($queryParameters, $parameters);
+                }
+              } else {
+                //string so parse as advanced search
+                $advancedFilterStrings[] = $criterion;
+              }
+            }
+          } else {
+            //string so parse as advanced search
+            $advancedFilterStrings[] = $criteria;
+          }
+        }
+
+        if (!empty($filter['string'])) {
+          $advancedFilterStrings[] = $filter['string'];
+        }
+      } else {
+        $advancedFilterStrings[] = $filter;
+      }
+
+      if (!empty($advancedFilterStrings)) {
+        foreach ($advancedFilterStrings as $parseString) {
+          $parsed = $filterHelper->parseString($parseString);
+
+          $advancedFilters->root = array_merge($advancedFilters->root, $parsed->root);
+          $filterHelper->mergeCommands($advancedFilters, $parsed->commands);
+        }
+        $this->advancedFilterCommands = $advancedFilters->commands;
+
+        list($expr, $parameters) = $this->addExtendedAdvancedSearchWhereClause($q, $advancedFilters, $extendedFieldFilters);
+        $this->appendExpression($queryExpression, $expr);
+
+        if (is_array($parameters)) {
+          $queryParameters = array_merge($queryParameters, $parameters);
+        }
+      }
+    }
+
+    //parse the filter if set
+    if ($queryExpression->count()) {
+      $q->andWhere($queryExpression);
+    }
+
+    // Add joins for extended fields
+    foreach($this->extendedFieldFilters as $extendedFilter)
+    {
+      $secure = strpos($extendedFilter['object'], "Secure")!==FALSE ? "_secure" : "";
+      $tableName = "lead_fields_leads_" . $extendedFilter['type'] . $secure . "_xref";
+      $tableAlias = $extendedFilter['type'] . $secure . $extendedFilter['id'];
+      $extendedJoinExpr = $q->expr()->andX(
+        $q->expr()->eq('l.id ', $tableAlias . '.lead_id'),
+        $q->expr()->eq($tableAlias . '.lead_field_id', $extendedFilter['id'])
+      );
+
+      $q->leftjoin('l', $tableName, $tableAlias, $extendedJoinExpr);
+    }
+
+    // Parameters have to be set even if there are no expressions just in case a search command
+    // passed back a parameter it used
+    foreach ($queryParameters as $k => $v) {
+      if ($v === true || $v === false) {
+        $q->setParameter($k, $v, 'boolean');
+      } else {
+        $q->setParameter($k, $v);
+      }
+    }
+  }
+  /**
+   * @param QueryBuilder|\Doctrine\DBAL\Query\QueryBuilder $query
+   * @param array                                          $clauses [['expr' => 'expression', 'col' => 'DB column', 'val' => 'value to search for']]
+   * @param $expr
+   */
+  protected function buildExtendedWhereClauseFromArray($query, array $clauses, $expr = null)
+  {
+    $isOrm       = $query instanceof QueryBuilder;
+    $columnValue = ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'like', 'notLike', 'in', 'notIn', 'between', 'notBetween'];
+    $justColumn  = ['isNull', 'isNotNull', 'isEmpty', 'isNotEmpty'];
+    $andOr       = ['andX', 'orX'];
+
+    if ($clauses && is_array($clauses)) {
+      foreach ($clauses as $clause) {
+        if (!empty($clause['internal']) && 'formula' === $clause['expr']) {
+          $whereClause = array_key_exists('value', $clause) ? $clause['value'] : $clause['val'];
+          if ($expr) {
+            $expr->add($whereClause);
+          } else {
+            $query->andWhere($whereClause);
+          }
+
+          continue;
+        }
+
+        if (in_array($clause['expr'], $andOr)) {
+          $composite = $query->expr()->{$clause['expr']}();
+          $this->buildWhereClauseFromArray($query, $clause['val'], $composite);
+
+          if (null === $expr) {
+            $query->andWhere($composite);
+          } else {
+            $expr->add($composite);
+          }
+        } else {
+          $clause = $this->validateWhereClause($clause);
+          $column = (strpos($clause['col'], '.') === false) ? $this->getTableAlias().'.'.$clause['col'] : $clause['col'];
+
+          $whereClause = null;
+          switch ($clause['expr']) {
+            case 'between':
+            case 'notBetween':
+              if (is_array($clause['val']) && count($clause['val']) === 2) {
+                $not   = 'notBetween' === $clause['expr'] ? ' NOT' : '';
+                $param = $this->generateRandomParameterName();
+                $query->setParameter($param, $clause['val'][0]);
+                $param2 = $this->generateRandomParameterName();
+                $query->setParameter($param2, $clause['val'][1]);
+
+                $whereClause = $column.$not.' BETWEEN :'.$param.' AND :'.$param2;
+              }
+              break;
+            case 'isEmpty':
+            case 'isNotEmpty':
+              if ('empty' === $clause['expr']) {
+                $whereClause = $query->expr()->orX(
+                  $query->expr()->eq($column, $query->expr()->literal('')),
+                  $query->expr()->isNull($column)
+                );
+              } else {
+                $whereClause = $query->expr()->andX(
+                  $query->expr()->neq($column, $query->expr()->literal('')),
+                  $query->expr()->isNotNull($column)
+                );
+              }
+              break;
+            case 'in':
+            case 'notIn':
+              if (!$isOrm) {
+                $whereClause = $query->expr()->{$clause['expr']}($column, (array) $clause['val']);
+              } else {
+                $param       = $this->generateRandomParameterName();
+                $whereClause = $query->expr()->{$clause['expr']}($column, ':'.$param);
+                $query->setParameter($param, $clause['val']);
+              }
+            default:
+              if (method_exists($query->expr(), $clause['expr'])) {
+                if (in_array($clause['expr'], $columnValue)) {
+                  $param       = $this->generateRandomParameterName();
+                  $whereClause = $query->expr()->{$clause['expr']}($column, ':'.$param);
+                  $query->setParameter($param, $clause['val']);
+                } elseif (in_array($clause['expr'], $justColumn)) {
+                  $whereClause = $query->expr()->{$clause['expr']}($column);
+                }
+              }
+          }
+
+          if ($whereClause) {
+            if ($expr) {
+              $expr->add($whereClause);
+            } else {
+              $query->andWhere($whereClause);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * @param \Doctrine\ORM\QueryBuilder|\Doctrine\DBAL\Query\QueryBuilder $q
+   * @param                                                              $filter
+   *
+   * @return array
+   */
+  protected function addExtendedAdvancedSearchWhereClause($qb, $filters, $extendedFieldFilters)
+  {
+    $parseFilters = [];
+    if (isset($filters->root[0])) {
+      // Function is determined by the second clause type
+      $type         = (isset($filters->root[1])) ? $filters->root[1]->type : $filters->root[0]->type;
+      $parseFilters = &$filters->root;
+    } elseif (isset($filters->children[0])) {
+      $type         = (isset($filters->children[1])) ? $filters->children[1]->type : $filters->children[0]->type;
+      $parseFilters = &$filters->children;
+    } elseif (is_array($filters)) {
+      $type         = (isset($filters[1])) ? $filters[1]->type : $filters[0]->type;
+      $parseFilters = &$filters;
+    }
+
+    if (empty($type)) {
+      $type = 'and';
+    }
+
+    $parameters  = [];
+    $expressions = $qb->expr()->{"{$type}X"}();
+
+    if ($parseFilters) {
+      $this->parseExtendedSearchFilters($parseFilters, $qb, $expressions, $parameters);
+    }
+
+    return [$expressions, $parameters];
+  }
+
+  /**
+   * @param $parseFilters
+   * @param $qb
+   * @param $expressions
+   * @param $parameters
+   */
+  protected function parseExtendedSearchFilters($parseFilters, $qb, $expressions, &$parameters)
+  {
+    foreach ($parseFilters as $f) {
+      if (isset($f->children)) {
+        list($expr, $params) = $this->addExtendedAdvancedSearchWhereClause($qb, $f, $this->extendedFieldFilters);
+      } else {
+        if (!empty($f->command)) {
+          // is this an Extended Field Filter?
+          if(in_array($f->command, array_keys($this->extendedFieldFilters))){
+            // do special where clause for extendedFields
+            list($expr, $params) = $this->addStandardExtendedlWhereClause($qb, $f);
+          }
+
+          elseif ($this->isSupportedSearchCommand($f->command, $f->string)) {
+            list($expr, $params) = $this->addExtendedSearchCommandWhereClause($qb, $f);
+          } else {
+            //treat the command:string as if its a single word
+            $f->string           = $f->command.':'.$f->string;
+            $f->not              = false;
+            $f->strict           = true;
+            list($expr, $params) = $this->addCatchAllWhereClause($qb, $f);
+          }
+        } else {
+          list($expr, $params) = $this->addCatchAllWhereClause($qb, $f);
+        }
+      }
+      if (!empty($params)) {
+        $parameters = array_merge($parameters, $params);
+      }
+
+      $this->appendExpression($expressions, $expr);
+    }
+  }
+  /**
+   * @param \Doctrine\ORM\QueryBuilder|\Doctrine\DBAL\Query\QueryBuilder $q
+   * @param                                                              $filter
+   *
+   * @return array
+   */
+  protected function addExtendedSearchCommandWhereClause($q, $filter)
+  {
+    $command = $filter->command;
+    $expr    = false;
+
+    switch ($command) {
+      case $this->translator->trans('mautic.core.searchcommand.ids'):
+      case $this->translator->trans('mautic.core.searchcommand.ids', [], null, 'en_US'):
+        $expr = $this->getIdsExpr($q, $filter);
+        break;
+    }
+
+    return [
+      $expr,
+      [],
+    ];
+  }
+
+  /**
+   * @param \Doctrine\ORM\QueryBuilder $q
+   * @param object                     $filter
+   * @param array                      $columns
+   *
+   * @return array
+   */
+  protected function addStandardExtendedlWhereClause(&$q, $filter)
+  {
+    $unique = $this->generateRandomParameterName(); //ensure that the string has a unique parameter identifier
+    $string = $filter->string;
+    $extendedFilter = $this->extendedFieldFilters[$filter->command];
+
+    $secure = strpos($extendedFilter['object'], "Secure")!==FALSE ? "_secure" : "";
+    $tableAlias = $extendedFilter['type'] . $secure . $extendedFilter['id'];
+    $col = $tableAlias . ".value";
+
+    if (!$filter->strict) {
+      if (strpos($string, '%') === false) {
+        $string = "$string%";
+      }
+    }
+
+    $ormQb = true;
+
+    if ($q instanceof QueryBuilder) {
+      $xFunc    = 'orX';
+      $exprFunc = 'like';
+    } else {
+      $ormQb = false;
+      if ($filter->not) {
+        $xFunc    = 'andX';
+        $exprFunc = 'notLike';
+      } else {
+        $xFunc    = 'orX';
+        $exprFunc = 'like';
+      }
+    }
+
+    $expr = $q->expr()->$xFunc();
+
+    $expr->add(
+      $q->expr()->$exprFunc($col, ":$unique")
+    );
+
+
+    if ($ormQb && $filter->not) {
+      $expr = $q->expr()->not($expr);
+    }
+
+    return [
+      $expr,
+      ["$unique" => $string],
+    ];
   }
 
 

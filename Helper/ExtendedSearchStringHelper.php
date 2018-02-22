@@ -130,5 +130,115 @@ class ExtendedSearchStringHelper extends SearchStringHelper
     return $filters;
   }
 
+  /**
+   * @param string $input
+   * @param array  $needsParsing
+   * @param array  $needsClosing
+   * @param array  $closingChars
+   *
+   * @return \stdClass
+   */
+  public static function parseSearchString($input, array $needsParsing = null, array $needsClosing = null, array $closingChars = null)
+  {
+    $input = trim(strip_tags($input));
+
+    $self = new self($needsParsing, $needsClosing, $closingChars);
+
+    return $self->parseString($input);
+  }
+
+  /**
+   * @param $input
+   */
+  public function parseString($input)
+  {
+    return $this->splitUpSearchString($input);
+  }
+
+  private function setFilter(&$filters, &$baseName, &$keyCount, &$string, &$command, $overrideCommand,
+                             $setFilter = true,
+                             $type = null,
+                             $setUpNext = true)
+  {
+    if (!empty($type)) {
+      $filters->{$baseName}[$keyCount]->type = strtolower($type);
+    } elseif ($setFilter) {
+      $string = trim(strtolower($string));
+
+      //remove operators and empty values
+      if (in_array($string, ['', 'or', 'and'])) {
+        unset($filters->{$baseName}[$keyCount]);
+
+        return;
+      }
+
+      if (!isset($filters->{$baseName}[$keyCount]->strict)) {
+        $filters->{$baseName}[$keyCount]->strict = 0;
+      }
+      if (!isset($filters->{$baseName}[$keyCount]->not)) {
+        $filters->{$baseName}[$keyCount]->not = 0;
+      }
+
+      $strictPos = strpos($string, '+');
+      $notPos    = strpos($string, '!');
+      if (($strictPos === 0 || $strictPos === 1 || $notPos === 0 || $notPos === 1)) {
+        if ($strictPos !== false && $notPos !== false) {
+          //+! or !+
+          $filters->{$baseName}[$keyCount]->strict = 1;
+          $filters->{$baseName}[$keyCount]->not    = 1;
+          $string                                  = substr($string, 2);
+        } elseif ($strictPos === 0 && $notPos === false) {
+          //+
+          $filters->{$baseName}[$keyCount]->strict = 1;
+          $filters->{$baseName}[$keyCount]->not    = 0;
+          $string                                  = substr($string, 1);
+        } elseif ($strictPos === false && $notPos === 0) {
+          //!
+          $filters->{$baseName}[$keyCount]->strict = 0;
+          $filters->{$baseName}[$keyCount]->not    = 1;
+          $string                                  = substr($string, 1);
+        }
+      }
+
+      $filters->{$baseName}[$keyCount]->string = $string;
+
+      $this->addFilterCommand($filters, $filters->{$baseName}[$keyCount]);
+
+      //setup the next filter
+      if ($setUpNext) {
+        ++$keyCount;
+        $filters->{$baseName}[$keyCount]          = new \stdClass();
+        $filters->{$baseName}[$keyCount]->type    = 'and';
+        $filters->{$baseName}[$keyCount]->command = $overrideCommand;
+        $filters->{$baseName}[$keyCount]->string  = '';
+        $filters->{$baseName}[$keyCount]->not     = 0;
+        $filters->{$baseName}[$keyCount]->strict  = 0;
+      }
+    }
+    $string  = '';
+    $command = $overrideCommand;
+  }
+
+  /**
+   * @param $filters
+   * @param $mergeFilter
+   */
+  protected function addFilterCommand(&$filters, $mergeFilter)
+  {
+    $command = $mergeFilter->command;
+    if ('is' === $command) {
+      // Special case
+      $command = $command.':'.$mergeFilter->string;
+    }
+    if (!empty($command)) {
+      if (!isset($filters->commands[$command])) {
+        $filters->commands[$command] = ($mergeFilter->not) ? self::COMMAND_NEGATE : self::COMMAND_POSIT;
+      } else {
+        if (($mergeFilter->not && self::COMMAND_POSIT === $filters->commands[$command]) || !$mergeFilter->not && self::COMMAND_NEGATE === $filters->commands[$command]) {
+          $filters->commands[$command] = self::COMMAND_NEUTRAL;
+        }
+      }
+    }
+  }
 
 }

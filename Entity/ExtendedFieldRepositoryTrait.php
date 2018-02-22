@@ -9,8 +9,8 @@ use Doctrine\DBAL\Query\QueryBuilder;
 use Mautic\CoreBundle\Entity\CommonRepository as CommonRepository;
 use Mautic\LeadBundle\Entity\CustomFieldRepositoryTrait;
 use Mautic\LeadBundle\Entity\Lead as Lead;
-use Mautic\CoreBundle\Helper\SearchStringHelper;
 use MauticPlugin\MauticExtendedFieldBundle\Helper\ExtendedSearchStringHelper;
+use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideCommonRepository;
 
 trait ExtendedFieldRepositoryTrait
 {
@@ -334,6 +334,7 @@ trait ExtendedFieldRepositoryTrait
    */
   public function getEntitiesWithCustomFields($object, $args, $resultsCallback = null)
   {
+    $originalArgs                 = $args;
     list($fields, $fixedFields) = $this->getCustomFieldList($object);
     $extendedFieldList = [];
     foreach($fields as $k =>$field){
@@ -344,16 +345,26 @@ trait ExtendedFieldRepositoryTrait
 
     //Fix arguments if necessary
     $args = $this->convertOrmProperties($this->getClassName(), $args);
-    list($args, $extendedArgs) = $this->removeExtendedFieldFilters($extendedFieldList, $args);
+
 
 
     //DBAL
     /** @var QueryBuilder $dq */
     $dq = isset($args['qb']) ? $args['qb'] : $this->getEntitiesDbalQueryBuilder();
 
+    // check to see if $args has any extendedFields
+    $extendedFieldFilters = !empty($this->ExtendedFieldFilters) ? $this->ExtendedFieldFilters : $this->getExtendedFieldFilters($args, $extendedFieldList);
+
     // Generate where clause first to know if we need to use distinct on primary ID or not
     $this->useDistinctCount = false;
-    $this->buildWhereClause($dq, $args);
+
+    if (!empty($extendedFieldFilters)){
+      $this->ExtendedBuildWhereClause($dq, $args, $extendedFieldFilters);
+
+    } else {
+      $this->buildWhereClause($dq, $args);
+
+    }
 
     // Distinct is required here to get the correct count when group by is used due to applied filters
     $countSelect = ($this->useDistinctCount) ? 'COUNT(DISTINCT('.$this->getTableAlias().'.id))' : 'COUNT('.$this->getTableAlias().'.id)';
@@ -363,6 +374,8 @@ trait ExtendedFieldRepositoryTrait
     if ($groupBy = $dq->getQueryPart('groupBy')) {
       $dq->resetQueryPart('groupBy');
     }
+
+    $query = $dq->getSQL(); // debug purposes only
 
     //get a total count
     $result = $dq->execute()->fetchAll();
@@ -381,6 +394,9 @@ trait ExtendedFieldRepositoryTrait
 
       $dq->resetQueryPart('select');
       $this->buildSelectClause($dq, $args);
+
+      $query = $dq->getSQL(); // debug purposes only
+
 
       $results = $dq->execute()->fetchAll();
 
@@ -460,6 +476,7 @@ trait ExtendedFieldRepositoryTrait
           if (is_callable($resultsCallback)) {
             $resultsCallback($r);
           }
+
         }
       } else {
         $results = [];
@@ -519,98 +536,20 @@ trait ExtendedFieldRepositoryTrait
   }
 
   /**
-   * Added so that the assumed filtering management process doesnt error when trying
-   * to build a filter expression for extended Fields against the lead table (which
-   * it always assumes is the table alias)
-   *
-   * @param array $extendedFieldList
-   * @param array $args
-   * @return array
-   */
-  public function removeExtendedFieldFilters($extendedFieldList = array(), &$args=array())
-  {
-    $extendedArgs              = [];
-    $filter                    = array_key_exists('filter', $args) ? $args['filter'] : '';
-    $filterHelper              = new SearchStringHelper();
-    $advancedFilters           = new \stdClass();
-    $advancedFilters->root     = [];
-    $advancedFilters->commands = [];
-    // Reset advanced filter commands to be used in search query building
-    $this->advancedFilterCommands = [];
-    $advancedFilterStrings        = [];
-    $queryParameters              = [];
-    $queryExpression              = $q->expr()->andX();
-
-    if (!empty($filter)) {
-      if (is_array($filter)) {
-        if (!empty($filter['where'])) {
-          // build clauses from array
-          $foo = '';
-        }
-        elseif (!empty($filter['criteria']) || !empty($filter['force'])) {
-          $criteria = !empty($filter['criteria']) ? $filter['criteria'] : $filter['force'];
-          if (is_array($criteria)) {
-            //defined columns with keys of column, expr, value
-            foreach ($criteria as $index=>$criterion) {
-              if ($criterion instanceof Query\Expr || $criterion instanceof CompositeExpression) {
-                // What todo here?
-                $foo = '';
-              }
-              elseif (is_array($criterion)) {
-                $foo = '';
-
-
-              } else {
-                //string so parse as advanced search
-                $advancedFilterStrings[] = $criterion;
-              }
-            }
-          } else {
-            //string so parse as advanced search
-            $advancedFilterStrings[] = $criteria;
-          }
-        }
-
-        if (!empty($filter['string'])) {
-          $advancedFilterStrings[] = $filter['string'];
-        }
-      } else {
-        $advancedFilterStrings[] = $filter;
-      }
-
-      if (!empty($advancedFilterStrings)) {
-        foreach ($advancedFilterStrings as $parseString) {
-          $parsed = $filterHelper->parseString($parseString);
-
-          $advancedFilters->root = array_merge($advancedFilters->root, $parsed->root);
-          $filterHelper->mergeCommands($advancedFilters, $parsed->commands);
-        }
-        $this->advancedFilterCommands = $advancedFilters->commands;
-
-        list($expr, $parameters) = $this->addAdvancedSearchWhereClause($q, $advancedFilters);
-        $this->appendExpression($queryExpression, $expr);
-
-        if (is_array($parameters)) {
-          $queryParameters = array_merge($queryParameters, $parameters);
-        }
-      }
-    }
-
-    return array($args, $extendedArgs);
-  }
-
-  /**
-   * @param $filterString
+   * @param $args
+   * @param $extendedFieldList
    * @return bool
    */
-  public function hasExtendedFieldInFilter($filterString, $extendedFieldList)
-  {
-  foreach($extendedFieldList as $field) {
-    if (strpos($filterString, $field['alias']) !== FALSE) {
-      return TRUE;
-    }
-  }
-  return FALSE;
+  public function getExtendedFieldFilters($args, $extendedFieldList)
+  { $result = [];
 
+    foreach (array_keys($extendedFieldList) as $extendedField)
+      if (strpos($args['filter']['string'], $extendedField) !== FALSE || strpos($args['filter']['force'], $extendedField) !== FALSE) {
+      // field is in the filter array somewhere
+        $result[$extendedField] =  $extendedFieldList[$extendedField];
+      }
+
+    return $result;
   }
+
 }
