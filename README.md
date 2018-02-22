@@ -1,5 +1,7 @@
-Mautic Extended Field Plugin
-===========
+![](./Assets/img/icon.png)
+# Mautic Extended Field
+
+Allows near-infinate custom fields.
 
 This plugin was created to help overcome an anticipated challenge supporting Custom Fields. 
 A full problem definition can be found at https://github.com/mautic/mautic/issues/4139. 
