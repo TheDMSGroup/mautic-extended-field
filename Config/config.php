@@ -12,8 +12,7 @@ use MauticPlugin\MauticExtendedFieldBundle\ExtendedFieldExtension;
 use Mautic\LeadBundle\Form\Type\FieldType;
 use Mautic\LeadBundle\Form\Type\LeadType;
 use Mautic\LeadBundle\Form\Type\ListType;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use MauticPlugin\MauticExtendedFieldBundle\EventListener\ExtendedLeadListener;
+use Mautic\LeadBundle\Form\Type\UpdateLeadActionType;
 
 //$container
 //  ->register('mautic.extendedfield.lead.listener', ExtendedLeadListener::class)
@@ -27,6 +26,14 @@ return [
     'services'   => [
       'other' => [
         // Form extensions
+        'mautic.form.extension.updatelead_action' => [
+          'class'     => 'MauticPlugin\MauticExtendedFieldBundle\Form\UpdateLeadActionExtension',
+          'arguments' => ['mautic.factory'],
+          'tag'          => 'form.type_extension',
+          'tagArguments' => [
+            'extended_type' => UpdateLeadActionType::class,
+          ],
+        ],
         'mautic.form.extension.extended_field' => [
           'class'     => 'MauticPlugin\MauticExtendedFieldBundle\Form\ExtendedFieldExtension',
           'arguments' => ['mautic.factory'],
