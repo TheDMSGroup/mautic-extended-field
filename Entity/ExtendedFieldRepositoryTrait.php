@@ -9,8 +9,6 @@ use Doctrine\DBAL\Query\QueryBuilder;
 use Mautic\CoreBundle\Entity\CommonRepository as CommonRepository;
 use Mautic\LeadBundle\Entity\CustomFieldRepositoryTrait;
 use Mautic\LeadBundle\Entity\Lead as Lead;
-use MauticPlugin\MauticExtendedFieldBundle\Helper\ExtendedSearchStringHelper;
-use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideCommonRepository;
 
 trait ExtendedFieldRepositoryTrait
 {
