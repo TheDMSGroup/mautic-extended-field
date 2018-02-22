@@ -96,11 +96,6 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
       }
 
       $fieldValues = $this->getFieldValues($id);
-      $extendedFieldValues = $this->getExtendedFieldValues($id, TRUE, 'extendedField');
-      $extendedFieldSecureValues = $this->getExtendedFieldValues($id, TRUE, 'extendedFieldSecure');
-      // TODO pass a Permission Base check here for secure values
-
-      $fieldValues = array_merge_recursive($fieldValues, $extendedFieldValues, $extendedFieldSecureValues);
       $entity->setFields($fieldValues);
 
       $entity->setAvailableSocialFields($this->availableSocialFields);
