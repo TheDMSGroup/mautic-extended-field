@@ -10,7 +10,6 @@ use Mautic\CoreBundle\Entity\CommonRepository as CommonRepository;
 use Mautic\LeadBundle\Entity\CustomFieldRepositoryTrait;
 use Mautic\LeadBundle\Entity\Lead as Lead;
 
-
 trait ExtendedFieldRepositoryTrait
 {
 
@@ -36,6 +35,13 @@ trait ExtendedFieldRepositoryTrait
    * @var array
    */
   protected $fields = [];
+
+  /**
+   * Stores the parsed columns and their negate status for addAdvancedSearchWhereClause().
+   *
+   * @var array
+   */
+  protected $advancedFilterCommands = [];
 
 
   /**
@@ -326,6 +332,7 @@ trait ExtendedFieldRepositoryTrait
    */
   public function getEntitiesWithCustomFields($object, $args, $resultsCallback = null)
   {
+    $originalArgs                 = $args;
     list($fields, $fixedFields) = $this->getCustomFieldList($object);
     $extendedFieldList = [];
     foreach($fields as $k =>$field){
@@ -337,13 +344,25 @@ trait ExtendedFieldRepositoryTrait
     //Fix arguments if necessary
     $args = $this->convertOrmProperties($this->getClassName(), $args);
 
+
+
     //DBAL
     /** @var QueryBuilder $dq */
     $dq = isset($args['qb']) ? $args['qb'] : $this->getEntitiesDbalQueryBuilder();
 
+    // check to see if $args has any extendedFields
+    $extendedFieldFilters = !empty($this->ExtendedFieldFilters) ? $this->ExtendedFieldFilters : $this->getExtendedFieldFilters($args, $extendedFieldList);
+
     // Generate where clause first to know if we need to use distinct on primary ID or not
     $this->useDistinctCount = false;
-    $this->buildWhereClause($dq, $args);
+
+    if (!empty($extendedFieldFilters)){
+      $this->ExtendedBuildWhereClause($dq, $args, $extendedFieldFilters);
+
+    } else {
+      $this->buildWhereClause($dq, $args);
+
+    }
 
     // Distinct is required here to get the correct count when group by is used due to applied filters
     $countSelect = ($this->useDistinctCount) ? 'COUNT(DISTINCT('.$this->getTableAlias().'.id))' : 'COUNT('.$this->getTableAlias().'.id)';
@@ -353,6 +372,8 @@ trait ExtendedFieldRepositoryTrait
     if ($groupBy = $dq->getQueryPart('groupBy')) {
       $dq->resetQueryPart('groupBy');
     }
+
+    $query = $dq->getSQL(); // debug purposes only
 
     //get a total count
     $result = $dq->execute()->fetchAll();
@@ -371,6 +392,9 @@ trait ExtendedFieldRepositoryTrait
 
       $dq->resetQueryPart('select');
       $this->buildSelectClause($dq, $args);
+
+      $query = $dq->getSQL(); // debug purposes only
+
 
       $results = $dq->execute()->fetchAll();
 
@@ -450,6 +474,7 @@ trait ExtendedFieldRepositoryTrait
           if (is_callable($resultsCallback)) {
             $resultsCallback($r);
           }
+
         }
       } else {
         $results = [];
@@ -507,4 +532,22 @@ trait ExtendedFieldRepositoryTrait
     return $leads;
 
   }
+
+  /**
+   * @param $args
+   * @param $extendedFieldList
+   * @return bool
+   */
+  public function getExtendedFieldFilters($args, $extendedFieldList)
+  { $result = [];
+
+    foreach (array_keys($extendedFieldList) as $extendedField)
+      if (strpos($args['filter']['string'], $extendedField) !== FALSE || strpos($args['filter']['force'], $extendedField) !== FALSE) {
+      // field is in the filter array somewhere
+        $result[$extendedField] =  $extendedFieldList[$extendedField];
+      }
+
+    return $result;
+  }
+
 }
