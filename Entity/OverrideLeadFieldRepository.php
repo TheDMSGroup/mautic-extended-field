@@ -179,8 +179,15 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
    */
 
   public function extendedCompareValue($q, $isExtendedField, $lead, $field, $value, $operatorExpr) {
+      $fieldModel = new ExtendedFieldModel();
+      $dataType = $fieldModel->getSchemaDefinition(
+        $isExtendedField['alias'],
+        $isExtendedField['type']
+      );
+      $dataType = $dataType['type'];
+
     $secure = strpos($isExtendedField['object'], "Secure") !== FALSE ? "_secure": "";
-    $tableName = "lead_fields_leads_" . $isExtendedField['type'] . $secure . '_xref';
+    $tableName = "lead_fields_leads_" . $dataType . $secure . '_xref';
 
     // select from the correct table
     $q->select('l.lead_id')

@@ -18,6 +18,7 @@ use Mautic\LeadBundle\Event\LeadListFiltersOperatorsEvent;
 use Mautic\LeadBundle\Event\LeadListFilteringEvent;
 use Mautic\CoreBundle\Doctrine\QueryFormatter\AbstractFormatter;
 use Mautic\CoreBundle\Helper\InputHelper;
+use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
 
 /**
  * OverrideLeadRepository.
@@ -437,7 +438,9 @@ class OverrideLeadListRepository extends LeadListRepository
         $fields = array();
         foreach ($results as $field) {
             $fieldAlias = $field->getAlias();
-            $dataType = $field->getType();
+            $fieldModel = new ExtendedFieldModel();
+            $dataType = $fieldModel->getSchemaDefinition($fieldAlias, $field->getType());
+            $dataType = $dataType['type'];
             $secure = strpos(
               $field->getObject(),
               'Secure'
@@ -570,7 +573,9 @@ class OverrideLeadListRepository extends LeadListRepository
             }
 
             if ($isExtendedField) {
-                $dataType = $extendedFieldList[$details['field']]['type'];
+                $fieldModel = new ExtendedFieldModel();
+                $dataType = $fieldModel->getSchemaDefinition($extendedFieldList[$details['field']]['alias'], $extendedFieldList[$details['field']]['type']);
+                $dataType = $dataType['type'];
                 $secure = strpos($object, 'Secure') !== false ? "_secure" : "";
                 $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
                 $this->extendedFieldTableSchema = $schema->listTableColumns(

@@ -382,9 +382,12 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     // Add joins for extended fields
     foreach($this->extendedFieldFilters as $extendedFilter)
     {
+      $fieldModel = new ExtendedFieldModel();
+      $dataType = $fieldModel->getSchemaDefinition($extendedFilter(['alias']), $extendedFilter['type']);
+      $dataType = $dataType['type'];
       $secure = strpos($extendedFilter['object'], "Secure")!==FALSE ? "_secure" : "";
-      $tableName = "lead_fields_leads_" . $extendedFilter['type'] . $secure . "_xref";
-      $tableAlias = $extendedFilter['type'] . $secure . $extendedFilter['id'];
+      $tableName = "lead_fields_leads_" . $dataType . $secure . "_xref";
+      $tableAlias = $dataType . $secure . $extendedFilter['id'];
       $extendedJoinExpr = $q->expr()->andX(
         $q->expr()->eq('l.id ', $tableAlias . '.lead_id'),
         $q->expr()->eq($tableAlias . '.lead_field_id', $extendedFilter['id'])
