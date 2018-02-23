@@ -20,6 +20,7 @@ use Mautic\LeadBundle\Entity\Lead as Lead;
 use Mautic\LeadBundle\LeadEvents;
 use Mautic\LeadBundle\Event\LeadChangeCompanyEvent;
 use Mautic\LeadBundle\Entity\CompanyLead as CompanyLead;
+use Mautic\LeadBundle\Entity\CompanyChangeLog;
 use Mautic\LeadBundle\Helper\IdentifyCompanyHelper as IdentifyCompanyHelper;
 use Mautic\CoreBundle\Model\FormModel;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldRepositoryTrait as ExtendedFieldRepositoryTrait;
@@ -118,6 +119,9 @@ class OverrideLeadModel extends LeadModel
    // parent::saveEntity($entity, $unlock);
 
     $this->doSaveEntity($entity, $unlock);
+
+    $this->em->persist($entity);
+    $this->em->flush($entity);
 
     if (!empty($company) && !$this->companyWasUpdated) {
       // Save after the lead in for new leads created through the API and maybe other places
