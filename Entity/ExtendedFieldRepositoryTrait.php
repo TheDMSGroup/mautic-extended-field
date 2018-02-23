@@ -495,25 +495,40 @@ trait ExtendedFieldRepositoryTrait
 
     }
 
+
     /**
-     * @param $args
-     * @param $extendedFieldList
-     * @return bool
+     * @param string|array $args
+     * @param array $extendedFieldList
+     * @return array
      */
-    public function getExtendedFieldFilters($args, $extendedFieldList)
+    private function getExtendedFieldFilters($args, $extendedFieldList)
     {
         $result = [];
 
-        foreach (array_keys($extendedFieldList) as $extendedField) {
-            if (strpos(
-                $args['filter']['string'],
-                $extendedField
-              ) !== false || strpos(
-                $args['filter']['force'],
-                $extendedField
-              ) !== false) {
-                // field is in the filter array somewhere
-                $result[$extendedField] = $extendedFieldList[$extendedField];
+        if (isset($args['filter'])) {
+            foreach (array_keys($extendedFieldList) as $extendedField) {
+                // @todo - this strpos checking will need to be refactored to use regex and check word boundries.
+                if (
+                    (is_string($args['filter']['string']) && strpos($args['filter']['string'], $extendedField) !== false)
+                    || (is_string($args['filter']['force']) && strpos($args['filter']['force'], $extendedField) !== false)
+                ) {
+                    // field is in the filter array somewhere
+                    $result[$extendedField] = $extendedFieldList[$extendedField];
+                    continue;
+                }
+                $extendedFieldLength = strlen($extendedField);
+                foreach (['string', 'force'] as $type) {
+                    if (is_array($args['filter'][$type])) {
+                        foreach ($args['filter'][$type] as $filter) {
+                            if (isset($filter['column'])) {
+                                if (substr($filter['column'], strlen($filter['column']) - $extendedFieldLength - 1) == '.'.$extendedField) {
+                                    $result[$extendedField] = $extendedFieldList[$extendedField];
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
