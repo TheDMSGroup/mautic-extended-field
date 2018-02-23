@@ -254,6 +254,11 @@ trait ExtendedFieldRepositoryTrait
 
       // remove the fields that are part of changes as they were already saved via a setter
       $fields = array_diff_key($fields, $changes);
+        // Overriden to check a deeper recursion in changes since fields may already have been saved that
+        // are not company fields, IE - extended fields and extended fields secure
+        if(isset($changes['fields'])){
+            $fields = array_diff_key($fields, $changes['fields']);
+        }
     }
 
     if (!empty($fields)) {
@@ -311,7 +316,9 @@ trait ExtendedFieldRepositoryTrait
       $fields = array_diff_key($fields, $changes);
       // Overriden to check a deeper recursion in changes since fields may already have been saved that
       // are not company fields, IE - extended fields and extended fields secure
-      $fields = array_diff_key($fields, $changes['fields']);
+        if(isset($changes['fields'])){
+            $fields = array_diff_key($fields, $changes['fields']);
+        }
     }
 
     if (!empty($fields)) {

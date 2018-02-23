@@ -65,7 +65,7 @@ class ExtendedFieldModel extends FieldModel {
     $isNew = $entity->getId() ? FALSE : TRUE;
     //set some defaults
     // custom table names
-    $dataType = $entity->getType();
+    $dataType = $this->getSchemaDefinition($entity->getAlias(), $entity->getType());
     $secure = ($entity->getObject() == 'extendedFieldSecure') ? TRUE : FALSE;
     $tableName = 'lead_fields_leads_' . $dataType . ($secure ? '_secure' : '') . '_xref';
 
