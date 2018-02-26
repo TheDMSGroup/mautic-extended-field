@@ -2,8 +2,10 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
+use Mautic\CoreBundle\Doctrine\Helper\SchemaHelperFactory;
 use Mautic\LeadBundle\Entity\CustomFieldEntityTrait;
 use Mautic\LeadBundle\Helper\CustomFieldHelper;
+use Mautic\LeadBundle\Model\FieldModel;
 use Doctrine\DBAL\Query\QueryBuilder;
 use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
 
@@ -133,11 +135,12 @@ trait ExtendedFieldRepositoryTrait
         // the 0 key is the list of fields ;  the 1 key is the list of is_fixed fields
         foreach ($customExtendedFieldList[0] as $key => $customExtendedField) {
             // 'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref');
-            $fieldModel = new ExtendedFieldModel();
+            $fieldModel = $this->fieldModel;
             $dataType = $fieldModel->getSchemaDefinition(
               $customExtendedField['alias'],
               $customExtendedField['type']
             );
+            $dataType = $dataType['type'];
             $secure = $object == 'extendedFieldSecure' ? true : false;
             $tableName = 'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref';
 
@@ -231,8 +234,8 @@ trait ExtendedFieldRepositoryTrait
         if (!empty($extendedFields)) {
 
             foreach ($extendedFields as $extendedField => $values) {
-                $fieldModel = new ExtendedFieldModel();
-                $dataType = $fieldname->getSchemaDefinition($values['alias'], $values['type']);
+                $fieldModel = $this->fieldModel;
+                $dataType = $fieldModel->getSchemaDefinition($values['name'], $values['type']);
                 $dataType = $dataType['type'];
                 $column = array(
                   'lead_field_id' => $values['id'],
@@ -464,13 +467,14 @@ trait ExtendedFieldRepositoryTrait
         $ids_str = implode(',', $lead_ids);
         $where_in = !empty($lead_ids) ? "Where lead_id IN ($ids_str)" : "";
         foreach ($extendedFieldList as $k => $details) {
-            $fieldModel = new ExtendedFieldModel();
+
+            $fieldModel = $this->fieldModel;
             $dataType  = $fieldModel->getSchemaDefinition($details['alias'], $details['type']);
             $dataType = $dataType['type'];
             // get extendedField Filters first
             // its an extended field, build a join expressions
             $secure = strpos(
-              $details['alias'],
+              $details['object'],
               "Secure"
             ) !== false ? "_secure" : "";
             $tableName = "lead_fields_leads_".$dataType.$secure."_xref";
@@ -509,8 +513,8 @@ trait ExtendedFieldRepositoryTrait
             foreach (array_keys($extendedFieldList) as $extendedField) {
                 // @todo - this strpos checking will need to be refactored to use regex and check word boundries.
                 if (
-                    (is_string($args['filter']['string']) && strpos($args['filter']['string'], $extendedField) !== false)
-                    || (is_string($args['filter']['force']) && strpos($args['filter']['force'], $extendedField) !== false)
+                  (is_string($args['filter']['string']) && strpos($args['filter']['string'], $extendedField) !== false)
+                  || (is_string($args['filter']['force']) && strpos($args['filter']['force'], $extendedField) !== false)
                 ) {
                     // field is in the filter array somewhere
                     $result[$extendedField] = $extendedFieldList[$extendedField];
