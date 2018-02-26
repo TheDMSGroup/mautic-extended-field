@@ -19,7 +19,8 @@ use Mautic\LeadBundle\Event\LeadListFilteringEvent;
 use Mautic\CoreBundle\Doctrine\QueryFormatter\AbstractFormatter;
 use Mautic\CoreBundle\Helper\InputHelper;
 use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
-
+use Mautic\FormBundle\Model\FieldModel;
+use Doctrine\ORM\Mapping\ClassMetadata;
 /**
  * OverrideLeadRepository.
  */
@@ -33,6 +34,21 @@ class OverrideLeadListRepository extends LeadListRepository
     protected $extendedFieldTableSchema;
 
     protected $hasExtendedFieldFilter = false;
+
+    protected $fieldModel;
+
+    /**
+     * Initializes a new <tt>EntityRepository</tt>.
+     *
+     * @param EntityManager         $em    The EntityManager to use.
+     * @param Mapping\ClassMetadata $class The class descriptor.
+     */
+    public function __construct($em, ClassMetadata $class, ExtendedFieldModel $fieldModel)
+    {
+        parent::__construct($em, $class);
+        $this->fieldModel = $fieldModel;
+
+    }
 
 
     /**
@@ -438,7 +454,7 @@ class OverrideLeadListRepository extends LeadListRepository
         $fields = array();
         foreach ($results as $field) {
             $fieldAlias = $field->getAlias();
-            $fieldModel = new ExtendedFieldModel();
+            $fieldModel = $this->fieldModel;
             $dataType = $fieldModel->getSchemaDefinition($fieldAlias, $field->getType());
             $dataType = $dataType['type'];
             $secure = strpos(
@@ -573,7 +589,7 @@ class OverrideLeadListRepository extends LeadListRepository
             }
 
             if ($isExtendedField) {
-                $fieldModel = new ExtendedFieldModel();
+                $fieldModel = $this->fieldModel;
                 $dataType = $fieldModel->getSchemaDefinition($extendedFieldList[$details['field']]['alias'], $extendedFieldList[$details['field']]['type']);
                 $dataType = $dataType['type'];
                 $secure = strpos($object, 'Secure') !== false ? "_secure" : "";
