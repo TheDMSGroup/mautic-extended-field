@@ -105,7 +105,7 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
                 $entity->setColor($this->triggerModel->getColorForLeadPoints($entity->getPoints()));
             }
 
-            $fieldValues = $this->getExtendedFieldValues($id);
+            $fieldValues = $this->getExtendedFieldValues($id, TRUE, 'lead');
             $entity->setFields($fieldValues);
 
             $entity->setAvailableSocialFields($this->availableSocialFields);

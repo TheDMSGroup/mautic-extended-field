@@ -126,35 +126,42 @@ trait ExtendedFieldRepositoryTrait
     public function getExtendedFieldValues(
       $id,
       $byGroup = true,
-      $object = 'extendedField'
+      $object = 'leads'
     ) {
         //use DBAL to get entity fields
 
         $customExtendedFieldList = $this->getCustomFieldList($object);
-        $fields = [];
+        if($object=='lead') {
+            $fields = $this->getFieldValues($id, FALSE, 'lead');
+        } else {
+            $fields = [];
+        }
         // the 0 key is the list of fields ;  the 1 key is the list of is_fixed fields
         foreach ($customExtendedFieldList[0] as $key => $customExtendedField) {
-            // 'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref');
-            $fieldModel = $this->fieldModel;
-            $dataType = $fieldModel->getSchemaDefinition(
-              $customExtendedField['alias'],
-              $customExtendedField['type']
-            );
-            $dataType = $dataType['type'];
-            $secure = $object == 'extendedFieldSecure' ? true : false;
-            $tableName = 'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref';
+            if(strpos($customExtendedField['object'], "extendedField")!== FALSE){
+                // 'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref');
+                $fieldModel = $this->fieldModel;
+                $dataType = $fieldModel->getSchemaDefinition(
+                  $customExtendedField['alias'],
+                  $customExtendedField['type']
+                );
+                $dataType = $dataType['type'];
+                $secure = $object == 'extendedFieldSecure' ? true : false;
+                $tableName = 'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref';
 
-            $fq = $this->getEntityManager()
-              ->getConnection()
-              ->createQueryBuilder();
-            $fq->select('f.lead_id, f.lead_field_id, f.value')
-              ->from(MAUTIC_TABLE_PREFIX.$tableName, 'f')
-              ->where('f.lead_field_id = :lead_field_id')
-              ->andWhere($fq->expr()->eq('lead_id', ':lead_id'))
-              ->setParameter('lead_field_id', $customExtendedField['id'])
-              ->setParameter('lead_id', $id);
-            $values = $fq->execute()->fetchAll();
-            $fields[$key] = reset($values);
+                $fq = $this->getEntityManager()
+                  ->getConnection()
+                  ->createQueryBuilder();
+                $fq->select('f.lead_id, f.lead_field_id, f.value')
+                  ->from(MAUTIC_TABLE_PREFIX.$tableName, 'f')
+                  ->where('f.lead_field_id = :lead_field_id')
+                  ->andWhere($fq->expr()->eq('lead_id', ':lead_id'))
+                  ->setParameter('lead_field_id', $customExtendedField['id'])
+                  ->setParameter('lead_id', $id);
+                $values = $fq->execute()->fetchAll();
+                $fields[$key]['value'] = !empty($values[0]) ? $values[0]['value'] : null;
+            }
+
         }
 
         return $this->formatExtendedFieldValues(
@@ -553,7 +560,7 @@ trait ExtendedFieldRepositoryTrait
     ) {
         list($fields, $fixedFields) = $this->getCustomFieldList($object);
 
-        $this->removeNonFieldColumns($values, $fixedFields);
+        $this->removeNonFieldColumns($fields, $fixedFields);
 
         // Reorder leadValues based on field order
 
