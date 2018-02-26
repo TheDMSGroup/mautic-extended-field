@@ -265,7 +265,10 @@ trait ExtendedFieldRepositoryTrait
                     $this->getEntityManager()->getConnection()->update(
                       $extendedTable,
                       $column,
-                      ['lead_id' => $entity->getId()]
+                      array(
+                        'lead_id' => $entity->getId(),
+                        'lead_field_id' => $values['id'],
+                      )
                     );
 
                 }
