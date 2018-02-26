@@ -393,7 +393,7 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
         foreach($this->extendedFieldFilters as $extendedFilter)
         {
             $fieldModel = $this->fieldModel;
-            $dataType = $fieldModel->getSchemaDefinition($extendedFilter(['alias']), $extendedFilter['type']);
+            $dataType = $fieldModel->getSchemaDefinition($extendedFilter['alias'], $extendedFilter['type']);
             $dataType = $dataType['type'];
             $secure = strpos($extendedFilter['object'], "Secure")!==FALSE ? "_secure" : "";
             $tableName = "lead_fields_leads_" . $dataType . $secure . "_xref";
@@ -626,8 +626,11 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
         $string = $filter->string;
         $extendedFilter = $this->extendedFieldFilters[$filter->command];
 
+        $fieldModel = $this->fieldModel;
+        $dataType = $fieldModel->getSchemaDefinition($extendedFilter['alias'], $extendedFilter['type']);
+        $dataType = $dataType['type'];
         $secure = strpos($extendedFilter['object'], "Secure")!==FALSE ? "_secure" : "";
-        $tableAlias = $extendedFilter['type'] . $secure . $extendedFilter['id'];
+        $tableAlias = $dataType . $secure . $extendedFilter['id'];
         $col = $tableAlias . ".value";
 
         if (!$filter->strict) {
