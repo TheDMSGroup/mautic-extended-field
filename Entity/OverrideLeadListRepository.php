@@ -263,13 +263,13 @@ class OverrideLeadListRepository extends LeadListRepository
                       'l.id = ll.lead_id'
                     );
 
-
-                    // add joins for filters that contain extendedFields
-                    $this->addExtendedFieldJoins(
-                      $filters,
-                      $extendedFieldList,
-                      $q
-                    );
+//
+//                    // add joins for filters that contain extendedFields
+//                    $this->addExtendedFieldJoins(
+//                      $filters,
+//                      $extendedFieldList,
+//                      $q
+//                    );
 
                     $mainExpr = $q->expr()->andX();
                     if ($batchLimiters && !empty($batchLimiters['dateTime'])) {
@@ -303,6 +303,13 @@ class OverrideLeadListRepository extends LeadListRepository
                       $parameters,
                       $sq,
                       $q
+                    );
+
+                    // add joins for filters that contain extendedFields
+                    $this->addExtendedFieldJoins(
+                      $filters,
+                      $extendedFieldList,
+                      $sq
                     );
 
                     if ($expr->count()) {
