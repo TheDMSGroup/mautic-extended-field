@@ -8,7 +8,9 @@
  *
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
+
 use MauticPlugin\MauticExtendedFieldBundle\ExtendedFieldExtension;
+use MauticPlugin\MauticExtendedFieldBundle\EventListener\ConfigSubscriber;
 use Mautic\LeadBundle\Form\Type\FieldType;
 use Mautic\LeadBundle\Form\Type\LeadType;
 use Mautic\LeadBundle\Form\Type\ListType;
@@ -23,58 +25,80 @@ return [
     'description' => 'Extend Mautic custom fields for scalability and HIPAA/PCI compliance.',
     'version'     => '0.3',
     'author'      => 'Mautic',
-    'services'   => [
-      'other' => [
-        // Form extensions
-        'mautic.form.extension.updatelead_action' => [
-          'class'     => 'MauticPlugin\MauticExtendedFieldBundle\Form\UpdateLeadActionExtension',
-          'arguments' => ['mautic.factory'],
-          'tag'          => 'form.type_extension',
-          'tagArguments' => [
-            'extended_type' => UpdateLeadActionType::class,
-          ],
+    'parameters'  => [
+        // set default to block creation of lead table columns
+        'disable_lead_table_fields'               => 1,
+    ],
+    'services'    => [
+        'events' => [
+            'mautic.extended_field.config.subscriber' => [
+                'class' => ConfigSubscriber::class,
+            ],
         ],
-        'mautic.form.extension.extended_field' => [
-          'class'     => 'MauticPlugin\MauticExtendedFieldBundle\Form\ExtendedFieldExtension',
-          'arguments' => ['mautic.factory'],
-          'tag'          => 'form.type_extension',
-          'tagArguments' => [
-            'extended_type' => FieldType::class,
-          ],
+        'forms'  => [
+            'mautic.extended_field.form.config' => array(
+                'class' => 'MauticPlugin\MauticExtendedFieldBundle\Form\ConfigType',
+                'alias' => 'extendedField_config'
+            ),
+            // 'mautic.extendedfield.extension' => array(
+            //     'class' => 'MauticPlugin\MauticExtendedFieldBundle\Form\ExtendedFieldExtension',
+            //     'arguments' => [
+            //         'mautic.factory',
+            //         'mautic.helper.core_parameters',
+            //     ],
+            // ),
         ],
-        'mautic.form.extension.extended_lead' => [
-          'class'     => 'MauticPlugin\MauticExtendedFieldBundle\Form\LeadTypeExtension',
-          'arguments' => ['mautic.factory', 'mautic.lead.model.company'],
-          'tag'          => 'form.type_extension',
-          'tagArguments' => [
-            'extended_type' => LeadType::class,
-          ],
+        'other'  => [
+            // Form extensions
+            'mautic.form.extension.updatelead_action' => [
+                'class'        => 'MauticPlugin\MauticExtendedFieldBundle\Form\UpdateLeadActionExtension',
+                'arguments'    => ['mautic.factory'],
+                'tag'          => 'form.type_extension',
+                'tagArguments' => [
+                    'extended_type' => UpdateLeadActionType::class,
+                ],
+            ],
+            'mautic.form.extension.extended_field'    => [
+                'class'        => 'MauticPlugin\MauticExtendedFieldBundle\Form\ExtendedFieldExtension',
+                'arguments'    => ['mautic.factory'],
+                'tag'          => 'form.type_extension',
+                'tagArguments' => [
+                    'extended_type' => FieldType::class,
+                ],
+            ],
+            'mautic.form.extension.extended_lead'     => [
+                'class'        => 'MauticPlugin\MauticExtendedFieldBundle\Form\LeadTypeExtension',
+                'arguments'    => ['mautic.factory', 'mautic.lead.model.company'],
+                'tag'          => 'form.type_extension',
+                'tagArguments' => [
+                    'extended_type' => LeadType::class,
+                ],
+            ],
+            'mautic.form.extension.extended_list'     => [
+                'class'        => 'MauticPlugin\MauticExtendedFieldBundle\Form\ListTypeExtension',
+                'arguments'    => [
+                    'translator',
+                    'mautic.lead.model.list',
+                    'mautic.email.model.email',
+                    'mautic.security',
+                    'mautic.lead.model.lead',
+                    'mautic.stage.model.stage',
+                    'mautic.category.model.category',
+                    'mautic.helper.user',
+                ],
+                'tag'          => 'form.type_extension',
+                'tagArguments' => [
+                    'extended_type' => ListType::class,
+                ],
+            ],
         ],
-        'mautic.form.extension.extended_list' => [
-          'class'     => 'MauticPlugin\MauticExtendedFieldBundle\Form\ListTypeExtension',
-          'arguments' => [
-            'translator',
-            'mautic.lead.model.list',
-            'mautic.email.model.email',
-            'mautic.security',
-            'mautic.lead.model.lead',
-            'mautic.stage.model.stage',
-            'mautic.category.model.category',
-            'mautic.helper.user',
-          ],
-          'tag'          => 'form.type_extension',
-          'tagArguments' => [
-            'extended_type' => ListType::class,
-          ],
+        'models' => [
+            'mautic.lead.model.extended_field' => [
+                'class'     => 'MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel',
+                'arguments' => [
+                    'mautic.lead.model.field',
+                ],
+            ],
         ],
-      ],
-       'models'   => [
-         'mautic.lead.model.extended_field' => [
-           'class'     => 'MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel',
-           'arguments' => [
-             'mautic.lead.model.field',
-           ],
-         ],
-       ]
-    ]
+    ],
 ];
