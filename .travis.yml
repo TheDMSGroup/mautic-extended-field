@@ -10,6 +10,11 @@ php:
   - 7.0
   - 7.1
 
+env:
+  global:
+    # the plugin folder/bundle name
+    - "MAUTIC_PLUGIN=MauticExtendedFieldBundle"
+
 before_install:
   # Create mautictest database
   - mysql -e 'CREATE DATABASE mautictest;'
@@ -27,12 +32,20 @@ before_install:
   - if [[ ${TRAVIS_PHP_VERSION:0:3} != "5.6" ]]; then composer global require phpstan/phpstan-shim:0.8.5; fi
 
   # clone core
-  - git clone https://github.com/mautic/mautic.git
+  - git clone https://github.com/mautic/mautic.git /tmp/mautic
 
-  - cp -r !(mautic) ./mautic/plugins/MauticExtendedFieldBundle
+  # nest core with our plugin
+  - mkdir -p /tmp/mautic/plugins/$MAUTIC_PLUGIN
+  - rsync -r --delete-after --quiet $TRAVIS_BUILD_DIR/ /tmp/mautic/plugins/$MAUTIC_PLUGIN
+  - rsync -r --delete-after --quiet /tmp/mautic/ $TRAVIS_BUILD_DIR/
 
 install:
+  # install core
   - composer install
+  
+  # install any plugin dependencies
+  - composer require wikimedia/composer-merge-plugin
+  - composer config extra.merge-plugin.include plugins/$MAUTIC_PLUGIN/composer.json
 
 script:
 
