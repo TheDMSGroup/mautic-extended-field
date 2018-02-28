@@ -29,12 +29,6 @@ trait ExtendedFieldRepositoryTrait
      */
     protected $customLeadFieldList = [];
 
-
-    /**
-     * @var array
-     */
-    protected $fields = [];
-
     /**
      * Stores the parsed columns and their negate status for addAdvancedSearchWhereClause().
      *
