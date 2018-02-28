@@ -1,6 +1,7 @@
 # Mautic Extended Field [![Build Status](https://travis-ci.org/TheDMSGroup/mautic-extended-field.svg?branch=master)](https://travis-ci.org/TheDMSGroup/mautic-extended-field)
 
 ![](Assets/img/icon.png?raw=true)
+
 Allows near-infinite custom fields.
 
 This plugin was created to help overcome an anticipated challenge supporting Custom Fields. 
