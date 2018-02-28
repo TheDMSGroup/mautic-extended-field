@@ -1,7 +1,7 @@
-![](./Assets/img/icon.png)
-# Mautic Extended Field
+# Mautic Extended Field [![Build Status](https://travis-ci.org/TheDMSGroup/mautic-extended-field.svg?branch=master)](https://travis-ci.org/TheDMSGroup/mautic-extended-field)
 
-Allows near-infinate custom fields.
+![](Assets/img/icon.png?raw=true)
+Allows near-infinite custom fields.
 
 This plugin was created to help overcome an anticipated challenge supporting Custom Fields. 
 A full problem definition can be found at https://github.com/mautic/mautic/issues/4139. 
@@ -49,7 +49,7 @@ Currently being tested with Mautic `2.12.x`.
 If you have success/issues with other versions please report.
 
 1. Install by running `composer require thedmsgroup/mautic-extended-field-bundle` or by unpacking this repository's contents into a folder named `/plugins/MauticExtendedFieldBundle`
-2. Go to `/s/plugins` and click `Install/Upgrade Plugins` the Extended Fields plugin should show up. Installation is complete.
+2. Go to `/s/plugins/reload`. The Extended Fields plugin should show up. Installation is complete.
 3. When creating new custom fields `/s/contacts/fields/new` select Object "Extended" or "Extended Secure".
 
 ## TODO
