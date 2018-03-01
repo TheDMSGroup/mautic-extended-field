@@ -465,7 +465,9 @@ trait ExtendedFieldRepositoryTrait
         $extendedFieldList = [],
         $lead_ids = []
     ) {
-
+        if(empty($extendedFieldList)){
+            return array();
+        }
         // get a query builder for extendedField values to get.
         if ($this->em) {
             $eq = $this->em->getConnection();
