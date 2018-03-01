@@ -31,14 +31,15 @@ use Doctrine\ORM\EntityManager;
 class OverrideLeadRepository extends LeadRepository implements CustomFieldRepositoryInterface
 {
 
+
+    //  use CustomFieldRepositoryTrait;
+    use ExtendedFieldRepositoryTrait;
+
+
     /**
      * @var array
      */
     private $availableSocialFields = [];
-
-
-    //  use CustomFieldRepositoryTrait;
-    use ExtendedFieldRepositoryTrait;
 
 
     /**
