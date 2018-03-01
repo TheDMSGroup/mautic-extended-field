@@ -24,17 +24,17 @@ trait ExtendedFieldRepositoryTrait
      */
     protected $customExtendedFieldSecureList = [];
 
-    /**
-     * @var array
-     */
-    protected $customLeadFieldList = [];
-
-    /**
-     * Stores the parsed columns and their negate status for addAdvancedSearchWhereClause().
-     *
-     * @var array
-     */
-    protected $advancedFilterCommands = [];
+    // /**
+    //  * @var array
+    //  */
+    // protected $customLeadFieldList = [];
+    //
+    // /**
+    //  * Stores the parsed columns and their negate status for addAdvancedSearchWhereClause().
+    //  *
+    //  * @var array
+    //  */
+    // protected $advancedFilterCommands = [];
 
 
     /**
