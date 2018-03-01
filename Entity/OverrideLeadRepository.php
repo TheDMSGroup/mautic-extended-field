@@ -31,39 +31,12 @@ use Doctrine\ORM\EntityManager;
 class OverrideLeadRepository extends LeadRepository implements CustomFieldRepositoryInterface
 {
 
-
-    public $fieldModel;
-
-    public function __construct(EntityManager $em, ClassMetadata $class, FieldModel $fieldmodel){
-        parent::__construct($em, $class);
-        $this->fieldModel = $fieldmodel;
-    }
-//  use CustomFieldRepositoryTrait;
+    //  use CustomFieldRepositoryTrait;
     use ExpressionHelperTrait;
     use OperatorListTrait;
     use ExtendedFieldRepositoryTrait;
 
-    /**
-     * @var EventDispatcherInterface
-     */
-    protected $dispatcher;
 
-    /**
-     * @var array
-     */
-    private $availableSocialFields = [];
-
-    /**
-     * @var array
-     */
-    private $availableSearchFields = [];
-
-    /**
-     * Required to get the color based on a lead's points.
-     *console
-     * @var TriggerModel
-     */
-    private $triggerModel;
     /**
      * Stores a boolean if args has extended field filters.
      *
@@ -71,6 +44,15 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
      */
     protected $extendedFieldFilters = [];
 
+    /**
+     * @var FieldModel
+     */
+    public $fieldModel;
+
+    public function __construct(EntityManager $em, ClassMetadata $class, FieldModel $fieldmodel){
+        parent::__construct($em, $class);
+        $this->fieldModel = $fieldmodel;
+    }
 
     /**
      * {@inheritdoc}
