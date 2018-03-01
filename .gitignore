@@ -1,0 +1,6 @@
+# Standard .gitignore for a Mautic plugin.
+.*
+!.gitignore
+!.htaccess
+!.gitkeep
+!.travis.yml
