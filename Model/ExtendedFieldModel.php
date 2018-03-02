@@ -238,6 +238,21 @@ class ExtendedFieldModel extends FieldModel {
     }
 
     /**
+     * Get list of custom field values for autopopulate fields.
+     *
+     * @param $type
+     * @param $filter
+     * @param $limit
+     *
+     * @return array
+     */
+    public function getLookupResults($type, $filter = '', $limit = 10)
+    {
+        $repo = $this->getRepository();
+        return $repo->getValueList($type, $filter, $limit);
+    }
+
+    /**
      * @param bool|true $byGroup
      * @param bool|true $alphabetical
      * @param array $filters

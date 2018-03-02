@@ -284,4 +284,78 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
         }
     }
 
+    /**
+     * Gets a list of unique values from fields for autocompletes.
+     * Overrides the method defined in CustomFieldRepositoryTrait
+     * to included extended field value lookups
+     *
+     * @param        $field
+     * @param string $search
+     * @param int    $limit
+     * @param int    $start
+     *
+     * @return array
+     */
+    public function getValueList($field, $search = '', $limit = 10, $start = 0)
+    {
+        $q     = $this->getEntityManager()->getConnection()->createQueryBuilder();
+
+        // get list of extendedFields
+        if(!empty($extendedField = $this->isExtendedField($field))) {
+            $fieldModel = $this->fieldModel;
+            $dataType   = $fieldModel->getSchemaDefinition(
+                $extendedField['alias'],
+                $extendedField['type']
+            );
+            $dataType   = $dataType['type'];
+            $secure     = strpos($extendedField['object'], "Secure") !== false ? "_secure" : "";
+            $table  = "lead_fields_leads_".$dataType.$secure.'_xref';
+            $alias      = $dataType.$extendedField['id'];
+            $col        = $alias.'.value';
+
+        } else {
+            $alias = 'l';
+            // Not an Extended Field, Carry On.
+            $table = $this->getEntityManager()->getClassMetadata($this->getClassName())->getTableName();
+            $col   = $this->getTableAlias().'.'.$field;
+        }
+
+        $q
+            ->select("DISTINCT $col AS $field")
+            ->from($table, $alias);
+
+        if(!empty($extendedField)){
+            $q->Where("$alias.lead_field_id = :fieldid")
+                ->setParameter('fieldid', $extendedField['id']);
+        } else {
+
+            $q->where(
+                $q->expr()->andX(
+                    $q->expr()->neq($col, $q->expr()->literal('')),
+                    $q->expr()->isNotNull($col)
+                )
+            );
+        }
+
+        if (!empty($search)) {
+            $q->andWhere("$col LIKE :search")
+                ->setParameter('search', "{$search}%");
+        }
+
+        $q->orderBy($field);
+
+        if (!empty($limit)) {
+            $q->setFirstResult($start)
+                ->setMaxResults($limit);
+        }
+
+        $results = $q->execute()->fetchAll();
+
+
+
+        return $results;
+    }
+
+
+
 }

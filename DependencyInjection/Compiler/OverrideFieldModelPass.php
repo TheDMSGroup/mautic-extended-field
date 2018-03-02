@@ -15,10 +15,8 @@ namespace MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler;
 use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
 use MauticPlugin\MauticExtendedFieldBundle\Model\OverrideLeadModel;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
-use MauticPlugin\MauticExtendedFieldBundle\Form\ExtendedFieldExtension;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Mautic\LeadBundle\Model\FieldModel;
 
 class OverrideFieldModelPass implements CompilerPassInterface
 {

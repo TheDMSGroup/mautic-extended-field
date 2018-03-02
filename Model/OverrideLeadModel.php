@@ -440,7 +440,7 @@ class OverrideLeadModel extends LeadModel
         } else {
             // update the lead's company name to nothing
             $lead->addUpdatedField('company', '');
-            $this->getRepository()->saveEntity($lead);
+            $this->getRepository()->saveExtendedEntity($lead);
         }
     }
 
