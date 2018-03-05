@@ -19,7 +19,6 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class ExtendedFieldTextSecure extends ExtendedFieldCommon
 {
-
     /**
      * @var Lead
      */

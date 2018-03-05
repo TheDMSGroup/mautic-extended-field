@@ -19,7 +19,6 @@ use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldCommon;
  */
 class ExtendedFieldEvent extends CommonEvent
 {
-
     /**
      * ExtendedFieldEvent constructor.
      *
@@ -49,5 +48,4 @@ class ExtendedFieldEvent extends CommonEvent
     {
         $this->entity = $ExtendedField;
     }
-
 }

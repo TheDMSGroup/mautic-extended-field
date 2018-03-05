@@ -14,17 +14,16 @@
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
-use Mautic\LeadBundle\Model\LeadModel;
-use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
-use Mautic\LeadBundle\Entity\Lead;
-use Mautic\LeadBundle\LeadEvents;
-use Mautic\LeadBundle\Event\LeadChangeCompanyEvent;
-use Mautic\LeadBundle\Entity\CompanyLead;
 use Mautic\LeadBundle\Entity\CompanyChangeLog;
-use Mautic\LeadBundle\Helper\IdentifyCompanyHelper;
-use Mautic\CoreBundle\Model\FormModel;
-use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldRepositoryTrait;
+use Mautic\LeadBundle\Entity\CompanyLead;
+use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Entity\LeadField;
+use Mautic\LeadBundle\Event\LeadChangeCompanyEvent;
+use Mautic\LeadBundle\Helper\IdentifyCompanyHelper;
+use Mautic\LeadBundle\LeadEvents;
+use Mautic\LeadBundle\Model\LeadModel;
+use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldRepositoryTrait;
+use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
 
 /**
  * Class OverrideLeadModel
@@ -32,12 +31,11 @@ use Mautic\LeadBundle\Entity\LeadField;
  */
 class OverrideLeadModel extends LeadModel
 {
-
     use ExtendedFieldRepositoryTrait;
 
-    public $companyWasUpdated = FALSE;
-    public $extendedFieldsAdded = FALSE;
+    public $companyWasUpdated = false;
 
+    public $extendedFieldsAdded = false;
 
     /**
      * Get a specific entity or generate a new one if id is empty.
@@ -48,13 +46,13 @@ class OverrideLeadModel extends LeadModel
      */
     public function getEntity($id = null)
     {
-        if ($id === null) {
+        if (null === $id) {
             return new Lead();
         }
         $fieldModel = $this->leadFieldModel;
-        $metastart = new ClassMetadata(Lead::class);
-        $repo = new OverrideLeadRepository($this->em, $metastart, $fieldModel);
-        $entity = $repo->getEntity($id);
+        $metastart  = new ClassMetadata(Lead::class);
+        $repo       = new OverrideLeadRepository($this->em, $metastart, $fieldModel);
+        $entity     = $repo->getEntity($id);
         //$entity = parent::getEntity($id);
 
         if (null === $entity) {
@@ -65,10 +63,9 @@ class OverrideLeadModel extends LeadModel
         return $entity;
     }
 
-
     /**
      * Overrides the LeadBundle LeadModel.php instance of saveEntity
-     * prevents calling parent:: and replaces with custom doSave() method
+     * prevents calling parent:: and replaces with custom doSave() method.
      *
      * {@inheritdoc}
      *
@@ -110,9 +107,18 @@ class OverrideLeadModel extends LeadModel
         $updatedFields = $entity->getUpdatedFields();
         if (isset($updatedFields['company'])) {
             $companyFieldMatches['company']            = $updatedFields['company'];
-            list($company, $leadAdded, $companyEntity) = IdentifyCompanyHelper::identifyLeadsCompany($companyFieldMatches, $entity, $this->companyModel);
+            list($company, $leadAdded, $companyEntity) = IdentifyCompanyHelper::identifyLeadsCompany(
+                $companyFieldMatches,
+                $entity,
+                $this->companyModel
+            );
             if ($leadAdded) {
-                $entity->addCompanyChangeLogEntry('form', 'Identify Company', 'Lead added to the company, '.$company['companyname'], $company['id']);
+                $entity->addCompanyChangeLogEntry(
+                    'form',
+                    'Identify Company',
+                    'Lead added to the company, '.$company['companyname'],
+                    $company['id']
+                );
             }
         }
 
@@ -128,7 +134,7 @@ class OverrideLeadModel extends LeadModel
         if (!empty($company) && !$this->companyWasUpdated) {
             // Save after the lead in for new leads created through the API and maybe other places
             $this->companyModel->addLeadToCompany($companyEntity, $entity);
-            $this->companyWasUpdated = True;
+            $this->companyWasUpdated = true;
 
             $this->setPrimaryCompany($companyEntity->getId(), $entity->getId());
         }
@@ -139,7 +145,7 @@ class OverrideLeadModel extends LeadModel
     /**
      * Create/edit entity.
      * forces the OverrideLeadRepository repo instance to use custom sql
-     * for extendedField schema handling
+     * for extendedField schema handling.
      *
      * @param object $entity
      * @param bool   $unlock
@@ -170,7 +176,7 @@ class OverrideLeadModel extends LeadModel
         static $repoSetup;
 
         $metastart = new ClassMetadata(Lead::class);
-        $repo = new OverrideLeadRepository($this->em, $metastart, $this->leadFieldModel);
+        $repo      = new OverrideLeadRepository($this->em, $metastart, $this->leadFieldModel);
         $repo->setDispatcher($this->dispatcher);
 
         if (!$repoSetup) {
@@ -200,22 +206,28 @@ class OverrideLeadModel extends LeadModel
      * @param array      $data
      * @param bool|false $overwriteWithBlank
      * @param bool|true  $fetchSocialProfiles
-     * @param bool|false $bindWithForm        Send $data through the Lead form and only use valid data (should be used with request data)
+     * @param bool|false $bindWithForm        Send $data through the Lead form and only use valid data (should be used with
+     *                                        request data)
      *
      * @return array
      */
-    public function setFieldValues(Lead &$lead, array $data, $overwriteWithBlank = false, $fetchSocialProfiles = true, $bindWithForm = false)
-    {
+    public function setFieldValues(
+        Lead &$lead,
+        array $data,
+        $overwriteWithBlank = false,
+        $fetchSocialProfiles = true,
+        $bindWithForm = false
+    ) {
         if ($fetchSocialProfiles) {
             //@todo - add a catch to NOT do social gleaning if a lead is created via a form, etc as we do not want the user to experience the wait
             //generate the social cache
             list($socialCache, $socialFeatureSettings) = $this->integrationHelper->getUserProfiles(
-              $lead,
-              $data,
-              true,
-              null,
-              false,
-              true
+                $lead,
+                $data,
+                true,
+                null,
+                false,
+                true
             );
 
             //set the social cache while we have it
@@ -231,9 +243,9 @@ class OverrideLeadModel extends LeadModel
             if ($data['stage'] !== $currentLeadStage) {
                 $stage = $this->em->getRepository('MauticStageBundle:Stage')->find($data['stage']);
                 $lead->stageChangeLogEntry(
-                  $stage,
-                  $stage->getId().':'.$stage->getName(),
-                  $this->translator->trans('mautic.stage.event.changed')
+                    $stage,
+                    $stage->getId().':'.$stage->getName(),
+                    $this->translator->trans('mautic.stage.event.changed')
                 );
             }
         }
@@ -241,14 +253,13 @@ class OverrideLeadModel extends LeadModel
         //save the field values
         $fieldValues = $lead->getFields();
 
-
         if (empty($fieldValues) || $bindWithForm) {
             // Lead is new or they haven't been populated so let's build the fields now
             static $flatFields, $fields;
             if (empty($flatFields)) {
                 // modified line below to get Extended Field Entities too.
                 $flatFields = $this->getExtendedEntities();
-                $fields = $this->organizeFieldsByGroup($flatFields);
+                $fields     = $this->organizeFieldsByGroup($flatFields);
             }
 
             if (empty($fieldValues)) {
@@ -259,10 +270,10 @@ class OverrideLeadModel extends LeadModel
         if ($bindWithForm) {
             // Cleanup the field values
             $form = $this->createForm(
-              new Lead(), // use empty lead to prevent binding errors
-              $this->formFactory,
-              null,
-              ['fields' => $flatFields, 'csrf_protection' => false, 'allow_extra_fields' => true]
+                new Lead(), // use empty lead to prevent binding errors
+                $this->formFactory,
+                null,
+                ['fields' => $flatFields, 'csrf_protection' => false, 'allow_extra_fields' => true]
             );
 
             // Unset stage and owner from the form because it's already been handled
@@ -278,7 +289,9 @@ class OverrideLeadModel extends LeadModel
             foreach ($form as $field => $formField) {
                 if (isset($data[$field])) {
                     if ($formField->getErrors()->count()) {
-                        $this->logger->addDebug('LEAD: '.$field.' failed form validation with an error of '.(string) $formField->getErrors());
+                        $this->logger->addDebug(
+                            'LEAD: '.$field.' failed form validation with an error of '.(string) $formField->getErrors()
+                        );
                         // Don't save bad data
                         unset($data[$field]);
                     } else {
@@ -319,7 +332,7 @@ class OverrideLeadModel extends LeadModel
                             //check to see if a field has been assigned
 
                             if (!empty($socialFeatureSettings[$service]['leadFields'])
-                              && in_array($field['alias'], $socialFeatureSettings[$service]['leadFields'])
+                                && in_array($field['alias'], $socialFeatureSettings[$service]['leadFields'])
                             ) {
                                 //check to see if the data is available
                                 $key = array_search($field['alias'], $socialFeatureSettings[$service]['leadFields']);
@@ -339,25 +352,24 @@ class OverrideLeadModel extends LeadModel
         $lead->setFields($fieldValues);
     }
 
-
     /**
-     * Gets array of extended Field config
+     * Gets array of extended Field config.
      *
      * @param array $args
+     *
      * @return array
      */
-
     public function getExtendedEntities(array $args = [])
     {
         //TODO check for perms of user to see if object should include extendedFieldSecure
 
         $fq = $this->em->getConnection()->createQueryBuilder();
         $fq->select('*')
-          ->from(MAUTIC_TABLE_PREFIX . 'lead_fields', 'f')
-          ->where('f.object <> :object')
-          ->andWhere($fq->expr()->eq('is_published', ':isPub'))
-          ->setParameter('object', 'company')
-          ->setParameter('isPub', TRUE);
+            ->from(MAUTIC_TABLE_PREFIX.'lead_fields', 'f')
+            ->where('f.object <> :object')
+            ->andWhere($fq->expr()->eq('is_published', ':isPub'))
+            ->setParameter('object', 'company')
+            ->setParameter('isPub', true);
         $values = $fq->execute()->fetchAll();
 
         return $values;
@@ -378,27 +390,26 @@ class OverrideLeadModel extends LeadModel
         foreach ($fields as $field) {
             if ($field instanceof LeadField) {
                 $alias = $field->getAlias();
-                if ($field->isPublished() and $field->getObject() !== 'Company') {
-                    $group                          = $field->getGroup();
-                    $array[$group][$alias]['id']    = $field->getId();
-                    $array[$group][$alias]['group'] = $group;
-                    $array[$group][$alias]['label'] = $field->getLabel();
-                    $array[$group][$alias]['alias'] = $alias;
-                    $array[$group][$alias]['type']  = $field->getType();
-                    $array[$group][$alias]['object']  = $field->getObject();
+                if ($field->isPublished() and 'Company' !== $field->getObject()) {
+                    $group                           = $field->getGroup();
+                    $array[$group][$alias]['id']     = $field->getId();
+                    $array[$group][$alias]['group']  = $group;
+                    $array[$group][$alias]['label']  = $field->getLabel();
+                    $array[$group][$alias]['alias']  = $alias;
+                    $array[$group][$alias]['type']   = $field->getType();
+                    $array[$group][$alias]['object'] = $field->getObject();
                 }
             } else {
-
                 if ((isset($field['isPublished']) && $field['isPublished']) ||
-                  (isset($field['is_published']) && $field['is_published']) &&
-                  $field['object'] !== 'company') {
-                    $alias = $field['alias'];
-                    $group = isset($field['group']) ? $field['group'] : $field['field_group'];
-                    $array[$group][$alias]['id'] = $field['id'];
-                    $array[$group][$alias]['group'] = $group;
-                    $array[$group][$alias]['label'] = $field['label'];
-                    $array[$group][$alias]['alias'] = $alias;
-                    $array[$group][$alias]['type'] = $field['type'];
+                    (isset($field['is_published']) && $field['is_published']) &&
+                    'company' !== $field['object']) {
+                    $alias                           = $field['alias'];
+                    $group                           = isset($field['group']) ? $field['group'] : $field['field_group'];
+                    $array[$group][$alias]['id']     = $field['id'];
+                    $array[$group][$alias]['group']  = $group;
+                    $array[$group][$alias]['label']  = $field['label'];
+                    $array[$group][$alias]['alias']  = $alias;
+                    $array[$group][$alias]['type']   = $field['type'];
                     $array[$group][$alias]['object'] = $field['object'];
                 }
             }
@@ -418,12 +429,12 @@ class OverrideLeadModel extends LeadModel
     /**
      * Overrides LeadBundle version of modifyCompanies
      * to remove extended fields from list before adding companies to prevent
-     * recursive saves that fail
+     * recursive saves that fail.
      *
      * Modify companies for lead.
      *
      * @param Lead $lead
-     * @param $companies
+     * @param      $companies
      */
     public function modifyCompanies(Lead $lead, $companies)
     {
@@ -431,7 +442,7 @@ class OverrideLeadModel extends LeadModel
         $leadCompanies = $this->companyModel->getCompanyLeadRepository()->getCompaniesByLeadId($lead->getId());
 
         foreach ($leadCompanies as $key => $leadCompany) {
-            if (array_search($leadCompany['company_id'], $companies) === false) {
+            if (false === array_search($leadCompany['company_id'], $companies)) {
                 $this->companyModel->removeLeadFromCompany([$leadCompany['company_id']], $lead);
             }
         }
@@ -446,6 +457,7 @@ class OverrideLeadModel extends LeadModel
     }
 
     /** Add lead to company
+     *
      * @param array|Company $companies
      * @param array|Lead    $lead
      *
@@ -484,17 +496,19 @@ class OverrideLeadModel extends LeadModel
         }
 
         if (!empty($searchForCompanies)) {
-            $companyEntities = $this->em->getRepository('MauticLeadBundle:Company')->getEntities([
-              'filter' => [
-                'force' => [
-                  [
-                    'column' => 'comp.id',
-                    'expr'   => 'in',
-                    'value'  => $searchForCompanies,
-                  ],
-                ],
-              ],
-            ]);
+            $companyEntities = $this->em->getRepository('MauticLeadBundle:Company')->getEntities(
+                [
+                    'filter' => [
+                        'force' => [
+                            [
+                                'column' => 'comp.id',
+                                'expr'   => 'in',
+                                'value'  => $searchForCompanies,
+                            ],
+                        ],
+                    ],
+                ]
+            );
 
             foreach ($companyEntities as $company) {
                 $companyLeadAdd[$company->getId()] = $company;
@@ -513,13 +527,13 @@ class OverrideLeadModel extends LeadModel
             }
 
             $companyLead = $this->em->getRepository('MauticLeadBundle:CompanyLead')->findOneBy(
-              [
-                'lead'    => $lead,
-                'company' => $companyLeadAdd[$companyId],
-              ]
+                [
+                    'lead'    => $lead,
+                    'company' => $companyLeadAdd[$companyId],
+                ]
             );
 
-            if ($companyLead != null) {
+            if (null != $companyLead) {
                 // @deprecated support to be removed in 3.0
                 if ($companyLead->wasManuallyRemoved()) {
                     $companyLead->setManuallyRemoved(false);
@@ -554,7 +568,7 @@ class OverrideLeadModel extends LeadModel
             $currentCompanyName = $lead->getCompany();
             if ($currentCompanyName !== $companyName) {
                 $lead->addUpdatedField('company', $companyName)
-                  ->setDateModified(new \DateTime());
+                    ->setDateModified(new \DateTime());
                 $this->saveEntity($lead);
             }
         }
@@ -612,7 +626,7 @@ class OverrideLeadModel extends LeadModel
             $latestCompany = $this->companyModel->getCompanyLeadRepository()->getLatestCompanyForLead($leadId);
             if (!empty($latestCompany)) {
                 $lead->addUpdatedField('company', $latestCompany['companyname'])
-                  ->setDateModified(new \DateTime());
+                    ->setDateModified(new \DateTime());
             }
         }
 
@@ -626,6 +640,4 @@ class OverrideLeadModel extends LeadModel
 
         return ['oldPrimary' => $oldPrimaryCompany, 'newPrimary' => $companyId];
     }
-
-
 }

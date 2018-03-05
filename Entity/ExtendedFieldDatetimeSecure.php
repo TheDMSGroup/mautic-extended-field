@@ -19,7 +19,6 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class ExtendedFieldDatetimeSecure extends ExtendedFieldCommon
 {
-
     /**
      * @var Lead
      */

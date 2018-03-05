@@ -19,7 +19,6 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class ExtendedFieldTime extends ExtendedFieldCommon
 {
-
     /**
      * @var Lead
      */

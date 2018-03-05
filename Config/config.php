@@ -9,12 +9,11 @@
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-use MauticPlugin\MauticExtendedFieldBundle\ExtendedFieldExtension;
-use MauticPlugin\MauticExtendedFieldBundle\EventListener\ConfigSubscriber;
 use Mautic\LeadBundle\Form\Type\FieldType;
 use Mautic\LeadBundle\Form\Type\LeadType;
 use Mautic\LeadBundle\Form\Type\ListType;
 use Mautic\LeadBundle\Form\Type\UpdateLeadActionType;
+use MauticPlugin\MauticExtendedFieldBundle\EventListener\ConfigSubscriber;
 
 //$container
 //  ->register('mautic.extendedfield.lead.listener', ExtendedLeadListener::class)
@@ -27,7 +26,7 @@ return [
     'author'      => 'Mautic',
     'parameters'  => [
         // set default to block creation of lead table columns
-        'disable_lead_table_fields'               => 1,
+        'disable_lead_table_fields' => 1,
     ],
     'services'    => [
         'events' => [
@@ -36,10 +35,10 @@ return [
             ],
         ],
         'forms'  => [
-            'mautic.extended_field.form.config' => array(
+            'mautic.extended_field.form.config' => [
                 'class' => 'MauticPlugin\MauticExtendedFieldBundle\Form\ConfigType',
-                'alias' => 'extendedField_config'
-            ),
+                'alias' => 'extendedField_config',
+            ],
             // 'mautic.extendedfield.extension' => array(
             //     'class' => 'MauticPlugin\MauticExtendedFieldBundle\Form\ExtendedFieldExtension',
             //     'arguments' => [

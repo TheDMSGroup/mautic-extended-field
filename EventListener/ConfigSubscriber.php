@@ -2,25 +2,23 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\EventListener;
 
-use Mautic\ConfigBundle\Event\ConfigEvent;
-use Mautic\CoreBundle\EventListener\CommonSubscriber;
 use Mautic\ConfigBundle\ConfigEvents;
 use Mautic\ConfigBundle\Event\ConfigBuilderEvent;
-
+use Mautic\CoreBundle\EventListener\CommonSubscriber;
 
 /**
- * Class ConfigSubscriber
+ * Class ConfigSubscriber.
  */
 class ConfigSubscriber extends CommonSubscriber
 {
-
     /**
      * @return array
      */
-    static public function getSubscribedEvents()
-    {return array(
-            ConfigEvents::CONFIG_ON_GENERATE => array('onConfigGenerate', 0),
-        );
+    public static function getSubscribedEvents()
+    {
+        return [
+            ConfigEvents::CONFIG_ON_GENERATE => ['onConfigGenerate', 0],
+        ];
     }
 
     /**
@@ -28,15 +26,18 @@ class ConfigSubscriber extends CommonSubscriber
      */
     public function onConfigGenerate(ConfigBuilderEvent $event)
     {
-        $params = !empty($event->getParametersFromConfig('MauticExtendedFieldBundle')) ? $event->getParametersFromConfig('MauticExtendedFieldBundle') : array();
+        $params = !empty(
+        $event->getParametersFromConfig(
+            'MauticExtendedFieldBundle'
+        )
+        ) ? $event->getParametersFromConfig('MauticExtendedFieldBundle') : [];
         $event->addForm(
-            array(
-                'bundle'     => "MauticExtendedFieldBundle",
+            [
+                'bundle'     => 'MauticExtendedFieldBundle',
                 'formAlias'  => 'extendedField_config',
                 'formTheme'  => 'MauticExtendedFieldBundle:Config',
                 'parameters' => $params,
-            )
+            ]
         );
     }
-
 }

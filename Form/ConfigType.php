@@ -1,13 +1,12 @@
 <?php
 
-
 namespace MauticPlugin\MauticExtendedFieldBundle\Form;
 
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 
 /**
- * Class ConfigType
+ * Class ConfigType.
  */
 class ConfigType extends AbstractType
 {
@@ -20,13 +19,13 @@ class ConfigType extends AbstractType
         $builder->add(
             'disable_lead_table_fields',
             'yesno_button_group',
-            array(
+            [
                 'label' => 'mautic.extendedField.disable_lead_table_fields',
                 'data'  => $options['data']['disable_lead_table_fields'],
-                'attr'  => array(
-                    'tooltip' => 'mautic.form.config.disable_lead_table_fields'
-                )
-            )
+                'attr'  => [
+                    'tooltip' => 'mautic.form.config.disable_lead_table_fields',
+                ],
+            ]
         );
     }
 

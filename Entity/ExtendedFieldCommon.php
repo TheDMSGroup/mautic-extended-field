@@ -12,16 +12,12 @@
 namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use Mautic\ApiBundle\Serializer\Driver\ApiMetadataDriver;
 use Mautic\CoreBundle\Doctrine\Mapping\ClassMetadataBuilder;
 use Mautic\CoreBundle\Entity\CommonEntity;
-use Mautic\LeadBundle\Model\FieldModel;
+use Mautic\LeadBundle\Entity\CustomFieldEntityInterface;
+use Mautic\LeadBundle\Entity\CustomFieldEntityTrait;
 use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Entity\LeadField;
-use Mautic\CoreBundle\Entity\FormEntity;
-use Mautic\LeadBundle\Entity\CustomFieldEntityTrait;
-use Mautic\LeadBundle\Entity\CustomFieldEntityInterface;
-use Mautic\LeadBundle\Entity\CustomFieldRepositoryInterface;
 
 /**
  * Class ExtendedFieldCommon.
@@ -30,39 +26,36 @@ use Mautic\LeadBundle\Entity\CustomFieldRepositoryInterface;
  */
 abstract class ExtendedFieldCommon extends CommonEntity implements CustomFieldEntityInterface
 {
-use CustomFieldEntityTrait;
+    use CustomFieldEntityTrait;
 
     const FIELD_ALIAS = 'extendedField';
 
-  /**
-   * @var int
-   */
-  private $lead;
+    /**
+     * @var int
+     */
+    private $lead;
 
-  /**
-   * @var string
-   */
-  private $leadField;
+    /**
+     * @var string
+     */
+    private $leadField;
 
-  /**
-   * @var string
-   */
-  private $value;
-
-
-
+    /**
+     * @var string
+     */
+    private $value;
 
     /**
      * @param ORM\ClassMetadata $metadata
-     * @param null $dataType Acceptable values matching doctrine datatypes:
-     *                         datetime
-     *                         date
-     *                         time
-     *                         boolean
-     *                         float
-     *                         string
-     *                         text
-     * @param bool $secure
+     * @param null              $dataType Acceptable values matching doctrine datatypes:
+     *                                    datetime
+     *                                    date
+     *                                    time
+     *                                    boolean
+     *                                    float
+     *                                    string
+     *                                    text
+     * @param bool              $secure
      */
     public static function loadMetadataCommon(ORM\ClassMetadata $metadata, $dataType = null, $secure = false)
     {
@@ -88,7 +81,6 @@ use CustomFieldEntityTrait;
             $builder->createField('value', $dataType)
                 ->columnName('value')
                 ->build();
-
         } else {
             $builder->addId();
         }
@@ -99,18 +91,19 @@ use CustomFieldEntityTrait;
      */
     public function getId()
     {
-        return $this->lead . '@' . $this->leadField;
+        return $this->lead.'@'.$this->leadField;
     }
 
-  /**
-   * Get the primary identifier for the extendedField.
-   *
-   * @return string
-   */
-  public function getPrimaryIdentifier()
-  {
-    return $this->lead . '@' . $this->leadField;;  // I dont know what this should be right now, so for now using this
-  }
+    /**
+     * Get the primary identifier for the extendedField.
+     *
+     * @return string
+     */
+    public function getPrimaryIdentifier()
+    {
+        return $this->lead.'@'.$this->leadField;  // I dont know what this should be right now, so for now using this
+    }
+
     /**
      * @return Lead
      */
@@ -127,6 +120,7 @@ use CustomFieldEntityTrait;
     public function setLead($lead)
     {
         $this->lead = $lead;
+
         return $this;
     }
 
@@ -146,6 +140,7 @@ use CustomFieldEntityTrait;
     public function setLeadField($leadField)
     {
         $this->leadField = $leadField;
+
         return $this;
     }
 
@@ -165,6 +160,7 @@ use CustomFieldEntityTrait;
     public function setValue($value)
     {
         $this->value = $value;
+
         return $this;
     }
 }

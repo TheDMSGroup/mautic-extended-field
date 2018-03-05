@@ -11,11 +11,10 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
-use Doctrine\DBAL\Query\Expression\CompositeExpression;
 use Doctrine\ORM\QueryBuilder;
 use Mautic\CoreBundle\Entity\CommonRepository;
-use Mautic\LeadBundle\Entity\CustomFieldRepositoryTrait;
 use Mautic\LeadBundle\Entity\CustomFieldRepositoryInterface;
+use Mautic\LeadBundle\Entity\CustomFieldRepositoryTrait;
 
 /**
  * Class ExtendedFieldRepository.
@@ -41,9 +40,9 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
             } else {
                 $extendedFieldId = $id;
             }
-            $idArray = explode('@', $extendedFieldId);
-            $leadId = isset($idArray[0]) && !isNUll($idArray[0]) ? $idArray[0]: NULL;
-            $leadField = isset($idArray[1]) && !isNUll($idArray[1]) ? $idArray[1]: NULL;
+            $idArray   = explode('@', $extendedFieldId);
+            $leadId    = isset($idArray[0]) && !isNUll($idArray[0]) ? $idArray[0] : null;
+            $leadField = isset($idArray[1]) && !isNUll($idArray[1]) ? $idArray[1] : null;
             $q->andWhere($this->getTableAlias().'.lead = '.$leadId);
             $q->andWhere($this->getTableAlias().'.leadField = '.$leadField);
             $entity = $q->getQuery()->getSingleResult();
@@ -51,12 +50,20 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
             $entity = null;
         }
 
-        if ($entity != null) {
+        if (null != $entity) {
             $fieldValues = $this->getFieldValues($extendedFieldId, true, 'extendedField');
             $entity->setFields($fieldValues);
         }
 
         return $entity;
+    }
+
+    /**
+     * @return mixed|string|void
+     */
+    public function getTableAlias()
+    {
+        // just nothing
     }
 
     /**
@@ -71,41 +78,34 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
         return $this->getLeadsWithCustomFields('lead', $args);
     }
 
-  /**
-   * @return \Doctrine\DBAL\Query\QueryBuilder|void
-   */
-    public function getEntitiesDbalQueryBuilder() {
-      $alias = 'l';
-      $dq    = $this->getEntityManager()->getConnection()->createQueryBuilder()
-        ->from(MAUTIC_TABLE_PREFIX.'leads', $alias)
-        ->leftJoin($alias, MAUTIC_TABLE_PREFIX.'users', 'u', 'u.id = '.$alias.'.owner_id');
-
-      return $dq;
-    }
-
-
-  /**
-   * @param $order
-   * @return QueryBuilder|void
-   */
-    public function getEntitiesOrmQueryBuilder($order){
-      // jusat nothing
-    }
-
-  /**
-   * @return mixed|string|void
-   */
-    public function getTableAlias()
+    /**
+     * @return \Doctrine\DBAL\Query\QueryBuilder|void
+     */
+    public function getEntitiesDbalQueryBuilder()
     {
-      // just nothing
+        $alias = 'l';
+        $dq    = $this->getEntityManager()->getConnection()->createQueryBuilder()
+            ->from(MAUTIC_TABLE_PREFIX.'leads', $alias)
+            ->leftJoin($alias, MAUTIC_TABLE_PREFIX.'users', 'u', 'u.id = '.$alias.'.owner_id');
+
+        return $dq;
     }
 
-  /**
-   * @return array|void
-   */
-
-    public function getFieldGroups() {
-      // TODO: Implement getFieldGroups() method.
+    /**
+     * @param $order
+     *
+     * @return QueryBuilder|void
+     */
+    public function getEntitiesOrmQueryBuilder($order)
+    {
+        // jusat nothing
     }
 
+    /**
+     * @return array|void
+     */
+    public function getFieldGroups()
+    {
+        // TODO: Implement getFieldGroups() method.
+    }
 }

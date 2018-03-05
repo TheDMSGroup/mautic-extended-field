@@ -1,7 +1,7 @@
 <?php
 /**
  * Mautic Extended Field Form Extension
- * Created by Scott Shipman
+ * Created by Scott Shipman.
  *
  * Date: 1/30/18
  *
@@ -10,23 +10,17 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Form;
 
-use Symfony\Component\Form\AbstractTypeExtension;
-use Mautic\LeadBundle\Form\Type\FieldType;
-use Symfony\Component\Form\ChoiceList\View\ChoiceView;
-use Symfony\Component\Form\FormView;
-use Symfony\Component\Form\FormInterface;
-use Symfony\Component\Form\FormBuilderInterface;
-use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\CoreBundle\Factory\MauticFactory;
+use Mautic\LeadBundle\Form\Type\FieldType;
+use Symfony\Component\Form\AbstractTypeExtension;
+use Symfony\Component\Form\FormBuilderInterface;
 
 class ExtendedFieldExtension extends AbstractTypeExtension
 {
-
     protected $coreParameters;
 
     public function __construct(MauticFactory $factory)
     {
-
         $this->coreParameters = $factory->getDispatcher()->getContainer()->get('mautic.helper.core_parameters');
     }
 
@@ -53,7 +47,6 @@ class ExtendedFieldExtension extends AbstractTypeExtension
             $options['data']->setObject('extendedField');
         }
 
-
         $disabled = (!empty($options['data'])) ? $options['data']->isFixed() : false;
         $new      = (!empty($options['data']) && $options['data']->getAlias()) ? false : true;
         $builder->add(
@@ -69,7 +62,7 @@ class ExtendedFieldExtension extends AbstractTypeExtension
                 'choices_as_values' => true,
                 'choice_attr'       => function ($key, $val, $index) use ($no_lead_table) {
                     // set "Contact" option disabled to true based on key or index of the choice.
-                    if ($key === 'lead' && $no_lead_table) {
+                    if ('lead' === $key && $no_lead_table) {
                         return ['disabled' => 'disabled'];
                     } else {
                         return [];
