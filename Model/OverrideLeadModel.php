@@ -14,16 +14,17 @@
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
-use Mautic\LeadBundle\Model\LeadModel as LeadModel;
-use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository as OverrideLeadRepository;
-use Mautic\LeadBundle\Entity\Lead as Lead;
+use Mautic\LeadBundle\Model\LeadModel;
+use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
+use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\LeadEvents;
 use Mautic\LeadBundle\Event\LeadChangeCompanyEvent;
-use Mautic\LeadBundle\Entity\CompanyLead as CompanyLead;
+use Mautic\LeadBundle\Entity\CompanyLead;
 use Mautic\LeadBundle\Entity\CompanyChangeLog;
-use Mautic\LeadBundle\Helper\IdentifyCompanyHelper as IdentifyCompanyHelper;
+use Mautic\LeadBundle\Helper\IdentifyCompanyHelper;
 use Mautic\CoreBundle\Model\FormModel;
-use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldRepositoryTrait as ExtendedFieldRepositoryTrait;
+use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldRepositoryTrait;
+use Mautic\LeadBundle\Entity\LeadField;
 
 /**
  * Class OverrideLeadModel
@@ -162,7 +163,7 @@ class OverrideLeadModel extends LeadModel
      *
      * {@inheritdoc}
      *
-     * @return \MauticPlugin\Mautic ExtendedFieldBundle\Entity\OverrideLeadRepository
+     * @return \MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository
      */
     public function getRepository()
     {

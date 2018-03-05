@@ -9,7 +9,7 @@
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-namespace Mautic\ExtendedFieldBundle\Event;
+namespace MauticPlugin\ExtendedFieldBundle\Event;
 
 use Mautic\CoreBundle\Event\CommonEvent;
 use MauticPlugin\ExtendedFieldBundle\Entity\ExtendedFieldCommon;
@@ -21,20 +21,19 @@ class ExtendedFieldEvent extends CommonEvent
 {
 
     /**
-     * @param ExtendedField $ExtendedField
-     * @param bool    $isNew
-     * @param int     $score
+     * ExtendedFieldEvent constructor.
+     *
+     * @param ExtendedFieldCommon $ExtendedField
+     * @param bool                $isNew
      */
-    public function __construct(ExtendedField $ExtendedField, $isNew = false)
+    public function __construct(ExtendedFieldCommon $ExtendedField, $isNew = false)
     {
         $this->entity = $ExtendedField;
         $this->isNew  = $isNew;
     }
 
     /**
-     * Returns the ExtendedField entity.
-     *
-     * @return ExtendedField
+     * @return ExtendedFieldCommon
      */
     public function getExtendedField()
     {
@@ -44,9 +43,9 @@ class ExtendedFieldEvent extends CommonEvent
     /**
      * Sets the ExtendedField entity.
      *
-     * @param ExtendedField $ExtendedField
+     * @param ExtendedFieldCommon $ExtendedField
      */
-    public function setCompany(ExtendedField $ExtendedField)
+    public function setCompany(ExtendedFieldCommon $ExtendedField)
     {
         $this->entity = $ExtendedField;
     }
