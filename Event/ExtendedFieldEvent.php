@@ -9,10 +9,10 @@
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-namespace MauticPlugin\ExtendedFieldBundle\Event;
+namespace MauticPlugin\MauticExtendedFieldBundle\Event;
 
 use Mautic\CoreBundle\Event\CommonEvent;
-use MauticPlugin\ExtendedFieldBundle\Entity\ExtendedFieldCommon;
+use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldCommon;
 
 /**
  * Class ExtendedFieldEvent.
