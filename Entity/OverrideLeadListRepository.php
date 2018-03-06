@@ -345,7 +345,7 @@ class OverrideLeadListRepository extends LeadListRepository
                     $q->resetQueryPart('groupBy');
                 }
 
-                $realQuery = $q->getSql(); // for debug purposes only
+                $realQuery = $q->getSQL(); // for debug purposes only
                 $results   = $q->execute()->fetchAll();
 
                 foreach ($results as $r) {

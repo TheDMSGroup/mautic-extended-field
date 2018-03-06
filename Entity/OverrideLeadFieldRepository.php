@@ -174,7 +174,8 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             ->from(MAUTIC_TABLE_PREFIX.'lead_fields', 'lf')
             ->where(
                 $qf->expr()->andX(
-                    $qf->expr()->eq('lf.alias', ':alias')
+                    $qf->expr()->eq('lf.alias', ':alias'),
+                    $qf->expr()->like('lf.object', $qf->expr()->literal('extended%'))
                 )
             )
             ->setParameter('alias', $field);
@@ -327,7 +328,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             ->from($table, $alias);
 
         if (!empty($extendedField)) {
-            $q->Where("$alias.lead_field_id = :fieldid")
+            $q->where("$alias.lead_field_id = :fieldid")
                 ->setParameter('fieldid', $extendedField['id']);
         } else {
             $q->where(
