@@ -1,4 +1,4 @@
-# Mautic Extended Field [![Build Status](https://travis-ci.org/TheDMSGroup/mautic-extended-field.svg?branch=master)](https://travis-ci.org/TheDMSGroup/mautic-extended-field)
+# Mautic Extended Field [![Latest Stable Version](https://poser.pugx.org/thedmsgroup/mautic-extended-field-bundle/v/stable)](https://packagist.org/packages/thedmsgroup/mautic-extended-field-bundle) [![License](https://poser.pugx.org/thedmsgroup/mautic-extended-field-bundle/license)](https://packagist.org/packages/thedmsgroup/mautic-extended-field-bundle) [![Build Status](https://travis-ci.org/TheDMSGroup/mautic-extended-field.svg?branch=master)](https://travis-ci.org/TheDMSGroup/mautic-extended-field)
 
 ![](Assets/img/icon.png?raw=true)
 
