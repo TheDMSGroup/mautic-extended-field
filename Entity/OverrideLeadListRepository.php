@@ -12,10 +12,20 @@
 namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
 use Doctrine\DBAL\Query\QueryBuilder;
+use Doctrine\DBAL\Types\DateType;
+use Doctrine\DBAL\Types\FloatType;
+use Doctrine\DBAL\Types\IntegerType;
+use Doctrine\DBAL\Types\TimeType;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\PersistentCollection;
 use Mautic\CoreBundle\Doctrine\QueryFormatter\AbstractFormatter;
+use Mautic\CoreBundle\Doctrine\Type\UTCDateTimeType;
+use Mautic\CoreBundle\Helper\DateTimeHelper;
 use Mautic\CoreBundle\Helper\InputHelper;
-use Mautic\LeadBundle\Entity\LeadListRepository as LeadListRepository;
+use Mautic\LeadBundle\Entity\DoNotContact;
+use Mautic\LeadBundle\Entity\LeadList;
+use Mautic\LeadBundle\Entity\LeadListRepository;
 use Mautic\LeadBundle\Event\LeadListFilteringEvent;
 use Mautic\LeadBundle\Event\LeadListFiltersOperatorsEvent;
 use Mautic\LeadBundle\LeadEvents;
@@ -26,22 +36,24 @@ use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
  */
 class OverrideLeadListRepository extends LeadListRepository
 {
-    /**
-     * @var \Doctrine\DBAL\Schema\Column[]
-     */
+    /** @var \Doctrine\DBAL\Schema\Column[] */
     protected $extendedFieldTableSchema;
 
+    /** @var bool */
     protected $hasExtendedFieldFilter = false;
 
+    /** @var ExtendedFieldModel */
     protected $fieldModel;
 
     /**
-     * Initializes a new <tt>EntityRepository</tt>.
+     * OverrideLeadListRepository constructor.
+     * Initializes a new EntityRepository.
      *
-     * @param EntityManager         $em    the EntityManager to use
-     * @param Mapping\ClassMetadata $class the class descriptor
+     * @param EntityManager      $em
+     * @param ClassMetadata      $class
+     * @param ExtendedFieldModel $fieldModel
      */
-    public function __construct($em, ClassMetadata $class, ExtendedFieldModel $fieldModel)
+    public function __construct(EntityManager $em, ClassMetadata $class, ExtendedFieldModel $fieldModel)
     {
         parent::__construct($em, $class);
         $this->fieldModel = $fieldModel;
@@ -258,13 +270,12 @@ class OverrideLeadListRepository extends LeadListRepository
                         'l.id = ll.lead_id'
                     );
 
-//
-//                    // add joins for filters that contain extendedFields
-//                    $this->addExtendedFieldJoins(
-//                      $filters,
-//                      $extendedFieldList,
-//                      $q
-//                    );
+                    // add joins for filters that contain extendedFields
+                    // $this->addExtendedFieldJoins(
+                    //   $filters,
+                    //   $extendedFieldList,
+                    //   $q
+                    // );
 
                     $mainExpr = $q->expr()->andX();
                     if ($batchLimiters && !empty($batchLimiters['dateTime'])) {

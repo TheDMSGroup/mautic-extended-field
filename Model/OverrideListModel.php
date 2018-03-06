@@ -28,12 +28,7 @@ use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadListRepository as 
 class OverrideListModel extends ListModel
 {
     /**
-     * {@inheritdoc}
-     *
-     * @return \Mautic\LeadBundle\Entity\OverrideLeadListRepository
-     *
-     * @throws \Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException
-     * @throws \Symfony\Component\DependencyInjection\Exception\ServiceCircularReferenceException
+     * @return OverrideLeadListRepository
      */
     public function getRepository()
     {

@@ -13,21 +13,24 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Mautic\LeadBundle\Entity\LeadFieldRepository as LeadFieldRepository;
 use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel as ExtendedFieldModel;
 
 class OverrideLeadFieldRepository extends LeadFieldRepository
 {
+    /** @var ExtendedFieldModel */
     protected $fieldModel;
 
     /**
-     * Initializes a new <tt>EntityRepository</tt>.
+     * OverrideLeadFieldRepository constructor.
      *
-     * @param EntityManager         $em    the EntityManager to use
-     * @param Mapping\ClassMetadata $class the class descriptor
+     * @param EntityManager      $em
+     * @param ClassMetadata      $class
+     * @param ExtendedFieldModel $fieldModel
      */
-    public function __construct($em, ClassMetadata $class, ExtendedFieldModel $fieldModel)
+    public function __construct(EntityManager $em, ClassMetadata $class, ExtendedFieldModel $fieldModel)
     {
         parent::__construct($em, $class);
         $this->fieldModel = $fieldModel;

@@ -14,6 +14,7 @@
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Mautic\LeadBundle\Entity\Company;
 use Mautic\LeadBundle\Entity\CompanyChangeLog;
 use Mautic\LeadBundle\Entity\CompanyLead;
 use Mautic\LeadBundle\Entity\Lead;
@@ -33,8 +34,10 @@ class OverrideLeadModel extends LeadModel
 {
     use ExtendedFieldRepositoryTrait;
 
+    /** @var bool */
     public $companyWasUpdated = false;
 
+    /** @var bool */
     public $extendedFieldsAdded = false;
 
     /**
@@ -206,10 +209,10 @@ class OverrideLeadModel extends LeadModel
      * @param array      $data
      * @param bool|false $overwriteWithBlank
      * @param bool|true  $fetchSocialProfiles
-     * @param bool|false $bindWithForm        Send $data through the Lead form and only use valid data (should be used with
-     *                                        request data)
+     * @param bool|false $bindWithForm        Send $data through the Lead form and only use valid data (should be used
+     *                                        with request data)
      *
-     * @return array
+     * @return array|void
      */
     public function setFieldValues(
         Lead &$lead,
@@ -435,6 +438,8 @@ class OverrideLeadModel extends LeadModel
      *
      * @param Lead $lead
      * @param      $companies
+     *
+     * @throws \Doctrine\ORM\ORMException
      */
     public function modifyCompanies(Lead $lead, $companies)
     {
@@ -458,8 +463,8 @@ class OverrideLeadModel extends LeadModel
 
     /** Add lead to company
      *
-     * @param array|Company $companies
-     * @param array|Lead    $lead
+     * @param array      $companies
+     * @param array|Lead $lead
      *
      * @return bool
      *

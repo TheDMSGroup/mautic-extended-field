@@ -22,6 +22,7 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 
 class UpdateLeadActionExtension extends AbstractTypeExtension
 {
+    /** @var MauticFactory */
     private $factory;
 
     /**
@@ -70,6 +71,11 @@ class UpdateLeadActionExtension extends AbstractTypeExtension
         $this->getExtendedFormFields($builder, $options);
     }
 
+    /**
+     * @param FormBuilderInterface $builder
+     * @param array                $options
+     * @param string               $object
+     */
     private function getExtendedFormFields(FormBuilderInterface $builder, array $options, $object = 'lead')
     {
         $fieldValues = [];

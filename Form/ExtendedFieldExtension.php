@@ -35,10 +35,12 @@ class ExtendedFieldExtension extends AbstractTypeExtension
         return FieldType::class;
     }
 
-    /*
-     * Add a custom 'object' type to write to a corresponding table for that new custom value
+    /**
+     * Add a custom 'object' type to write to a corresponding table for that new custom value.
+     *
+     * @param FormBuilderInterface $builder
+     * @param array                $options
      */
-
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         // change default option to "extendedField" from "lead" when plugin is enabled and config set

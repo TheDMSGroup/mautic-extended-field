@@ -47,12 +47,14 @@ class ExtendedFieldModel extends FieldModel
     }
 
     /**
-     * @param   $entity
-     * @param   $unlock
+     * @param      $entity
+     * @param bool $unlock
+     *
+     * @return mixed|void
      *
      * @throws DBALException
-     *
-     * @return mixed
+     * @throws DriverException
+     * @throws \Mautic\CoreBundle\Exception\SchemaException
      */
     public function saveEntity($entity, $unlock = true)
     {
@@ -196,6 +198,11 @@ class ExtendedFieldModel extends FieldModel
         $this->reorderFieldsByEntity($entity);
     }
 
+    /**
+     * @param $entity
+     *
+     * @return bool
+     */
     public function isExtendedField($entity)
     {
         $pos = strpos($entity->getObject(), 'extendedField');

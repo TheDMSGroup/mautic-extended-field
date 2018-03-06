@@ -31,12 +31,12 @@ abstract class ExtendedFieldCommon extends CommonEntity implements CustomFieldEn
     const FIELD_ALIAS = 'extendedField';
 
     /**
-     * @var int
+     * @var \Mautic\LeadBundle\Entity\Lead
      */
     private $lead;
 
     /**
-     * @var string
+     * @var \Mautic\LeadBundle\Entity\LeadField
      */
     private $leadField;
 
@@ -145,7 +145,7 @@ abstract class ExtendedFieldCommon extends CommonEntity implements CustomFieldEn
     }
 
     /**
-     * @return Value
+     * @return string
      */
     public function getValue()
     {
@@ -153,9 +153,9 @@ abstract class ExtendedFieldCommon extends CommonEntity implements CustomFieldEn
     }
 
     /**
-     * @param Value
+     * @param $value
      *
-     * @return ExtendedFieldCommon
+     * @return $this
      */
     public function setValue($value)
     {

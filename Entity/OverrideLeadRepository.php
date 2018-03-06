@@ -13,25 +13,26 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
+use Doctrine\DBAL\Query\Expression\CompositeExpression;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\Query;
+use Doctrine\ORM\QueryBuilder;
 use Mautic\CoreBundle\Helper\SearchStringHelper;
 use Mautic\LeadBundle\Entity\CustomFieldRepositoryInterface;
 use Mautic\LeadBundle\Entity\Lead;
-use Mautic\LeadBundle\Entity\LeadRepository as LeadRepository;
+use Mautic\LeadBundle\Entity\LeadRepository;
 use Mautic\LeadBundle\Model\FieldModel;
 
 /**
- * OverrideLeadRepository.
+ * Class OverrideLeadRepository.
  */
 class OverrideLeadRepository extends LeadRepository implements CustomFieldRepositoryInterface
 {
-    //  use CustomFieldRepositoryTrait;
+    // use CustomFieldRepositoryTrait;
     use ExtendedFieldRepositoryTrait;
 
-    /**
-     * @var FieldModel
-     */
+    /** @var FieldModel */
     public $fieldModel;
 
     /**
@@ -41,11 +42,16 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
      */
     protected $extendedFieldFilters = [];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     private $availableSocialFields = [];
 
+    /**
+     * OverrideLeadRepository constructor.
+     *
+     * @param EntityManager $em
+     * @param ClassMetadata $class
+     * @param FieldModel    $fieldmodel
+     */
     public function __construct(EntityManager $em, ClassMetadata $class, FieldModel $fieldmodel)
     {
         parent::__construct($em, $class);
@@ -55,6 +61,7 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     /**
      * @param \Doctrine\ORM\QueryBuilder $q
      * @param array                      $args
+     * @param array                      $extendedFieldFilters
      */
     protected function ExtendedBuildWhereClause($q, array $args, array $extendedFieldFilters)
     {
@@ -185,10 +192,10 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     }
 
     /**
-     * @param QueryBuilder|\Doctrine\DBAL\Query\QueryBuilder $query
-     * @param array                                          $clauses [['expr' => 'expression', 'col' => 'DB column',
-     *                                                                'val' => 'value to search for']]
-     * @param                                                $expr
+     * @param \Doctrine\DBAL\Query\QueryBuilder $query
+     * @param array                             $clauses [['expr' => 'expression', 'col' => 'DB column',
+     *                                                   'val' => 'value to search for']]
+     * @param                                   $expr
      */
     protected function buildExtendedWhereClauseFromArray($query, array $clauses, $expr = null)
     {
@@ -274,7 +281,7 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
                                 $whereClause = $query->expr()->{$clause['expr']}($column, ':'.$param);
                                 $query->setParameter($param, $clause['val']);
                             }
-                            // no break
+                        // no break
                         default:
                             if (method_exists($query->expr(), $clause['expr'])) {
                                 if (in_array($clause['expr'], $columnValue)) {
@@ -300,8 +307,9 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     }
 
     /**
-     * @param \Doctrine\ORM\QueryBuilder|\Doctrine\DBAL\Query\QueryBuilder $q
-     * @param                                                              $filter
+     * @param \Doctrine\ORM\QueryBuilder $qb
+     * @param object                     $filters
+     * @param                            $extendedFieldFilters
      *
      * @return array
      */
@@ -332,48 +340,6 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
         }
 
         return [$expressions, $parameters];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @param int $id
-     *
-     * @return mixed|null
-     *
-     * Gets the lead object with all core and custom fields
-     */
-    public function getEntity($id = 0)
-    {
-        try {
-            $q = $this->createQueryBuilder($this->getTableAlias());
-            if (is_array($id)) {
-                $this->buildSelectClause($q, $id);
-                $contactId = (int) $id['id'];
-            } else {
-                $q->select('l, u, i')
-                    ->leftJoin('l.ipAddresses', 'i')
-                    ->leftJoin('l.owner', 'u');
-                $contactId = $id;
-            }
-            $q->andWhere($this->getTableAlias().'.id = '.(int) $contactId);
-            $entity = $q->getQuery()->getSingleResult();
-        } catch (\Exception $e) {
-            $entity = null;
-        }
-
-        if (null != $entity) {
-            if (!empty($this->triggerModel)) {
-                $entity->setColor($this->triggerModel->getColorForLeadPoints($entity->getPoints()));
-            }
-
-            $fieldValues = $this->getExtendedFieldValues($id, true, 'lead');
-            $entity->setFields($fieldValues);
-
-            $entity->setAvailableSocialFields($this->availableSocialFields);
-        }
-
-        return $entity;
     }
 
     /**
@@ -421,7 +387,6 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     /**
      * @param \Doctrine\ORM\QueryBuilder $q
      * @param object                     $filter
-     * @param array                      $columns
      *
      * @return array
      */
@@ -478,8 +443,8 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     }
 
     /**
-     * @param \Doctrine\ORM\QueryBuilder|\Doctrine\DBAL\Query\QueryBuilder $q
-     * @param                                                              $filter
+     * @param \Doctrine\ORM\QueryBuilder $q
+     * @param                            $filter
      *
      * @return array
      */
@@ -499,6 +464,48 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
             $expr,
             [],
         ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @param int $id
+     *
+     * @return mixed|null
+     *
+     * Gets the lead object with all core and custom fields
+     */
+    public function getEntity($id = 0)
+    {
+        try {
+            $q = $this->createQueryBuilder($this->getTableAlias());
+            if (is_array($id)) {
+                $this->buildSelectClause($q, $id);
+                $contactId = (int) $id['id'];
+            } else {
+                $q->select('l, u, i')
+                    ->leftJoin('l.ipAddresses', 'i')
+                    ->leftJoin('l.owner', 'u');
+                $contactId = $id;
+            }
+            $q->andWhere($this->getTableAlias().'.id = '.(int) $contactId);
+            $entity = $q->getQuery()->getSingleResult();
+        } catch (\Exception $e) {
+            $entity = null;
+        }
+
+        if (null != $entity) {
+            if (!empty($this->triggerModel)) {
+                $entity->setColor($this->triggerModel->getColorForLeadPoints($entity->getPoints()));
+            }
+
+            $fieldValues = $this->getExtendedFieldValues($id, true, 'lead');
+            $entity->setFields($fieldValues);
+
+            $entity->setAvailableSocialFields($this->availableSocialFields);
+        }
+
+        return $entity;
     }
 
     /**

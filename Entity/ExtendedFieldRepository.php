@@ -41,8 +41,8 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
                 $extendedFieldId = $id;
             }
             $idArray   = explode('@', $extendedFieldId);
-            $leadId    = isset($idArray[0]) && !isNUll($idArray[0]) ? $idArray[0] : null;
-            $leadField = isset($idArray[1]) && !isNUll($idArray[1]) ? $idArray[1] : null;
+            $leadId    = isset($idArray[0]) && !is_null($idArray[0]) ? $idArray[0] : null;
+            $leadField = isset($idArray[1]) && !is_null($idArray[1]) ? $idArray[1] : null;
             $q->andWhere($this->getTableAlias().'.lead = '.$leadId);
             $q->andWhere($this->getTableAlias().'.leadField = '.$leadField);
             $entity = $q->getQuery()->getSingleResult();
@@ -50,7 +50,7 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
             $entity = null;
         }
 
-        if (null != $entity) {
+        if (null != $entity && isset($extendedFieldId)) {
             $fieldValues = $this->getFieldValues($extendedFieldId, true, 'extendedField');
             $entity->setFields($fieldValues);
         }
@@ -71,15 +71,16 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
      *
      * @param array $args
      *
-     * @return array
+     * @return \Doctrine\ORM\Tools\Pagination\Paginator|void
      */
     public function getEntities(array $args = [])
     {
-        return $this->getLeadsWithCustomFields('lead', $args);
+        // @todo - Create this method?
+        // return $this->getLeadsWithCustomFields('lead', $args);
     }
 
     /**
-     * @return \Doctrine\DBAL\Query\QueryBuilder|void
+     * @return $this|\Doctrine\DBAL\Query\QueryBuilder
      */
     public function getEntitiesDbalQueryBuilder()
     {
@@ -98,7 +99,7 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
      */
     public function getEntitiesOrmQueryBuilder($order)
     {
-        // jusat nothing
+        // just nothing
     }
 
     /**
@@ -106,6 +107,6 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
      */
     public function getFieldGroups()
     {
-        // TODO: Implement getFieldGroups() method.
+        // @todo - Implement getFieldGroups() method.
     }
 }

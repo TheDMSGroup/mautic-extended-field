@@ -6,23 +6,20 @@ use Doctrine\DBAL\Query\QueryBuilder;
 use Mautic\LeadBundle\Entity\CustomFieldEntityTrait;
 use Mautic\LeadBundle\Helper\CustomFieldHelper;
 
+/**
+ * Trait ExtendedFieldRepositoryTrait.
+ */
 trait ExtendedFieldRepositoryTrait
 {
     use CustomFieldEntityTrait;
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $customExtendedFieldList = [];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $customExtendedFieldSecureList = [];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $customLeadFieldList = [];
 
     /**
@@ -40,7 +37,7 @@ trait ExtendedFieldRepositoryTrait
 
         if (empty($thisList)) {
             //Get the list of custom fields
-            if ($this->em) {
+            if (isset($this->em)) {
                 $fq = $this->em->getConnection()->createQueryBuilder();
             } else {
                 $fq = $this->getEntityManager()
@@ -96,7 +93,6 @@ trait ExtendedFieldRepositoryTrait
     /**
      * @param        $id      (from leads table) identifies the lead
      * @param bool   $byGroup
-     * @param string $object  = "extendedField" or "extendedFieldSecure"
      * @param string $object  = "extendedField" or "extendedFieldSecure"
      *
      * @return array
@@ -565,7 +561,7 @@ trait ExtendedFieldRepositoryTrait
             return [];
         }
         // get a query builder for extendedField values to get.
-        if ($this->em) {
+        if (isset($this->em)) {
             $eq = $this->em->getConnection();
         } else {
             $eq = $this->getEntityManager()->getConnection();

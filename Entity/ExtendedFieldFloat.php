@@ -20,12 +20,12 @@ use Doctrine\ORM\Mapping as ORM;
 class ExtendedFieldFloat extends ExtendedFieldCommon
 {
     /**
-     * @var Lead
+     * @var \Mautic\LeadBundle\Entity\Lead
      */
     private $lead;
 
     /**
-     * @var LeadField
+     * @var \Mautic\LeadBundle\Entity\LeadField
      */
     private $leadField;
 

@@ -16,15 +16,18 @@ use MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler\Override
 use MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler\OverrideListModelPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
+/**
+ * Class MauticExtendedFieldBundle.
+ */
 class MauticExtendedFieldBundle extends PluginBundleBase
 {
-    /*
+    /**
      * Implements Compiler Passes to Override the Lead Bundle FieldModel
      * https://symfony.com/doc/2.8/service_container/compiler_passes.html
+     * allows to add a custom extendedField object value.
      *
-     * allows to add a custom extendedField object value
+     * @param ContainerBuilder $container
      */
-
     public function build(ContainerBuilder $container)
     {
         parent::build($container);

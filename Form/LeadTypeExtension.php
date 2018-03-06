@@ -54,10 +54,12 @@ class LeadTypeExtension extends AbstractTypeExtension
         return LeadType::class;
     }
 
-    /*
-     * Add a custom 'object' type to write to a corresponding table for that new custom value
+    /**
+     * Add a custom 'object' type to write to a corresponding table for that new custom value.
+     *
+     * @param FormBuilderInterface $builder
+     * @param array                $options
      */
-
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder->addEventSubscriber(new FormExitSubscriber('lead.lead', $options));
