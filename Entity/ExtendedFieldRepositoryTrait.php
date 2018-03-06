@@ -114,7 +114,7 @@ trait ExtendedFieldRepositoryTrait
         foreach ($customExtendedFieldList[0] as $key => $customExtendedField) {
             if (false !== strpos($customExtendedField['object'], 'extendedField')) {
                 // 'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref');
-                $fieldModel = $this->fieldModel;
+                $fieldModel = $this->leadFieldModel;
                 $dataType   = $fieldModel->getSchemaDefinition(
                     $customExtendedField['alias'],
                     $customExtendedField['type']
@@ -279,7 +279,7 @@ trait ExtendedFieldRepositoryTrait
 
         if (!empty($extendedFields)) {
             foreach ($extendedFields as $extendedField => $values) {
-                $fieldModel    = $this->fieldModel;
+                $fieldModel    = $this->leadFieldModel;
                 $dataType      = $fieldModel->getSchemaDefinition($values['name'], $values['type']);
                 $dataType      = $dataType['type'];
                 $column        = [
@@ -571,7 +571,7 @@ trait ExtendedFieldRepositoryTrait
         $ids_str        = implode(',', $lead_ids);
         $where_in       = !empty($lead_ids) ? "Where lead_id IN ($ids_str)" : '';
         foreach ($extendedFieldList as $k => $details) {
-            $fieldModel = $this->fieldModel;
+            $fieldModel = $this->leadFieldModel;
             $dataType   = $fieldModel->getSchemaDefinition($details['alias'], $details['type']);
             $dataType   = $dataType['type'];
             // get extendedField Filters first

@@ -33,7 +33,7 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     use ExtendedFieldRepositoryTrait;
 
     /** @var FieldModel */
-    public $fieldModel;
+    public $leadFieldModel;
 
     /**
      * Stores a boolean if args has extended field filters.
@@ -50,12 +50,12 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
      *
      * @param EntityManager $em
      * @param ClassMetadata $class
-     * @param FieldModel    $fieldmodel
+     * @param FieldModel    $fieldModel
      */
-    public function __construct(EntityManager $em, ClassMetadata $class, FieldModel $fieldmodel)
+    public function __construct(EntityManager $em, ClassMetadata $class, FieldModel $fieldModel)
     {
         parent::__construct($em, $class);
-        $this->fieldModel = $fieldmodel;
+        $this->leadFieldModel = $fieldModel;
     }
 
     /**
@@ -166,8 +166,8 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
 
         // Add joins for extended fields
         foreach ($this->extendedFieldFilters as $extendedFilter) {
-            $fieldModel       = $this->fieldModel;
-            $dataType         = $fieldModel->getSchemaDefinition($extendedFilter['alias'], $extendedFilter['type']);
+            $leadFieldModel       = $this->leadFieldModel;
+            $dataType         = $leadFieldModel->getSchemaDefinition($extendedFilter['alias'], $extendedFilter['type']);
             $dataType         = $dataType['type'];
             $secure           = false !== strpos($extendedFilter['object'], 'Secure') ? '_secure' : '';
             $tableName        = 'lead_fields_leads_'.$dataType.$secure.'_xref';
@@ -397,8 +397,8 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
         $string         = $filter->string;
         $extendedFilter = $this->extendedFieldFilters[$filter->command];
 
-        $fieldModel = $this->fieldModel;
-        $dataType   = $fieldModel->getSchemaDefinition($extendedFilter['alias'], $extendedFilter['type']);
+        $leadFieldModel = $this->leadFieldModel;
+        $dataType   = $leadFieldModel->getSchemaDefinition($extendedFilter['alias'], $extendedFilter['type']);
         $dataType   = $dataType['type'];
         $secure     = false !== strpos($extendedFilter['object'], 'Secure') ? '_secure' : '';
         $tableAlias = $dataType.$secure.$extendedFilter['id'];

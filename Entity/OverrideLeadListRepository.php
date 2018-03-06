@@ -446,7 +446,7 @@ class OverrideLeadListRepository extends LeadListRepository
         $object = 'extendedField';
 
         $q = $this->getEntityManager()->createQueryBuilder()
-            ->from('MauticLeadBundle:Leadfield', 'l');
+            ->from('MauticLeadBundle:LeadField', 'l');
 
         if (!$secure) {
             $q->select('partial l.{id, label, alias, object, type}')
