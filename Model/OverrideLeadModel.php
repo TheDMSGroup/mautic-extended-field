@@ -459,7 +459,6 @@ class OverrideLeadModel extends LeadModel
     }
 
     /** Add lead to company
-     *
      * @param array      $companies
      * @param array|Lead $lead
      *
