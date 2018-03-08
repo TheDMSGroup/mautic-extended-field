@@ -23,7 +23,6 @@ use Mautic\LeadBundle\Event\LeadChangeCompanyEvent;
 use Mautic\LeadBundle\Helper\IdentifyCompanyHelper;
 use Mautic\LeadBundle\LeadEvents;
 use Mautic\LeadBundle\Model\LeadModel;
-use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldRepositoryTrait;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
 
 /**
@@ -32,8 +31,6 @@ use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
  */
 class OverrideLeadModel extends LeadModel
 {
-    use ExtendedFieldRepositoryTrait;
-
     /** @var bool */
     public $companyWasUpdated = false;
 
@@ -462,7 +459,6 @@ class OverrideLeadModel extends LeadModel
     }
 
     /** Add lead to company
-     *
      * @param array      $companies
      * @param array|Lead $lead
      *

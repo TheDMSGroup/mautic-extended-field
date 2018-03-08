@@ -37,13 +37,9 @@ trait ExtendedFieldRepositoryTrait
 
         if (empty($thisList)) {
             //Get the list of custom fields
-            if (isset($this->em)) {
-                $fq = $this->em->getConnection()->createQueryBuilder();
-            } else {
-                $fq = $this->getEntityManager()
-                    ->getConnection()
-                    ->createQueryBuilder();
-            }
+            $fq = $this->getEntityManager()
+                ->getConnection()
+                ->createQueryBuilder();
 
             // if object==lead we really want everything but company
             if ('lead' == $object) {
@@ -337,6 +333,8 @@ trait ExtendedFieldRepositoryTrait
      * @param null $resultsCallback
      *
      * @return array
+     *
+     * @throws \Doctrine\DBAL\DBALException
      */
     public function getEntitiesWithCustomFields(
         $object,
@@ -384,7 +382,7 @@ trait ExtendedFieldRepositoryTrait
             $dq->resetQueryPart('groupBy');
         }
 
-        $query = $dq->getSQL(); // debug purposes only
+        // $query = $dq->getSQL(); // debug purposes only
 
         //get a total count
         $result = $dq->execute()->fetchAll();
@@ -404,7 +402,7 @@ trait ExtendedFieldRepositoryTrait
             $dq->resetQueryPart('select');
             $this->buildSelectClause($dq, $args);
 
-            $query = $dq->getSQL(); // debug purposes only
+            // $query = $dq->getSQL(); // debug purposes only
 
             $results = $dq->execute()->fetchAll();
 
@@ -550,8 +548,9 @@ trait ExtendedFieldRepositoryTrait
 
     /**
      * @param array $extendedFieldList
+     * @param array $lead_ids
      *
-     * @return mixed
+     * @return array
      */
     public function getExtendedFieldValuesMultiple(
         $extendedFieldList = [],
@@ -561,11 +560,7 @@ trait ExtendedFieldRepositoryTrait
             return [];
         }
         // get a query builder for extendedField values to get.
-        if (isset($this->em)) {
-            $eq = $this->em->getConnection();
-        } else {
-            $eq = $this->getEntityManager()->getConnection();
-        }
+        $eq             = $this->getEntityManager()->getConnection();
         $extendedTables = [];
         $ex_expr        = '';
         $ids_str        = implode(',', $lead_ids);
