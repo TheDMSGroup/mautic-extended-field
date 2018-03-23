@@ -6,7 +6,9 @@ Allows near-infinite custom fields.
 
 This plugin was created to help overcome an anticipated challenge supporting Custom Fields. 
 A full problem definition can be found at https://github.com/mautic/mautic/issues/4139. 
-This plugin is a compromise between a strict EAV approach and current custom field support.
+This plugin is a compromise between a strict EAV approach and current custom field support, and allows an admin to disable the core "Contact" fields in favor of Extended fields when needed.
+
+![](Assets/img/screenshot.png?raw=true)
 
 ## Plugin Overview
 
