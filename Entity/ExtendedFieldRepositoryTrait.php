@@ -252,6 +252,7 @@ trait ExtendedFieldRepositoryTrait
             }
         }
 
+        $changes = [];
         if (method_exists($entity, 'getChanges')) {
             $changes = $entity->getChanges();
 
@@ -287,7 +288,8 @@ trait ExtendedFieldRepositoryTrait
 
                 // insert (no pre-existing value per lead) or update
 
-                if (isset($changes['fields'])
+                if (
+                    isset($changes['fields'])
                     && !empty($changes['fields'][$values['name']][0])
                     && empty($changes['fields'][$values['name']][1])) {
                     // need to delete the row from db table because new value is empty
@@ -301,8 +303,11 @@ trait ExtendedFieldRepositoryTrait
                         $column
                     );
                 } else {
-                    if (isset($changes['fields'])
-                        && $changes['fields'][$values['name']][0] == null
+                    if (
+                        isset($changes['fields'])
+                        && isset($changes['fields'][$values['name']])
+                        && isset($changes['fields'][$values['name']][0])
+                        && $changes['fields'][$values['name']][0] === null
                         && !empty($changes['fields'][$values['name']][1])) {
                         // need to do an insert, no previous value for this lead id
                         $column['lead_id'] = $entity->getId();
