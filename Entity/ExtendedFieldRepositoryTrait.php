@@ -252,6 +252,7 @@ trait ExtendedFieldRepositoryTrait
             }
         }
 
+        $changes = [];
         if (method_exists($entity, 'getChanges')) {
             $changes = $entity->getChanges();
 
@@ -287,7 +288,8 @@ trait ExtendedFieldRepositoryTrait
 
                 // insert (no pre-existing value per lead) or update
 
-                if (isset($changes['fields'])
+                if (
+                    isset($changes['fields'])
                     && !empty($changes['fields'][$values['name']][0])
                     && empty($changes['fields'][$values['name']][1])) {
                     // need to delete the row from db table because new value is empty
@@ -301,8 +303,11 @@ trait ExtendedFieldRepositoryTrait
                         $column
                     );
                 } else {
-                    if (isset($changes['fields'])
-                        && $changes['fields'][$values['name']][0] == null
+                    if (
+                        isset($changes['fields'])
+                        && isset($changes['fields'][$values['name']])
+                        && isset($changes['fields'][$values['name']][0])
+                        && $changes['fields'][$values['name']][0] === null
                         && !empty($changes['fields'][$values['name']][1])) {
                         // need to do an insert, no previous value for this lead id
                         $column['lead_id'] = $entity->getId();
@@ -511,14 +516,21 @@ trait ExtendedFieldRepositoryTrait
             foreach (array_keys($extendedFieldList) as $extendedField) {
                 // @todo - this strpos checking will need to be refactored to use regex and check word boundries.
                 if (
-                    (is_string($args['filter']['string']) && false !== strpos(
-                            $args['filter']['string'],
-                            $extendedField
-                        ))
-                    || (is_string($args['filter']['force']) && false !== strpos(
-                            $args['filter']['force'],
-                            $extendedField
-                        ))
+                    isset($args['filter']['string'])
+                    && (
+                        (
+                            is_string($args['filter']['string']) && false !== strpos(
+                                $args['filter']['string'],
+                                $extendedField
+                            )
+                        )
+                        || (
+                            is_string($args['filter']['force']) && false !== strpos(
+                                $args['filter']['force'],
+                                $extendedField
+                            )
+                        )
+                    )
                 ) {
                     // field is in the filter array somewhere
                     $result[$extendedField] = $extendedFieldList[$extendedField];
@@ -526,7 +538,10 @@ trait ExtendedFieldRepositoryTrait
                 }
                 $extendedFieldLength = strlen($extendedField);
                 foreach (['string', 'force'] as $type) {
-                    if (is_array($args['filter'][$type])) {
+                    if (
+                        isset($args['filter'][$type])
+                        && is_array($args['filter'][$type])
+                    ) {
                         foreach ($args['filter'][$type] as $filter) {
                             if (isset($filter['column'])) {
                                 if (substr(
