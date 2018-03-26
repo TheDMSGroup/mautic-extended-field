@@ -516,14 +516,21 @@ trait ExtendedFieldRepositoryTrait
             foreach (array_keys($extendedFieldList) as $extendedField) {
                 // @todo - this strpos checking will need to be refactored to use regex and check word boundries.
                 if (
-                    (is_string($args['filter']['string']) && false !== strpos(
-                            $args['filter']['string'],
-                            $extendedField
-                        ))
-                    || (is_string($args['filter']['force']) && false !== strpos(
-                            $args['filter']['force'],
-                            $extendedField
-                        ))
+                    isset($args['filter']['string'])
+                    && (
+                        (
+                            is_string($args['filter']['string']) && false !== strpos(
+                                $args['filter']['string'],
+                                $extendedField
+                            )
+                        )
+                        || (
+                            is_string($args['filter']['force']) && false !== strpos(
+                                $args['filter']['force'],
+                                $extendedField
+                            )
+                        )
+                    )
                 ) {
                     // field is in the filter array somewhere
                     $result[$extendedField] = $extendedFieldList[$extendedField];
@@ -531,7 +538,10 @@ trait ExtendedFieldRepositoryTrait
                 }
                 $extendedFieldLength = strlen($extendedField);
                 foreach (['string', 'force'] as $type) {
-                    if (is_array($args['filter'][$type])) {
+                    if (
+                        isset($args['filter'][$type])
+                        && is_array($args['filter'][$type])
+                    ) {
                         foreach ($args['filter'][$type] as $filter) {
                             if (isset($filter['column'])) {
                                 if (substr(
