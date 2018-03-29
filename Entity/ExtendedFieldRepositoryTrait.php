@@ -252,11 +252,6 @@ trait ExtendedFieldRepositoryTrait
 
             // remove the fields that are part of changes as they were already saved via a setter
             $fields = array_diff_key($fields, $changes);
-            // Overriden to check a deeper recursion in changes since fields may already have been saved that
-            // are not company fields, IE - extended fields and extended fields secure
-            if (isset($changes['fields'])) {
-                $fields = array_diff_key($fields, $changes['fields']);
-            }
         }
 
         if (!empty($fields)) {
@@ -301,7 +296,7 @@ trait ExtendedFieldRepositoryTrait
                         isset($changes['fields'])
                         && isset($changes['fields'][$values['name']])
                         && isset($changes['fields'][$values['name']][0])
-                        && $changes['fields'][$values['name']][0] === null
+                        && $changes['fields'][$values['name']][0] == null
                         && !empty($changes['fields'][$values['name']][1])) {
                         // need to do an insert, no previous value for this lead id
                         $column['lead_id'] = $entity->getId();
