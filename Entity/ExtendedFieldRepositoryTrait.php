@@ -223,27 +223,8 @@ trait ExtendedFieldRepositoryTrait
             $this->getEntityManager()->flush($entity);
         }
 
-        // Includes prefix
-        $fields = $entity->getUpdatedFields();
-        $table  = $this->getEntityManager()->getClassMetadata(
-            $this->getClassName()
-        )->getTableName();
-
-        // Get Extended Fields to separate from standard Update statement.
-        $extendedFields = [];
-        $fieldList      = $this->getCustomFieldList('lead');
-        foreach ($fields as $fieldname => $formData) {
-            if ($fieldList[0][$fieldname]['object'] == 'extendedField' || $fieldList[0][$fieldname]['object'] == 'extendedFieldSecure') {
-                $extendedFields[$fieldname]['value']  = $formData;
-                $extendedFields[$fieldname]['type']   = $fieldList[0][$fieldname]['type'];
-                $extendedFields[$fieldname]['id']     = $fieldList[0][$fieldname]['id'];
-                $extendedFields[$fieldname]['name']   = $fieldname;
-                $extendedFields[$fieldname]['secure'] = $fieldList[0][$fieldname]['object'] == 'extendedFieldSecure' ? true : false;
-                unset($fields[$fieldname]);
-                break;
-            }
-        }
-
+        // Get updated fields, and include changes so that we have everything.
+        $fields  = $entity->getUpdatedFields();
         $changes = [];
         if (method_exists($entity, 'getChanges')) {
             $changes = $entity->getChanges();
@@ -252,7 +233,30 @@ trait ExtendedFieldRepositoryTrait
             $fields = array_diff_key($fields, $changes);
         }
 
+        // Get Extended Fields to separate from standard Update statement.
+        $extendedFields = [];
+        $fieldList      = $this->getCustomFieldList('lead');
+        foreach ($fields as $fieldname => $value) {
+            if (
+                $fieldList[0][$fieldname]['object'] == 'extendedField'
+                || $fieldList[0][$fieldname]['object'] == 'extendedFieldSecure'
+            ) {
+                $extendedFields[$fieldname]['value']  = $value;
+                $extendedFields[$fieldname]['type']   = $fieldList[0][$fieldname]['type'];
+                $extendedFields[$fieldname]['id']     = $fieldList[0][$fieldname]['id'];
+                $extendedFields[$fieldname]['name']   = $fieldname;
+                $extendedFields[$fieldname]['secure'] = $fieldList[0][$fieldname]['object'] == 'extendedFieldSecure' ? true : false;
+                unset($fields[$fieldname]);
+                // I'm leaving this in here, commented out, as a life lesson :)
+                // break;
+            }
+        }
+
+        // Save standard/core fields.
         if (!empty($fields)) {
+            $table = $this->getEntityManager()->getClassMetadata(
+                $this->getClassName()
+            )->getTableName();
             $this->prepareDbalFieldsForSave($fields);
             $this->getEntityManager()->getConnection()->update(
                 $table,
@@ -273,36 +277,36 @@ trait ExtendedFieldRepositoryTrait
                 $extendedTable = 'lead_fields_leads_'.$dataType.($values['secure'] ? '_secure' : '').'_xref';
                 $this->prepareDbalFieldsForSave($column);
 
-                // insert (no pre-existing value per lead) or update
-
                 if (
                     isset($changes['fields'])
-                    && !empty($changes['fields'][$values['name']][0])
-                    && empty($changes['fields'][$values['name']][1])) {
-                    // need to delete the row from db table because new value is empty
-                    $lead_id = $entity->getId();
-                    $column  = [
-                        'lead_field_id' => $values['id'],
-                        'lead_id'       => $lead_id,
-                    ];
-                    $this->getEntityManager()->getConnection()->delete(
+                    && isset($changes['fields'][$values['name']])
+                    && is_null($changes['fields'][$values['name']][0])
+                    && !empty($changes['fields'][$values['name']][1])
+                ) {
+                    // Need to do an insert, no previous value for this lead id
+                    $column['lead_id'] = $entity->getId();
+                    $this->getEntityManager()->getConnection()->insert(
                         $extendedTable,
                         $column
                     );
                 } else {
                     if (
                         isset($changes['fields'])
-                        && isset($changes['fields'][$values['name']])
-                        && isset($changes['fields'][$values['name']][0])
-                        && $changes['fields'][$values['name']][0] == null
-                        && !empty($changes['fields'][$values['name']][1])) {
-                        // need to do an insert, no previous value for this lead id
-                        $column['lead_id'] = $entity->getId();
-                        $this->getEntityManager()->getConnection()->insert(
+                        && !empty($changes['fields'][$values['name']][0])
+                        && empty($changes['fields'][$values['name']][1])
+                    ) {
+                        // Need to delete the row from db table because new value is empty
+                        $lead_id = $entity->getId();
+                        $column  = [
+                            'lead_field_id' => $values['id'],
+                            'lead_id'       => $lead_id,
+                        ];
+                        $this->getEntityManager()->getConnection()->delete(
                             $extendedTable,
                             $column
                         );
                     } else {
+                        // Update the lead.
                         $this->getEntityManager()->getConnection()->update(
                             $extendedTable,
                             $column,
@@ -325,8 +329,6 @@ trait ExtendedFieldRepositoryTrait
      * @param null $resultsCallback
      *
      * @return array
-     *
-     * @throws \Doctrine\DBAL\DBALException
      */
     public function getEntitiesWithCustomFields(
         $object,
