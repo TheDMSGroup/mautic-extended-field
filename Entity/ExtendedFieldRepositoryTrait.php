@@ -231,10 +231,9 @@ trait ExtendedFieldRepositoryTrait
 
         // Get Extended Fields to separate from standard Update statement.
         $extendedFields = [];
-        $fieldList = $this->getCustomFieldList('lead');
+        $fieldList      = $this->getCustomFieldList('lead');
         foreach ($fields as $fieldname => $formData) {
-            if ($fieldList[0][$fieldname]['object'] == 'extendedField' || $fieldList[0][$fieldname]['object'] == 'extendedFieldSecure' )
-            {
+            if ($fieldList[0][$fieldname]['object'] == 'extendedField' || $fieldList[0][$fieldname]['object'] == 'extendedFieldSecure') {
                 $extendedFields[$fieldname]['value']  = $formData;
                 $extendedFields[$fieldname]['type']   = $fieldList[0][$fieldname]['type'];
                 $extendedFields[$fieldname]['id']     = $fieldList[0][$fieldname]['id'];
@@ -243,7 +242,6 @@ trait ExtendedFieldRepositoryTrait
                 unset($fields[$fieldname]);
                 break;
             }
-
         }
 
         $changes = [];
