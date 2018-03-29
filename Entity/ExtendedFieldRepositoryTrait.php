@@ -231,25 +231,19 @@ trait ExtendedFieldRepositoryTrait
 
         // Get Extended Fields to separate from standard Update statement.
         $extendedFields = [];
-        $entityConfig   = $entity->getFields();
+        $fieldList = $this->getCustomFieldList('lead');
         foreach ($fields as $fieldname => $formData) {
-            foreach ($entityConfig as $group) {
-                if (isset($group[$fieldname]) && isset($group[$fieldname]['object']) && false !== strpos(
-                        $group[$fieldname]['object'],
-                        'extendedField'
-                    )) {
-                    $extendedFields[$fieldname]['value']  = $formData;
-                    $extendedFields[$fieldname]['type']   = $group[$fieldname]['type'];
-                    $extendedFields[$fieldname]['id']     = $group[$fieldname]['id'];
-                    $extendedFields[$fieldname]['name']   = $fieldname;
-                    $extendedFields[$fieldname]['secure'] = false !== strpos(
-                        $group[$fieldname]['object'],
-                        'Secure'
-                    ) ? true : false;
-                    unset($fields[$fieldname]);
-                    break;
-                }
+            if ($fieldList[0][$fieldname]['object'] == 'extendedField' || $fieldList[0][$fieldname]['object'] == 'extendedFieldSecure' )
+            {
+                $extendedFields[$fieldname]['value']  = $formData;
+                $extendedFields[$fieldname]['type']   = $fieldList[0][$fieldname]['type'];
+                $extendedFields[$fieldname]['id']     = $fieldList[0][$fieldname]['id'];
+                $extendedFields[$fieldname]['name']   = $fieldname;
+                $extendedFields[$fieldname]['secure'] = $fieldList[0][$fieldname]['object'] == 'extendedFieldSecure' ? true : false;
+                unset($fields[$fieldname]);
+                break;
             }
+
         }
 
         $changes = [];
