@@ -96,7 +96,7 @@ trait ExtendedFieldRepositoryTrait
     public function getExtendedFieldValues(
         $id,
         $byGroup = true,
-        $object = 'leads'
+        $object = 'lead'
     ) {
         //use DBAL to get entity fields
 
