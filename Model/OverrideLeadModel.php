@@ -459,6 +459,7 @@ class OverrideLeadModel extends LeadModel
     }
 
     /** Add lead to company
+     *
      * @param array      $companies
      * @param array|Lead $lead
      *
@@ -640,5 +641,26 @@ class OverrideLeadModel extends LeadModel
         $this->em->clear(CompanyLead::class);
 
         return ['oldPrimary' => $oldPrimaryCompany, 'newPrimary' => $companyId];
+    }
+
+    /**
+     * Gets the details of a lead if not already set.
+     *
+     * @param $lead
+     *
+     * @return mixed
+     */
+    public function getLeadDetails($lead)
+    {
+        if ($lead instanceof Lead) {
+            $fields = $lead->getFields();
+            if (!empty($fields)) {
+                return $fields;
+            }
+        }
+
+        $leadId = ($lead instanceof Lead) ? $lead->getId() : (int) $lead;
+
+        return $this->getRepository()->getExtendedFieldValues($leadId);
     }
 }
