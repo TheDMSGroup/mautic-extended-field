@@ -350,4 +350,45 @@ class ExtendedFieldModel extends FieldModel
             ]
         );
     }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @param  $entity
+     */
+    public function deleteEntity($entity)
+    {
+        if ($this->isExtendedField($entity)) {
+            $secure        = false == strpos($entity->getType(), 'Secure') ? '' : '_secure';
+            $dataType      = $this->getSchemaDefinition($entity->getName(), $entity->getType());
+            $dataType      = $dataType['type'];
+            $extendedTable = 'lead_fields_leads_'.$dataType.$secure.'_xref';
+            $column        = [
+                'lead_field_id' => $entity->getId(),
+            ];
+
+            $this->em->getConnection()->delete(
+                $extendedTable,
+                $column
+            );
+
+            $id    = $entity->getId();
+            $event = $this->dispatchEvent('pre_delete', $entity);
+            $this->getRepository()->deleteEntity($entity);
+
+            //set the id for use in events
+            $entity->deletedId = $id;
+            $this->dispatchEvent('post_delete', $entity, false, $event);
+        } else {
+            parent::deleteEntity($entity);
+
+            $objects = ['lead' => 'leads', 'company' => 'companies'];
+            $object  = $objects[$entity->getObject()];
+
+            //remove the column from the leads table
+            $leadsSchema = $this->schemaHelperFactory->getSchemaHelper('column', $object);
+            $leadsSchema->dropColumn($entity->getAlias());
+            $leadsSchema->executeChanges();
+        }
+    }
 }
