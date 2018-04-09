@@ -351,7 +351,6 @@ class ExtendedFieldModel extends FieldModel
         );
     }
 
-
     /**
      * {@inheritdoc}
      *
@@ -359,12 +358,12 @@ class ExtendedFieldModel extends FieldModel
      */
     public function deleteEntity($entity)
     {
-        if($this->isExtendedField($entity)){
-            $secure = strpos($entity->getType(), 'Secure') == false ? "" : "_secure";
+        if ($this->isExtendedField($entity)) {
+            $secure        = false == strpos($entity->getType(), 'Secure') ? '' : '_secure';
             $dataType      = $this->getSchemaDefinition($entity->getName(), $entity->getType());
             $dataType      = $dataType['type'];
             $extendedTable = 'lead_fields_leads_'.$dataType.$secure.'_xref';
-            $column  = [
+            $column        = [
                 'lead_field_id' => $entity->getId(),
             ];
 
@@ -380,9 +379,7 @@ class ExtendedFieldModel extends FieldModel
             //set the id for use in events
             $entity->deletedId = $id;
             $this->dispatchEvent('post_delete', $entity, false, $event);
-
         } else {
-
             parent::deleteEntity($entity);
 
             $objects = ['lead' => 'leads', 'company' => 'companies'];
@@ -393,7 +390,5 @@ class ExtendedFieldModel extends FieldModel
             $leadsSchema->dropColumn($entity->getAlias());
             $leadsSchema->executeChanges();
         }
-
     }
-
 }
