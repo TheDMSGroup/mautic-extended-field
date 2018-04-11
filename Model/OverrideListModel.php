@@ -502,15 +502,14 @@ class OverrideListModel extends ListModel
             $properties         = $field->getProperties();
             $properties['type'] = $type;
             // Force extendedField Objects to 'lead'
-            $fieldObject     = false !== strpos($field->getObject(), 'extendedField') ? 'lead' : $field->getObject();
-            $isExtendedField = false !== strpos($field->getObject(), 'extendedField') ? true : false;
+            $fieldObject = false !== strpos($field->getObject(), 'extendedField') ? 'lead' : $field->getObject();
 
             if (in_array($type, ['lookup', 'multiselect', 'boolean'])) {
                 if ('boolean' == $type) {
                     //create a lookup list with ID
                     $properties['list'] = [
-                        0 => $properties['no'],
-                        1 => $properties['yes'],
+                        0 => isset($properties['no']) ? $properties['no'] : null,
+                        1 => isset($properties['yes']) ? $properties['yes'] : null,
                     ];
                 } else {
                     $properties['callback'] = 'activateLeadFieldTypeahead';
