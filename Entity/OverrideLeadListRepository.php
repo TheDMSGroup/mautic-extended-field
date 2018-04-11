@@ -503,12 +503,12 @@ class OverrideLeadListRepository extends LeadListRepository
             // get extendedField Filters first
             if (in_array($details['field'], array_keys($extendedFieldList))) {
                 // its an extended field, build a join expressions
-                $extendedLinkExpr = $extendedFieldList[$details['field']]['table'].'.lead_id = l.id';
+                $extendedAlias = $extendedFieldList[$details['field']]['table'].$k;
                 $q->leftJoin(
                     'l',
                     MAUTIC_TABLE_PREFIX.$extendedFieldList[$details['field']]['table'],
-                    $extendedFieldList[$details['field']]['table'],
-                    $extendedLinkExpr
+                    $extendedAlias,
+                    $extendedAlias.'.lead_id = l.id'
                 );
             }
         }
@@ -630,7 +630,7 @@ class OverrideLeadListRepository extends LeadListRepository
             } elseif ($isExtendedField) {
                 // this is an extendedField Custom Field type that needs custom table joins
                 // for simplicity, the full tablename is used as the table alias
-                $field = $tableName.'.value';
+                $field = $tableName.$k.'.value';
             }
 
             $columnType = false;
@@ -1708,7 +1708,7 @@ class OverrideLeadListRepository extends LeadListRepository
                         }
                     }
                     if ($isExtendedField) {
-                        $fieldNameColumn = $tableName.'.lead_field_id';
+                        $fieldNameColumn = $tableName.$k.'.lead_field_id';
                         $fieldNameValue  = $extendedFieldList[$details['field']]['id'];
                         switch ($func) {
                             case 'between':
