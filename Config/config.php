@@ -15,14 +15,10 @@ use Mautic\LeadBundle\Form\Type\ListType;
 use Mautic\LeadBundle\Form\Type\UpdateLeadActionType;
 use MauticPlugin\MauticExtendedFieldBundle\EventListener\ConfigSubscriber;
 
-//$container
-//  ->register('mautic.extendedfield.lead.listener', ExtendedLeadListener::class)
-//  ->addTag('doctrine.event_listener', array('event' => 'postLoad'));
-
 return [
     'name'        => 'Extended Fields',
     'description' => 'Extend Mautic custom fields for scalability and HIPAA/PCI compliance.',
-    'version'     => '0.3',
+    'version'     => '1.0',
     'author'      => 'Mautic',
     'parameters'  => [
         // set default to block creation of lead table columns
