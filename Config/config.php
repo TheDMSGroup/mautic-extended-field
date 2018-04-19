@@ -18,7 +18,7 @@ use MauticPlugin\MauticExtendedFieldBundle\EventListener\ConfigSubscriber;
 return [
     'name'        => 'Extended Fields',
     'description' => 'Extend Mautic custom fields for scalability and HIPAA/PCI compliance.',
-    'version'     => '1.0',
+    'version'     => '2.12',
     'author'      => 'Mautic',
     'parameters'  => [
         // set default to block creation of lead table columns
@@ -35,13 +35,6 @@ return [
                 'class' => 'MauticPlugin\MauticExtendedFieldBundle\Form\ConfigType',
                 'alias' => 'extendedField_config',
             ],
-            // 'mautic.extendedfield.extension' => array(
-            //     'class' => 'MauticPlugin\MauticExtendedFieldBundle\Form\ExtendedFieldExtension',
-            //     'arguments' => [
-            //         'mautic.factory',
-            //         'mautic.helper.core_parameters',
-            //     ],
-            // ),
         ],
         'other'  => [
             // Form extensions

@@ -48,10 +48,14 @@ The following services were redefined using this methid:
     
 ## Installation & Usage
 
-Currently being tested with Mautic `2.12.x`.
-If you have success/issues with other versions please report.
+Choose a release that matches your version of Mautic.
 
-1. Install by running `composer require thedmsgroup/mautic-extended-field-bundle` or by unpacking this repository's contents into a folder named `/plugins/MauticExtendedFieldBundle`
+| Mautic version | Installation                                                        |
+| -------------- | ------------------------------------------------------------------- |
+| 2.12.x         | `composer require thedmsgroup/mautic-extended-field-bundle "^2.12"` |
+| 2.13.x         | TBD                                                                 |
+
+1. Install by running the command above or by downloading the appropriate version and unpacking the contents into a folder named `/plugins/MauticExtendedFieldBundle`
 2. Go to `/s/plugins/reload`. The Extended Fields plugin should show up. Installation is complete.
 3. When creating new custom fields `/s/contacts/fields/new` select Object "Extended" or "Extended Secure".
 
@@ -60,4 +64,4 @@ If you have success/issues with other versions please report.
 #### Permissions for Secure types
 
 Need to implement Permission pass methods for any ExtendedFieldSecure data type
-display, edit or retreival.
+display, edit or retrieval.
