@@ -1517,6 +1517,7 @@ class OverrideLeadListRepository extends LeadListRepository
                     break;
                 case 'tags':
                 case 'globalcategory':
+                case 'campaign':
                 case 'lead_email_received':
                 case 'lead_email_sent':
                 case 'device_type':
@@ -1540,6 +1541,14 @@ class OverrideLeadListRepository extends LeadListRepository
                         case 'globalcategory':
                             $table  = 'lead_categories';
                             $column = 'category_id';
+                            break;
+                        case 'campaign':
+                            $table  = 'campaign_leads';
+                            $column = 'campaign_id';
+
+                            $notRemovedParameter                         = $this->generateRandomParameterName();
+                            $subQueryFilters[$alias.'.manually_removed'] = $notRemovedParameter;
+                            $parameters[$notRemovedParameter]            = 0;
                             break;
                         case 'lead_email_received':
                             $table  = 'email_stats';
