@@ -108,6 +108,7 @@ class ConfigSubscriber extends CommonSubscriber
      */
     private function alterSelect()
     {
+
         foreach ($this->selectParts as $key => $selectPart) {
             if (strpos($selectPart, 'l.') === 0) {
                 // field from the lead table, so check if its an extended field
@@ -129,18 +130,24 @@ class ConfigSubscriber extends CommonSubscriber
                     $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
                     $this->count++;
                     $fieldId                 = $this->extendedFields[$fieldAlias]['id'];
-                    $this->selectParts[$key] = "t$this->count.value AS $fieldAlias";
 
-                    $this->fieldTables[$fieldAlias] = [
-                        'table' => $tableName,
-                        'alias' => 't'.$this->count,
-                    ];
-                    $this->query->leftJoin(
-                        'l',
-                        $tableName,
-                        't'.$this->count,
-                        'l.id = t'.$this->count.'.lead_id AND t'.$this->count.'.lead_field_id = '.$fieldId
-                    );
+                    if (array_key_exists($fieldAlias, $this->fieldTables)) {
+                        $this->selectParts[$key] = $this->fieldTables[$fieldAlias]['alias'].'.value AS '.$fieldAlias;
+                    } else {
+
+                        $this->selectParts[$key] = "t$this->count.value AS $fieldAlias";
+
+                        $this->fieldTables[$fieldAlias] = [
+                            'table' => $tableName,
+                            'alias' => 't'.$this->count,
+                        ];
+                        $this->query->leftJoin(
+                            'l',
+                            $tableName,
+                            't'.$this->count,
+                            'l.id = t'.$this->count.'.lead_id AND t'.$this->count.'.lead_field_id = '.$fieldId
+                        );
+                    }
 
                 }
             }
