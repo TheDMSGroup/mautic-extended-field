@@ -87,7 +87,7 @@ class ConfigSubscriber extends CommonSubscriber
         $this->groupByParts   = $this->query->getQueryPart('groupBy');
         $args                 = ['keys' => 'alias'];
         $this->extendedFields = $this->leadModel->getExtendedEntities($args);
-        $this->fieldTables    = [];
+        $this->fieldTables    = isset($this->fieldTables) ? $this->fieldTables : [];
         $this->count          = 0;
 
         $this->alterSelect();
@@ -95,7 +95,7 @@ class ConfigSubscriber extends CommonSubscriber
         $this->alterGroupBy();
 
         $this->query->select($this->selectParts);
-        if ($this->event instanceof ReportQueryEvent)  {
+        if ($this->event instanceof ReportQueryEvent && !empty($this->orderByParts))  {
             $orderBy = implode(',', $this->orderByParts);
             $this->query->add('orderBy', $orderBy);
         }
@@ -131,7 +131,7 @@ class ConfigSubscriber extends CommonSubscriber
                     $fieldId                 = $this->extendedFields[$fieldAlias]['id'];
                     $this->selectParts[$key] = "t$this->count.value AS $fieldAlias";
 
-                    $this->fieldTable[$fieldAlias] = [
+                    $this->fieldTables[$fieldAlias] = [
                         'table' => $tableName,
                         'alias' => 't'.$this->count,
                     ];
@@ -139,7 +139,7 @@ class ConfigSubscriber extends CommonSubscriber
                         'l',
                         $tableName,
                         't'.$this->count,
-                        'l.id = t'.$this->count.'.lead_id AND t'.$this->count.'.lead_field_id = '.$this->extendedFields[$fieldAlias]['id']
+                        'l.id = t'.$this->count.'.lead_id AND t'.$this->count.'.lead_field_id = '.$fieldId
                     );
 
                 }
@@ -176,9 +176,8 @@ class ConfigSubscriber extends CommonSubscriber
                         $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
                         $this->count++;
                         $fieldId             = $this->extendedFields[$fieldAlias]['id'];
-                        #$this->selectParts[$key] = "t$this->count.value AS $fieldAlias";
 
-                        $this->fieldTable[$fieldAlias] = [
+                        $this->fieldTables[$fieldAlias] = [
                             'table' => $tableName,
                             'alias' => 't'.$this->count,
                         ];
@@ -208,7 +207,7 @@ class ConfigSubscriber extends CommonSubscriber
                     // is extended field, so rewrite the SQL part.
                     if (array_key_exists($fieldAlias, $this->fieldTables)) {
                         // set using the existing table alias from the altered select statement
-                        $this->orderByParts[$key] = $fieldTable[$fieldAlias]['alias'].'.'.$fieldAlias;
+                        $this->groupByParts[$key] = $this->fieldTables[$fieldAlias]['alias'].'.value';
 
                     } else {
                         // field hasnt been identified yet so generate unique alias and table
@@ -221,9 +220,8 @@ class ConfigSubscriber extends CommonSubscriber
                         $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
                         $this->count++;
                         $fieldId                  = $this->extendedFields[$fieldAlias]['id'];
-                        #$this->selectParts[$key] = "t$this->count.value AS $fieldAlias";
 
-                        $this->fieldTable[$fieldAlias] = [
+                        $this->fieldTables[$fieldAlias] = [
                             'table' => $tableName,
                             'alias' => 't'.$this->count,
                         ];
@@ -231,7 +229,7 @@ class ConfigSubscriber extends CommonSubscriber
                             'l',
                             $tableName,
                             't'.$this->count,
-                            'l.id = t'.$this->count.'.lead_id AND t'.$this->count.'.lead_field_id = '.$this->extendedFields[$fieldAlias]['id']
+                            'l.id = t'.$this->count.'.lead_id AND t'.$this->count.'.lead_field_id = '.$fieldId
                         );
                         $this->groupByParts[$key] = 't'.$this->count.'.value';
                     }
