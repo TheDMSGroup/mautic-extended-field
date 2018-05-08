@@ -22,11 +22,8 @@ class ConfigSubscriber extends CommonSubscriber
         $eventList = [
             ConfigEvents::CONFIG_ON_GENERATE       => ['onConfigGenerate', 0],
             ReportEvents::REPORT_ON_GRAPH_GENERATE => ['onReportGraphGenerate', 20],
+            'mautic.report_query_pre_execute'      => ['onReportQueryPreExecute']
         ];
-
-        if (defined('REPORT_QUERY_PRE_EXECUTE')) { // dependent on a mautic core change to register this event
-            $eventList[] = [ReportEvents::REPORT_QUERY_PRE_EXECUTE => ['onReportQueryPreExecute']];
-        }
 
         return $eventList;
     }
