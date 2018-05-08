@@ -85,6 +85,8 @@ class ConfigSubscriber extends CommonSubscriber
         $this->selectParts    = $this->query->getQueryPart('select');
         $this->orderByParts   = $this->query->getQueryPart('orderBy');
         $this->groupByParts   = $this->query->getQueryPart('groupBy');
+        $this->filters        = $this->event->getReport()->getFilters();
+        $this->where          = $this->query->getQueryPart('where');
         $args                 = ['keys' => 'alias'];
         $this->extendedFields = $this->leadModel->getExtendedEntities($args);
         $this->fieldTables    = isset($this->fieldTables) ? $this->fieldTables : [];
@@ -93,6 +95,7 @@ class ConfigSubscriber extends CommonSubscriber
         $this->alterSelect();
         if ($this->event instanceof ReportQueryEvent) {$this->alterOrderBy();}
         $this->alterGroupBy();
+        $this->alterWhere();
 
         $this->query->select($this->selectParts);
         if ($this->event instanceof ReportQueryEvent && !empty($this->orderByParts))  {
@@ -100,6 +103,7 @@ class ConfigSubscriber extends CommonSubscriber
             $this->query->add('orderBy', $orderBy);
         }
         if(!empty($this->groupByParts)) {$this->query->groupBy($this->groupByParts);}
+        $this->query->where($this->where);
 
     }
 
@@ -208,7 +212,7 @@ class ConfigSubscriber extends CommonSubscriber
     {
         foreach ($this->groupByParts as $key => $groupByPart) {
             if (strpos($groupByPart, 'l.') === 0) {
-                // field from the lead table, so check if its an extend$partStrings = (explode('.', $groupByPart));
+                // field from the lead table, so check if its an extended
                 $fieldAlias = substr($groupByPart, 2);
                 if (isset($this->extendedFields[$fieldAlias]) && $this->extendedFields[$fieldAlias]['object'] != 'lead') {
                     // is extended field, so rewrite the SQL part.
@@ -243,5 +247,49 @@ class ConfigSubscriber extends CommonSubscriber
                 }
             }
         }
+    }
+
+    private function alterWhere()
+    {
+        $where = $this->where->__toString();
+        foreach($this->filters as $filter)
+        {
+            if (strpos($filter['column'], 'l.') === 0) {
+                // field from the lead table, so check if its an extended
+                $fieldAlias = substr($filter['column'], 2);
+                if (isset($this->extendedFields[$fieldAlias]) && $this->extendedFields[$fieldAlias]['object'] != 'lead') {
+                    // is extended field, so rewrite the SQL part.
+                    if (array_key_exists($fieldAlias, $this->fieldTables)) {
+                        // set using the existing table alias from the altered select statement
+                        $where = str_replace($filter['column'], $this->fieldTables[$fieldAlias]['alias'].'.value', $where);
+
+                    } else {
+                        // field hasnt been identified yet so generate unique alias and table
+                        $dataType  = $this->fieldModel->getSchemaDefinition(
+                            $this->extendedFields[$fieldAlias]['alias'],
+                            $this->extendedFields[$fieldAlias]['type']
+                        );
+                        $dataType  = $dataType['type'];
+                        $secure    = 'extendedFieldSecure' == $this->extendedFields[$fieldAlias]['object'] ? '_secure' : '';
+                        $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
+                        $this->count++;
+                        $fieldId                  = $this->extendedFields[$fieldAlias]['id'];
+
+                        $this->fieldTables[$fieldAlias] = [
+                            'table' => $tableName,
+                            'alias' => 't'.$this->count,
+                        ];
+                        $this->query->leftJoin(
+                            'l',
+                            $tableName,
+                            't'.$this->count,
+                            'l.id = t'.$this->count.'.lead_id AND t'.$this->count.'.lead_field_id = '.$fieldId
+                        );
+                        $where = str_replace($filter['column'], 't'.$this->count.'.value', $where);
+                    }
+                }
+            }
+        }
+        $this->where = $where;
     }
 }
