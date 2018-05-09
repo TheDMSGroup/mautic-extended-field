@@ -15,6 +15,66 @@ use Mautic\ReportBundle\ReportEvents;
 class ConfigSubscriber extends CommonSubscriber
 {
     /**
+     * @var
+     */
+    protected $event;
+
+    /**
+     * @var
+     */
+    protected $query;
+
+    /**
+     * @var
+     */
+    protected $fieldModel;
+
+    /**
+     * @var
+     */
+    protected $leadModel;
+
+    /**
+     * @var array
+     */
+    protected $selectParts = [];
+
+    /**
+     * @var array
+     */
+    protected $orderByParts = [];
+
+    /**
+     * @var array
+     */
+    protected $groupByParts = [];
+
+    /**
+     * @var array
+     */
+    protected $filters = [];
+
+    /**
+     * @var
+     */
+    protected $where;
+
+    /**
+     * @var array
+     */
+    protected $extendedFields = [];
+
+    /**
+     * @var array
+     */
+    protected $fieldTables = [];
+
+    /**
+     * @var int
+     */
+    protected $count = 0;
+
+    /**
      * @return array
      */
     public static function getSubscribedEvents()
@@ -22,7 +82,7 @@ class ConfigSubscriber extends CommonSubscriber
         $eventList = [
             ConfigEvents::CONFIG_ON_GENERATE       => ['onConfigGenerate', 0],
             ReportEvents::REPORT_ON_GRAPH_GENERATE => ['onReportGraphGenerate', 20],
-            'mautic.report_query_pre_execute'      => ['onReportQueryPreExecute']
+            'mautic.report_query_pre_execute'      => ['onReportQueryPreExecute'],
         ];
 
         return $eventList;
@@ -135,7 +195,7 @@ class ConfigSubscriber extends CommonSubscriber
                     $secure    = 'extendedFieldSecure' == $this->extendedFields[$fieldAlias]['object'] ? '_secure' : '';
                     $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
                     ++$this->count;
-                    $fieldId                 = $this->extendedFields[$fieldAlias]['id'];
+                    $fieldId = $this->extendedFields[$fieldAlias]['id'];
 
                     if (array_key_exists($fieldAlias, $this->fieldTables)) {
                         $this->selectParts[$key] = $this->fieldTables[$fieldAlias]['alias'].'.value AS '.$fieldAlias;
@@ -185,7 +245,7 @@ class ConfigSubscriber extends CommonSubscriber
                         $secure    = 'extendedFieldSecure' == $this->extendedFields[$fieldAlias]['object'] ? '_secure' : '';
                         $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
                         ++$this->count;
-                        $fieldId             = $this->extendedFields[$fieldAlias]['id'];
+                        $fieldId = $this->extendedFields[$fieldAlias]['id'];
 
                         $this->fieldTables[$fieldAlias] = [
                             'table' => $tableName,
@@ -228,7 +288,7 @@ class ConfigSubscriber extends CommonSubscriber
                         $secure    = 'extendedFieldSecure' == $this->extendedFields[$fieldAlias]['object'] ? '_secure' : '';
                         $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
                         ++$this->count;
-                        $fieldId                  = $this->extendedFields[$fieldAlias]['id'];
+                        $fieldId = $this->extendedFields[$fieldAlias]['id'];
 
                         $this->fieldTables[$fieldAlias] = [
                             'table' => $tableName,
@@ -258,7 +318,11 @@ class ConfigSubscriber extends CommonSubscriber
                     // is extended field, so rewrite the SQL part.
                     if (array_key_exists($fieldAlias, $this->fieldTables)) {
                         // set using the existing table alias from the altered select statement
-                        $where = str_replace($filter['column'], $this->fieldTables[$fieldAlias]['alias'].'.value', $where);
+                        $where = str_replace(
+                            $filter['column'],
+                            $this->fieldTables[$fieldAlias]['alias'].'.value',
+                            $where
+                        );
                     } else {
                         // field hasnt been identified yet so generate unique alias and table
                         $dataType  = $this->fieldModel->getSchemaDefinition(
@@ -269,7 +333,7 @@ class ConfigSubscriber extends CommonSubscriber
                         $secure    = 'extendedFieldSecure' == $this->extendedFields[$fieldAlias]['object'] ? '_secure' : '';
                         $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
                         ++$this->count;
-                        $fieldId                  = $this->extendedFields[$fieldAlias]['id'];
+                        $fieldId = $this->extendedFields[$fieldAlias]['id'];
 
                         $this->fieldTables[$fieldAlias] = [
                             'table' => $tableName,
