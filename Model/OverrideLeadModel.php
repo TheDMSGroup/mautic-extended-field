@@ -372,6 +372,17 @@ class OverrideLeadModel extends LeadModel
             ->setParameter('isPub', true);
         $values = $fq->execute()->fetchAll();
 
+        if ($args['keys']) {
+            // rekey the results by the provided key value
+            $fields=[];
+            foreach ($values as $v) {
+                if ($v[$args['keys']]) {
+                    $fields[$v[$args['keys']]] = $v;
+                }
+            }
+            $values = $fields;
+        }
+
         return $values;
     }
 
