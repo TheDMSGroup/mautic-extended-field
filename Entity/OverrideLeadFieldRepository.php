@@ -215,7 +215,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
         $q = $this->getEntityManager()->getConnection()->createQueryBuilder();
 
         // get list of extendedFields
-        if (!empty($extendedField = $this->isExtendedField($field))) {
+        if ($extendedField = $this->getExtendedField($field)) {
             $fieldModel = $this->fieldModel;
             $dataType   = $fieldModel->getSchemaDefinition(
                 $extendedField['alias'],
