@@ -37,137 +37,11 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
     }
 
     /**
-     * Overrides LeadBundle compareValue() method.
+     * @param string $field
      *
-     *
-     * Compare a form result value with defined value for defined lead.
-     * to handle extended field table schema differences from lead table
-     * IE - needs a join and pivot on columns
-     *
-     * @param int    $lead         ID
-     * @param int    $field        alias
-     * @param string $value        to compare with
-     * @param string $operatorExpr for WHERE clause
-     *
-     * @return bool
+     * @return null|array
      */
-    public function compareValue($lead, $field, $value, $operatorExpr)
-    {
-        $q = $this->_em->getConnection()->createQueryBuilder();
-
-        if ($isExtendedField = $this->isExtendedField($field)) {
-            $this->extendedCompareValue($q, $isExtendedField, $lead, $field, $value, $operatorExpr);
-        } else {
-            $q->select('l.id')
-                ->from(MAUTIC_TABLE_PREFIX.'leads', 'l');
-
-            if ('tags' === $field) {
-                // Special reserved tags field
-                $q->join('l', MAUTIC_TABLE_PREFIX.'lead_tags_xref', 'x', 'l.id = x.lead_id')
-                    ->join('x', MAUTIC_TABLE_PREFIX.'lead_tags', 't', 'x.tag_id = t.id')
-                    ->where(
-                        $q->expr()->andX(
-                            $q->expr()->eq('l.id', ':lead'),
-                            $q->expr()->eq('t.tag', ':value')
-                        )
-                    )
-                    ->setParameter('lead', (int) $lead)
-                    ->setParameter('value', $value);
-
-                $result = $q->execute()->fetch();
-
-                if (('eq' === $operatorExpr) || ('like' === $operatorExpr)) {
-                    return !empty($result['id']);
-                } elseif (('neq' === $operatorExpr) || ('notLike' === $operatorExpr)) {
-                    return empty($result['id']);
-                } else {
-                    return false;
-                }
-            } else {
-                // Standard field
-                if ('empty' === $operatorExpr || 'notEmpty' === $operatorExpr) {
-                    $q->where(
-                        $q->expr()->andX(
-                            $q->expr()->eq('l.id', ':lead'),
-                            ('empty' === $operatorExpr) ?
-                                $q->expr()->orX(
-                                    $q->expr()->isNull('l.'.$field),
-                                    $q->expr()->eq('l.'.$field, $q->expr()->literal(''))
-                                )
-                                :
-                                $q->expr()->andX(
-                                    $q->expr()->isNotNull('l.'.$field),
-                                    $q->expr()->neq('l.'.$field, $q->expr()->literal(''))
-                                )
-                        )
-                    )
-                        ->setParameter('lead', (int) $lead);
-                } elseif ('regexp' === $operatorExpr || 'notRegexp' === $operatorExpr) {
-                    if ('regexp' === $operatorExpr) {
-                        $where = 'l.'.$field.' REGEXP  :value';
-                    } else {
-                        $where = 'l.'.$field.' NOT REGEXP  :value';
-                    }
-
-                    $q->where(
-                        $q->expr()->andX(
-                            $q->expr()->eq('l.id', ':lead'),
-                            $q->expr()->andX($where)
-                        )
-                    )
-                        ->setParameter('lead', (int) $lead)
-                        ->setParameter('value', $value);
-                } else {
-                    $expr = $q->expr()->andX(
-                        $q->expr()->eq('l.id', ':lead')
-                    );
-
-                    if ('neq' == $operatorExpr) {
-                        // include null
-                        $expr->add(
-                            $q->expr()->orX(
-                                $q->expr()->$operatorExpr('l.'.$field, ':value'),
-                                $q->expr()->isNull('l.'.$field)
-                            )
-                        );
-                    } else {
-                        switch ($operatorExpr) {
-                            case 'startsWith':
-                                $operatorExpr = 'like';
-                                $value        = $value.'%';
-                                break;
-                            case 'endsWith':
-                                $operatorExpr = 'like';
-                                $value        = '%'.$value;
-                                break;
-                            case 'contains':
-                                $operatorExpr = 'like';
-                                $value        = '%'.$value.'%';
-                                break;
-                        }
-
-                        $expr->add(
-                            $q->expr()->$operatorExpr('l.'.$field, ':value')
-                        );
-                    }
-
-                    $q->where($expr)
-                        ->setParameter('lead', (int) $lead)
-                        ->setParameter('value', $value);
-                }
-            }
-        }
-        $result = $q->execute()->fetch();
-
-        return !empty($result['id']);
-    }
-
-    /**
-     * @param $field
-     *
-     * @return mixed
-     */
-    public function isExtendedField($field)
+    public function getExtendedField($field)
     {
         $qf = $this->_em->getConnection()->createQueryBuilder();
         $qf->select('lf.id, lf.object, lf.type, lf.alias, lf.field_group, lf.label')
@@ -186,108 +60,143 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
     }
 
     /**
-     * @param $isExtendedField
-     * @param $lead
-     * @param $field
-     * @param $value
-     * @param $operatorExpr
+     * Overrides LeadBundle compareValue() method.
+     *
+     * Compare a form result value with defined value for defined lead.
+     * to handle extended field table schema differences from lead table
+     * IE - needs a join and pivot on columns
+     *
+     * @param int    $lead         ID
+     * @param int    $field        alias
+     * @param string $value        to compare with
+     * @param string $operatorExpr for WHERE clause
+     *
+     * @return bool
      */
-    public function extendedCompareValue($q, $isExtendedField, $lead, $field, $value, $operatorExpr)
+    public function compareValue($lead, $field, $value, $operatorExpr)
     {
-        $fieldModel = $this->fieldModel;
-        $dataType   = $fieldModel->getSchemaDefinition(
-            $isExtendedField['alias'],
-            $isExtendedField['type']
-        );
-        $dataType   = $dataType['type'];
+        $q = $this->_em->getConnection()->createQueryBuilder();
+        $q->select('l.id')
+            ->from(MAUTIC_TABLE_PREFIX.'leads', 'l');
 
-        $secure    = false !== strpos($isExtendedField['object'], 'Secure') ? '_secure' : '';
-        $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
-
-        // select from the correct table
-        $q->select('l.lead_id')
-            ->from(MAUTIC_TABLE_PREFIX.$tableName, 'l');
-        // and the lead_field_id matches the $field
-        $q->where(
-            $q->expr()->andX(
-                $q->expr()->eq('l.lead_field_id', ':leadfieldid')
-            )
-        )
-            ->setParameter('leadfieldid', (int) $isExtendedField['id']);
-        // add a Where clause based on type
-
-        if ('empty' === $operatorExpr || 'notEmpty' === $operatorExpr) {
-            $q->where(
-                $q->expr()->andX(
-                    $q->expr()->eq('l.lead_id', ':lead'),
-                    ('empty' === $operatorExpr) ?
-                        $q->expr()->orX(
-                            $q->expr()->isNull('l.value'),
-                            $q->expr()->eq('l.value', $q->expr()->literal(''))
-                        )
-                        :
-                        $q->expr()->andX(
-                            $q->expr()->isNotNull('l.value'),
-                            $q->expr()->neq('l.value', $q->expr()->literal(''))
-                        )
+        if ($field === 'tags') {
+            // Special reserved tags field
+            $q->join('l', MAUTIC_TABLE_PREFIX.'lead_tags_xref', 'x', 'l.id = x.lead_id')
+                ->join('x', MAUTIC_TABLE_PREFIX.'lead_tags', 't', 'x.tag_id = t.id')
+                ->where(
+                    $q->expr()->andX(
+                        $q->expr()->eq('l.id', ':lead'),
+                        $q->expr()->eq('t.tag', ':value')
+                    )
                 )
-            )
-                ->setParameter('lead', (int) $lead);
-        } elseif ('regexp' === $operatorExpr || 'notRegexp' === $operatorExpr) {
-            if ('regexp' === $operatorExpr) {
-                $where = 'l.value REGEXP  :value';
-            } else {
-                $where = 'l.value NOT REGEXP  :value';
-            }
-
-            $q->where(
-                $q->expr()->andX(
-                    $q->expr()->eq('l.lead_id', ':lead'),
-                    $q->expr()->andX($where)
-                )
-            )
                 ->setParameter('lead', (int) $lead)
                 ->setParameter('value', $value);
-        } else {
-            $expr = $q->expr()->andX(
-                $q->expr()->eq('l.lead_id', ':lead')
-            );
 
-            if ('neq' == $operatorExpr) {
-                // include null
-                $expr->add(
-                    $q->expr()->orX(
-                        $q->expr()->$operatorExpr('l.value', ':value'),
-                        $q->expr()->isNull('l.value')
-                    )
-                );
+            $result = $q->execute()->fetch();
+
+            if (($operatorExpr === 'eq') || ($operatorExpr === 'like')) {
+                return !empty($result['id']);
+            } elseif (($operatorExpr === 'neq') || ($operatorExpr === 'notLike')) {
+                return empty($result['id']);
             } else {
-                switch ($operatorExpr) {
-                    case 'startsWith':
-                        $operatorExpr = 'like';
-                        $value        = $value.'%';
-                        break;
-                    case 'endsWith':
-                        $operatorExpr = 'like';
-                        $value        = '%'.$value;
-                        break;
-                    case 'contains':
-                        $operatorExpr = 'like';
-                        $value        = '%'.$value.'%';
-                        break;
+                return false;
+            }
+        } else {
+            // Standard field / UTM field / Extended field
+            $extendedField = $this->getExtendedField($field);
+            if (null !== $extendedField) {
+                $secure = (false !== strpos($extendedField['object'], 'Secure')) ? '_secure' : '';
+                $schemaDef = $this->fieldModel->getSchemaDefinition(
+                    $extendedField['alias'],
+                    $extendedField['type']
+                );
+                $tableName = 'lead_fields_leads_'.$schemaDef['type'].$secure.'_xref';
+                $q->join('l', MAUTIC_TABLE_PREFIX.$tableName, 'x', 'l.id = x.lead_id AND '.$extendedField['id'].' = x.lead_field_id');
+                $property = 'x.value';
+            } elseif (in_array($field, ['utm_campaign', 'utm_content', 'utm_medium', 'utm_source', 'utm_term'])) {
+                $q->join('l', MAUTIC_TABLE_PREFIX.'lead_utmtags', 'u', 'l.id = u.lead_id');
+                $q->orderBy('u.date_added', 'DESC');
+                $q->setMaxResults(1);
+                $property = 'u.'.$field;
+            } else {
+                $property = 'l.'.$field;
+            }
+            if ($operatorExpr === 'empty' || $operatorExpr === 'notEmpty') {
+                $q->where(
+                    $q->expr()->andX(
+                        $q->expr()->eq('l.id', ':lead'),
+                        ($operatorExpr === 'empty') ?
+                            $q->expr()->orX(
+                                $q->expr()->isNull($property),
+                                $q->expr()->eq($property, $q->expr()->literal(''))
+                            )
+                            :
+                            $q->expr()->andX(
+                                $q->expr()->isNotNull($property),
+                                $q->expr()->neq($property, $q->expr()->literal(''))
+                            )
+                    )
+                )
+                    ->setParameter('lead', (int) $lead);
+            } elseif ($operatorExpr === 'regexp' || $operatorExpr === 'notRegexp') {
+                if ($operatorExpr === 'regexp') {
+                    $where = $property.' REGEXP  :value';
+                } else {
+                    $where = $property.' NOT REGEXP  :value';
                 }
 
-                $expr->add(
-                    $q->expr()->$operatorExpr('l.value', ':value')
+                $q->where(
+                    $q->expr()->andX(
+                        $q->expr()->eq('l.id', ':lead'),
+                        $q->expr()->andX($where)
+                    )
+                )
+                    ->setParameter('lead', (int) $lead)
+                    ->setParameter('value', $value);
+            } else {
+                $expr = $q->expr()->andX(
+                    $q->expr()->eq('l.id', ':lead')
                 );
+
+                if ($operatorExpr == 'neq') {
+                    // include null
+                    $expr->add(
+                        $q->expr()->orX(
+                            $q->expr()->$operatorExpr($property, ':value'),
+                            $q->expr()->isNull($property)
+                        )
+                    );
+                } else {
+                    switch ($operatorExpr) {
+                        case 'startsWith':
+                            $operatorExpr    = 'like';
+                            $value           = $value.'%';
+                            break;
+                        case 'endsWith':
+                            $operatorExpr   = 'like';
+                            $value          = '%'.$value;
+                            break;
+                        case 'contains':
+                            $operatorExpr   = 'like';
+                            $value          = '%'.$value.'%';
+                            break;
+                    }
+
+                    $expr->add(
+                        $q->expr()->$operatorExpr($property, ':value')
+                    );
+                }
+
+                $q->where($expr)
+                    ->setParameter('lead', (int) $lead)
+                    ->setParameter('value', $value);
             }
 
-            $q->where($expr)
-                ->setParameter('lead', (int) $lead)
-                ->setParameter('value', $value);
+            $result = $q->execute()->fetch();
+
+            return !empty($result['id']);
         }
     }
-
     /**
      * Gets a list of unique values from fields for autocompletes.
      * Overrides the method defined in CustomFieldRepositoryTrait
