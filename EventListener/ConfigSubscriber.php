@@ -109,7 +109,7 @@ class ConfigSubscriber extends CommonSubscriber
     }
 
     /**
-     * @param ConfigBuilderEvent $event
+     * @param ReportQueryEvent $event
      */
     public function onReportQueryPreExecute(ReportQueryEvent $event)
     {
@@ -121,7 +121,7 @@ class ConfigSubscriber extends CommonSubscriber
     }
 
     /**
-     * @param ConfigBuilderEvent $event
+     * @param ReportGraphEvent $event
      */
     public function onReportGraphGenerate(ReportGraphEvent $event)
     {
