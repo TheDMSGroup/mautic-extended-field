@@ -6,7 +6,6 @@ use Mautic\ConfigBundle\ConfigEvents;
 use Mautic\ConfigBundle\Event\ConfigBuilderEvent;
 use Mautic\CoreBundle\EventListener\CommonSubscriber;
 use Mautic\ReportBundle\Event\ReportGraphEvent;
-use Mautic\ReportBundle\Event\ReportQueryEvent;
 use Mautic\ReportBundle\ReportEvents;
 
 /**
@@ -109,9 +108,9 @@ class ConfigSubscriber extends CommonSubscriber
     }
 
     /**
-     * @param ReportQueryEvent $event
+     * @param $event
      */
-    public function onReportQueryPreExecute(ReportQueryEvent $event)
+    public function onReportQueryPreExecute($event)
     {
         $this->event = $event;
         $this->query = $event->getQuery();
@@ -153,14 +152,14 @@ class ConfigSubscriber extends CommonSubscriber
         $this->count          = 0;
 
         $this->alterSelect();
-        if ($this->event instanceof ReportQueryEvent) {
+        if (method_exists($this->event, 'getQuery')) { // identify ReportQueryEvent instance in backwards compatible way
             $this->alterOrderBy();
         }
         $this->alterGroupBy();
         $this->alterWhere();
 
         $this->query->select($this->selectParts);
-        if ($this->event instanceof ReportQueryEvent && !empty($this->orderByParts)) {
+        if (method_exists($this->event, 'getQuery') && !empty($this->orderByParts)) {
             $orderBy = implode(',', $this->orderByParts);
             $this->query->add('orderBy', $orderBy);
         }
@@ -179,7 +178,7 @@ class ConfigSubscriber extends CommonSubscriber
             if (0 === strpos($selectPart, 'l.')) {
                 // field from the lead table, so check if its an extended field
                 $partStrings = (explode(' AS ', $selectPart));
-                if ($this->event instanceof ReportQueryEvent) {
+                if (method_exists($this->event, 'getQuery')) {
                     $fieldAlias = $this->event->getOptions()['columns'][$partStrings[0]]['alias'];
                 } else {
                     $fieldAlias = $partStrings[1];
