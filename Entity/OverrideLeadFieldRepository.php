@@ -105,7 +105,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             // Standard field / UTM field / Extended field
             $extendedField = $this->getExtendedField($field);
             if (null !== $extendedField) {
-                $secure = (false !== strpos($extendedField['object'], 'Secure')) ? '_secure' : '';
+                $secure    = (false !== strpos($extendedField['object'], 'Secure')) ? '_secure' : '';
                 $schemaDef = $this->fieldModel->getSchemaDefinition(
                     $extendedField['alias'],
                     $extendedField['type']
@@ -197,6 +197,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             return !empty($result['id']);
         }
     }
+
     /**
      * Gets a list of unique values from fields for autocompletes.
      * Overrides the method defined in CustomFieldRepositoryTrait
