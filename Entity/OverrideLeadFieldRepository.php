@@ -104,7 +104,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
         } else {
             // Standard field / UTM field / Extended field
             $extendedField = $this->getExtendedField($field);
-            if (null !== $extendedField) {
+            if ($extendedField) {
                 $secure    = (false !== strpos($extendedField['object'], 'Secure')) ? '_secure' : '';
                 $schemaDef = $this->fieldModel->getSchemaDefinition(
                     $extendedField['alias'],
