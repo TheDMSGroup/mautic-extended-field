@@ -119,12 +119,6 @@ class UpdateLeadActionExtension extends AbstractTypeExtension
 
             switch ($type) {
                 case 'number':
-                    if (empty($properties['precision'])) {
-                        $properties['precision'] = null;
-                    } //ensure default locale is used
-                    else {
-                        $properties['precision'] = (int) $properties['precision'];
-                    }
 
                     if ('' === $value) {
                         // Prevent transform errors
@@ -142,7 +136,7 @@ class UpdateLeadActionExtension extends AbstractTypeExtension
                             'data'          => (null !== $value) ? (float) $value : $value,
                             'mapped'        => $mapped,
                             'constraints'   => $constraints,
-                            'precision'     => $properties['precision'],
+                            'precision'     => isset($properties['precision']) ? (int) $properties['precision'] : 0,
                             'rounding_mode' => isset($properties['roundmode']) ? (int) $properties['roundmode'] : 0,
                         ]
                     );
