@@ -112,23 +112,11 @@ class ConfigSubscriber extends CommonSubscriber
      */
     public function onReportQueryPreExecute($event)
     {
-        $this->event = $event;
-        $this->query = $event->getQuery();
+        $this->fieldTables = [];
+        $this->event       = $event;
+        $this->query       = $event->getQuery();
         $this->convertToExtendedFieldQuery();
         $this->event->setQuery($this->query);
-        $event = $this->event;
-    }
-
-    /**
-     * @param ReportGraphEvent $event
-     */
-    public function onReportGraphGenerate(ReportGraphEvent $event)
-    {
-        $this->event = $event;
-        $this->query = $event->getQueryBuilder();
-        $this->convertToExtendedFieldQuery();
-        $this->event->setQueryBuilder($this->query);
-        $event = $this->event;
     }
 
     /**
@@ -350,5 +338,17 @@ class ConfigSubscriber extends CommonSubscriber
             }
         }
         $this->where = $where;
+    }
+
+    /**
+     * @param ReportGraphEvent $event
+     */
+    public function onReportGraphGenerate(ReportGraphEvent $event)
+    {
+        $this->fieldTables = [];
+        $this->event       = $event;
+        $this->query       = $event->getQueryBuilder();
+        $this->convertToExtendedFieldQuery();
+        $this->event->setQueryBuilder($this->query);
     }
 }
