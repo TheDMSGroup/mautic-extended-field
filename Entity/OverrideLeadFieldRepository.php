@@ -79,7 +79,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
         $q->select('l.id')
             ->from(MAUTIC_TABLE_PREFIX.'leads', 'l');
 
-        if ($field === 'tags') {
+        if ('tags' === $field) {
             // Special reserved tags field
             $q->join('l', MAUTIC_TABLE_PREFIX.'lead_tags_xref', 'x', 'l.id = x.lead_id')
                 ->join('x', MAUTIC_TABLE_PREFIX.'lead_tags', 't', 'x.tag_id = t.id')
@@ -94,9 +94,9 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
 
             $result = $q->execute()->fetch();
 
-            if (($operatorExpr === 'eq') || ($operatorExpr === 'like')) {
+            if (('eq' === $operatorExpr) || ('like' === $operatorExpr)) {
                 return !empty($result['id']);
-            } elseif (($operatorExpr === 'neq') || ($operatorExpr === 'notLike')) {
+            } elseif (('neq' === $operatorExpr) || ('notLike' === $operatorExpr)) {
                 return empty($result['id']);
             } else {
                 return false;
@@ -121,11 +121,11 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             } else {
                 $property = 'l.'.$field;
             }
-            if ($operatorExpr === 'empty' || $operatorExpr === 'notEmpty') {
+            if ('empty' === $operatorExpr || 'notEmpty' === $operatorExpr) {
                 $q->where(
                     $q->expr()->andX(
                         $q->expr()->eq('l.id', ':lead'),
-                        ($operatorExpr === 'empty') ?
+                        ('empty' === $operatorExpr) ?
                             $q->expr()->orX(
                                 $q->expr()->isNull($property),
                                 $q->expr()->eq($property, $q->expr()->literal(''))
@@ -138,8 +138,8 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                     )
                 )
                     ->setParameter('lead', (int) $lead);
-            } elseif ($operatorExpr === 'regexp' || $operatorExpr === 'notRegexp') {
-                if ($operatorExpr === 'regexp') {
+            } elseif ('regexp' === $operatorExpr || 'notRegexp' === $operatorExpr) {
+                if ('regexp' === $operatorExpr) {
                     $where = $property.' REGEXP  :value';
                 } else {
                     $where = $property.' NOT REGEXP  :value';
@@ -158,7 +158,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                     $q->expr()->eq('l.id', ':lead')
                 );
 
-                if ($operatorExpr == 'neq') {
+                if ('neq' == $operatorExpr) {
                     // include null
                     $expr->add(
                         $q->expr()->orX(
