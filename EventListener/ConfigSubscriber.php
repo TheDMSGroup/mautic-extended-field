@@ -180,7 +180,7 @@ class ConfigSubscriber extends CommonSubscriber
                     );
                     $dataType  = $dataType['type'];
                     $secure    = 'extendedFieldSecure' == $this->extendedFields[$fieldAlias]['object'] ? '_secure' : '';
-                    $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
+                    $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
                     ++$this->count;
                     $fieldId = $this->extendedFields[$fieldAlias]['id'];
 
@@ -230,7 +230,7 @@ class ConfigSubscriber extends CommonSubscriber
                         );
                         $dataType  = $dataType['type'];
                         $secure    = 'extendedFieldSecure' == $this->extendedFields[$fieldAlias]['object'] ? '_secure' : '';
-                        $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
+                        $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
                         ++$this->count;
                         $fieldId = $this->extendedFields[$fieldAlias]['id'];
 
@@ -242,7 +242,7 @@ class ConfigSubscriber extends CommonSubscriber
                             'l',
                             $tableName,
                             't'.$this->count,
-                            'l.id = t'.$this->count.'.lead_id AND t'.$this->count.'.lead_field_id = '.$this->extendedFields[$fieldAlias]['id']
+                            'l.id = t'.$this->count.'.lead_id AND t'.$this->count.'.lead_field_id = '.$fieldId
                         );
                         $this->orderByParts[$key] = 't'.$this->count.'.value';
                     }
@@ -273,7 +273,7 @@ class ConfigSubscriber extends CommonSubscriber
                         );
                         $dataType  = $dataType['type'];
                         $secure    = 'extendedFieldSecure' == $this->extendedFields[$fieldAlias]['object'] ? '_secure' : '';
-                        $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
+                        $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
                         ++$this->count;
                         $fieldId = $this->extendedFields[$fieldAlias]['id'];
 
@@ -318,7 +318,7 @@ class ConfigSubscriber extends CommonSubscriber
                         );
                         $dataType  = $dataType['type'];
                         $secure    = 'extendedFieldSecure' == $this->extendedFields[$fieldAlias]['object'] ? '_secure' : '';
-                        $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
+                        $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
                         ++$this->count;
                         $fieldId = $this->extendedFields[$fieldAlias]['id'];
 
