@@ -68,7 +68,7 @@ class ExtendedFieldModel extends FieldModel
         $dataType  = $this->getSchemaDefinition($entity->getAlias(), $entity->getType());
         $dataType  = $dataType['type'];
         $secure    = ('extendedFieldSecure' == $entity->getObject()) ? true : false;
-        $tableName = 'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref';
+        $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref';
 
         $this->setTimestamps($entity, $isNew, $unlock);
         $objects = [
@@ -362,7 +362,7 @@ class ExtendedFieldModel extends FieldModel
             $secure        = false == strpos($entity->getType(), 'Secure') ? '' : '_secure';
             $dataType      = $this->getSchemaDefinition($entity->getName(), $entity->getType());
             $dataType      = $dataType['type'];
-            $extendedTable = 'lead_fields_leads_'.$dataType.$secure.'_xref';
+            $extendedTable = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
             $column        = [
                 'lead_field_id' => $entity->getId(),
             ];

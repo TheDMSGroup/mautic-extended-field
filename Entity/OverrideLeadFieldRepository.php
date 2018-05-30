@@ -110,8 +110,8 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                     $extendedField['alias'],
                     $extendedField['type']
                 );
-                $tableName = 'lead_fields_leads_'.$schemaDef['type'].$secure.'_xref';
-                $q->join('l', MAUTIC_TABLE_PREFIX.$tableName, 'x', 'l.id = x.lead_id AND '.$extendedField['id'].' = x.lead_field_id');
+                $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$schemaDef['type'].$secure.'_xref';
+                $q->join('l', $tableName, 'x', 'l.id = x.lead_id AND '.$extendedField['id'].' = x.lead_field_id');
                 $property = 'x.value';
             } elseif (in_array($field, ['utm_campaign', 'utm_content', 'utm_medium', 'utm_source', 'utm_term'])) {
                 $q->join('l', MAUTIC_TABLE_PREFIX.'lead_utmtags', 'u', 'l.id = u.lead_id');
@@ -223,7 +223,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             );
             $dataType   = $dataType['type'];
             $secure     = false !== strpos($extendedField['object'], 'Secure') ? '_secure' : '';
-            $table      = 'lead_fields_leads_'.$dataType.$secure.'_xref';
+            $table      = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
             $alias      = $dataType.$extendedField['id'];
             $col        = $alias.'.value';
         } else {

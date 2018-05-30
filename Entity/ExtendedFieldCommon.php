@@ -62,7 +62,7 @@ abstract class ExtendedFieldCommon extends CommonEntity implements CustomFieldEn
         $builder = new ClassMetadataBuilder($metadata);
         if ($dataType) {
             $builder
-                ->setTable('lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref');
+                ->setTable(MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref');
 
             $builder->createManyToOne('lead', Lead::class)
                 ->cascadePersist()
