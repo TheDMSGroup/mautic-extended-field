@@ -259,10 +259,7 @@ trait ExtendedFieldRepositoryTrait
         $extendedFields = [];
         $fieldList      = $this->getCustomFieldList('lead');
         foreach ($fields as $fieldname => $value) {
-            if (
-                $fieldList[0][$fieldname]['object'] === 'extendedField'
-                || $fieldList[0][$fieldname]['object'] === 'extendedFieldSecure'
-            ) {
+            if (in_array($fieldList[0][$fieldname]['object'], ['extendedField', 'extendedFieldSecure'])) {
                 $extendedFields[$fieldname]['value']  = $value;
                 $extendedFields[$fieldname]['type']   = $fieldList[0][$fieldname]['type'];
                 $extendedFields[$fieldname]['id']     = $fieldList[0][$fieldname]['id'];
