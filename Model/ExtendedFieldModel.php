@@ -357,9 +357,9 @@ class ExtendedFieldModel extends FieldModel
     public function deleteEntity($entity)
     {
         if ($this->isExtendedField($entity)) {
-            $secure        = 'extendedFieldSecure' === $entity->getType() ? '_secure' : '';
             $dataType      = $this->getSchemaDefinition($entity->getName(), $entity->getType());
             $dataType      = $dataType['type'];
+            $secure        = 'extendedFieldSecure' === $entity->getObject() ? '_secure' : '';
             $extendedTable = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
             $column        = [
                 'lead_field_id' => $entity->getId(),
