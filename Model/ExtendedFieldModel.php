@@ -67,8 +67,8 @@ class ExtendedFieldModel extends FieldModel
         // custom table names
         $dataType  = $this->getSchemaDefinition($entity->getAlias(), $entity->getType());
         $dataType  = $dataType['type'];
-        $secure    = ('extendedFieldSecure' == $entity->getObject()) ? true : false;
-        $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref';
+        $secure    = 'extendedFieldSecure' === $entity->getObject()? '_secure' : '';
+        $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
 
         $this->setTimestamps($entity, $isNew, $unlock);
         $objects = [
@@ -205,9 +205,7 @@ class ExtendedFieldModel extends FieldModel
      */
     public function isExtendedField($entity)
     {
-        $pos = strpos($entity->getObject(), 'extendedField');
-
-        return (is_integer($pos)) ? true : false;
+        return in_array($entity->getObject(), ['extendedField', 'extendedFieldSecure']);
     }
 
     /**
@@ -359,7 +357,7 @@ class ExtendedFieldModel extends FieldModel
     public function deleteEntity($entity)
     {
         if ($this->isExtendedField($entity)) {
-            $secure        = false == strpos($entity->getType(), 'Secure') ? '' : '_secure';
+            $secure        = $entity->getType() === 'extendedFieldSecure' ? '' : '_secure';
             $dataType      = $this->getSchemaDefinition($entity->getName(), $entity->getType());
             $dataType      = $dataType['type'];
             $extendedTable = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';

@@ -49,7 +49,10 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             ->where(
                 $qf->expr()->andX(
                     $qf->expr()->eq('lf.alias', ':alias'),
-                    $qf->expr()->like('lf.object', $qf->expr()->literal('extended%'))
+                    $qf->expr()->orX(
+                        $qf->expr()->eq('lf.object', $qf->expr()->literal('extendedField')),
+                        $qf->expr()->eq('lf.object', $qf->expr()->literal('extendedFieldSecure'))
+                    )
                 )
             )
             ->setParameter('alias', $field);
@@ -105,7 +108,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             // Standard field / UTM field / Extended field
             $extendedField = $this->getExtendedField($field);
             if ($extendedField) {
-                $secure    = (false !== strpos($extendedField['object'], 'Secure')) ? '_secure' : '';
+                $secure    = $extendedField['object'] === 'extendedFieldSecure' ? '_secure' : '';
                 $schemaDef = $this->fieldModel->getSchemaDefinition(
                     $extendedField['alias'],
                     $extendedField['type']
@@ -222,7 +225,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                 $extendedField['type']
             );
             $dataType   = $dataType['type'];
-            $secure     = false !== strpos($extendedField['object'], 'Secure') ? '_secure' : '';
+            $secure     = $extendedField['object'] === 'extendedFieldSecure' ? '_secure' : '';
             $table      = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
             $alias      = $dataType.$extendedField['id'];
             $col        = $alias.'.value';
