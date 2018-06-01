@@ -170,7 +170,7 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
             $dataType         = $leadFieldModel->getSchemaDefinition($extendedFilter['alias'], $extendedFilter['type']);
             $dataType         = $dataType['type'];
             $secure           = false !== strpos($extendedFilter['object'], 'Secure') ? '_secure' : '';
-            $tableName        = 'lead_fields_leads_'.$dataType.$secure.'_xref';
+            $tableName        = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
             $tableAlias       = $dataType.$secure.$extendedFilter['id'];
             $extendedJoinExpr = $q->expr()->andX(
                 $q->expr()->eq('l.id ', $tableAlias.'.lead_id'),

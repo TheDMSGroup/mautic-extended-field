@@ -117,13 +117,13 @@ trait ExtendedFieldRepositoryTrait
                 );
                 $dataType   = $dataType['type'];
                 $secure     = 'extendedFieldSecure' == $object ? true : false;
-                $tableName  = 'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref';
+                $tableName  = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref';
 
                 $fq = $this->getEntityManager()
                     ->getConnection()
                     ->createQueryBuilder();
                 $fq->select('f.lead_id, f.lead_field_id, f.value')
-                    ->from(MAUTIC_TABLE_PREFIX.$tableName, 'f')
+                    ->from($tableName, 'f')
                     ->where('f.lead_field_id = :lead_field_id')
                     ->andWhere($fq->expr()->eq('lead_id', ':lead_id'))
                     ->setParameter('lead_field_id', $customExtendedField['id'])
@@ -274,7 +274,7 @@ trait ExtendedFieldRepositoryTrait
                     'lead_field_id' => $values['id'],
                     'value'         => $values['value'],
                 ];
-                $extendedTable = 'lead_fields_leads_'.$dataType.($values['secure'] ? '_secure' : '').'_xref';
+                $extendedTable = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.($values['secure'] ? '_secure' : '').'_xref';
                 $this->prepareDbalFieldsForSave($column);
 
                 if (
@@ -579,7 +579,7 @@ trait ExtendedFieldRepositoryTrait
                 $details['object'],
                 'Secure'
             ) ? '_secure' : '';
-            $tableName = 'lead_fields_leads_'.$dataType.$secure.'_xref';
+            $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
             if (!isset($extendedTables[$tableName])) {
                 $count            = count($extendedTables);
                 $union            = $count > 0 ? ' UNION' : '';

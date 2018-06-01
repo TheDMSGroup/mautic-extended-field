@@ -473,7 +473,7 @@ class OverrideLeadListRepository extends LeadListRepository
                 $field->getObject(),
                 'Secure'
             ) ? '_secure' : '';
-            $tableName                              = 'lead_fields_leads_'.$dataType.$secure.'_xref';
+            $tableName                              = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
             $fields[$fieldAlias]['alias']           = $fieldAlias;
             $fields[$fieldAlias]['id']              = $field->getId();
             $fields[$fieldAlias]['label']           = $field->getLabel();
@@ -605,10 +605,8 @@ class OverrideLeadListRepository extends LeadListRepository
                 );
                 $dataType                       = $dataType['type'];
                 $secure                         = false !== strpos($object, 'Secure') ? '_secure' : '';
-                $tableName                      = 'lead_fields_leads_'.$dataType.$secure.'_xref';
-                $this->extendedFieldTableSchema = $schema->listTableColumns(
-                    MAUTIC_TABLE_PREFIX.$tableName
-                );
+                $tableName                      = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
+                $this->extendedFieldTableSchema = $schema->listTableColumns($tableName);
             }
 
             if ('lead' == $object) {
