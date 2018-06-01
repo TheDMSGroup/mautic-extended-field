@@ -596,7 +596,7 @@ trait ExtendedFieldRepositoryTrait
             $dataType   = $dataType['type'];
             // get extendedField Filters first
             // its an extended field, build a join expressions
-            $secure    = $details['object'] === 'extendedFieldSecure' ? '_secure' : '';
+            $secure    = 'extendedFieldSecure' === $details['object'] ? '_secure' : '';
             $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
             $method    = $count > 0 ? ' UNION SELECT' : 'SELECT';
             ++$count;

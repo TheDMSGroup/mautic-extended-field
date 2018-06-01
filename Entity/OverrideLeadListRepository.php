@@ -469,7 +469,7 @@ class OverrideLeadListRepository extends LeadListRepository
             $fieldModel                             = $this->fieldModel;
             $dataType                               = $fieldModel->getSchemaDefinition($fieldAlias, $field->getType());
             $dataType                               = $dataType['type'];
-            $secure                                 = $field->getObject() === 'extendedFieldSecure' ? '_secure' : '';
+            $secure                                 = 'extendedFieldSecure' === $field->getObject() ? '_secure' : '';
             $tableName                              = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
             $fields[$fieldAlias]['alias']           = $fieldAlias;
             $fields[$fieldAlias]['id']              = $field->getId();
@@ -601,7 +601,7 @@ class OverrideLeadListRepository extends LeadListRepository
                     $extendedFieldList[$details['field']]['type']
                 );
                 $dataType                       = $dataType['type'];
-                $secure                         = $object === 'extendedFieldSecure' ? '_secure' : '';
+                $secure                         = 'extendedFieldSecure' === $object ? '_secure' : '';
                 $tableName                      = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
                 $this->extendedFieldTableSchema = $schema->listTableColumns($tableName);
             }
