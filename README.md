@@ -53,7 +53,7 @@ Choose a release that matches your version of Mautic.
 | Mautic version | Installation                                                        |
 | -------------- | ------------------------------------------------------------------- |
 | 2.12.x         | `composer require thedmsgroup/mautic-extended-field-bundle "^2.12"` |
-| 2.13.x         | TBD                                                                 |
+| 2.14.x         | `composer require thedmsgroup/mautic-extended-field-bundle "^2.14"` |
 
 1. Install by running the command above or by downloading the appropriate version and unpacking the contents into a folder named `/plugins/MauticExtendedFieldBundle`
 2. Go to `/s/plugins/reload`. The Extended Fields plugin should show up. Installation is complete.

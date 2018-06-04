@@ -18,7 +18,7 @@ use MauticPlugin\MauticExtendedFieldBundle\EventListener\ConfigSubscriber;
 return [
     'name'        => 'Extended Fields',
     'description' => 'Extend Mautic custom fields for scalability and HIPAA/PCI compliance.',
-    'version'     => '2.12',
+    'version'     => '2.14',
     'author'      => 'Mautic',
     'parameters'  => [
         // set default to block creation of lead table columns
