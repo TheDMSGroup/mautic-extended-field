@@ -212,7 +212,7 @@ class OverrideLeadModel extends LeadModel
      * @return array|void
      */
     public function setFieldValues(
-        Lead &$lead,
+        Lead $lead,
         array $data,
         $overwriteWithBlank = false,
         $fetchSocialProfiles = true,
