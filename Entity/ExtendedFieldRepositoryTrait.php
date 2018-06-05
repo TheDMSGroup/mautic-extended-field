@@ -272,10 +272,13 @@ trait ExtendedFieldRepositoryTrait
     }
 
     /**
+     * Alterations from core:
+     *  Saves all extended field data in xref tables.
+     *
      * @param $entity
      * @param $flush
      */
-    public function saveExtendedEntity($entity, $flush = true)
+    public function saveEntity($entity, $flush = true)
     {
         $this->preSaveEntity($entity);
 

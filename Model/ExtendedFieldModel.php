@@ -108,46 +108,52 @@ class ExtendedFieldModel extends FieldModel
     }
 
     /**
+     * Returns lead custom fields.
+     *
      * Alterations from core:
-     *  Include extended objects.
-     *  Check permissions (if secure).
+     *  Include extended objects when various methods attempt to get fields of object 'lead'.
+     *
+     * @param $args
      *
      * @return array
      */
-    public function getLeadFields()
+    public function getEntities(array $args = [])
     {
-        // @todo - Change this to a permission base.
-        if (false) {
-            $leadFields = $this->getEntities(
-                [
-                    'filter' => [
-                        'force' => [
-                            [
-                                'column' => 'f.object',
-                                'expr'   => 'in',
-                                'value'  => ['lead', 'extendedField'],
-                            ],
-                        ],
-                    ],
-                ]
-            );
-        } else {
-            $leadFields = $this->getEntities(
-                [
-                    'filter' => [
-                        'force' => [
-                            [
-                                'column' => 'f.object',
-                                'expr'   => 'in',
-                                'value'  => ['lead', 'extendedField', 'extendedFieldSecure'],
-                            ],
-                        ],
-                    ],
-                ]
-            );
+        // @todo - use permission base to exclude secure if necessary.
+        $replacementFilter = [
+            'column' => 'f.object',
+            'expr'   => 'in',
+            'value'  => ['lead', 'extendedField', 'extendedFieldSecure'],
+        ];
+        foreach ($args as $type => &$arg) {
+            if ('filter' === $type) {
+                foreach ($arg as $key => &$filter) {
+                    if ('force' === $key) {
+                        foreach ($filter as $forceKey => &$forceFilter) {
+                            if (
+                                !empty($forceFilter['column'])
+                                && 'f.object' == $forceFilter['column']
+                                && !empty($forceFilter['expr'])
+                                && 'eq' == $forceFilter['expr']
+                                && !empty($forceFilter['value'])
+                                && 'lead' == $forceFilter['value']
+                            ) {
+                                $forceFilter = $replacementFilter;
+                            }
+                        }
+                    } elseif ('object' === $key && 'lead' === $filter) {
+                        // Move the filter to force mode in order to replace.
+                        if (!isset($arg['force'])) {
+                            $arg['force'] = [];
+                        }
+                        $arg['force'][] = $replacementFilter;
+                        unset($arg[$key]);
+                    }
+                }
+            }
         }
 
-        return $leadFields;
+        return parent::getEntities($args);
     }
 
     /**
@@ -165,112 +171,6 @@ class ExtendedFieldModel extends FieldModel
     public function getLookupResults($type, $filter = '', $limit = 10)
     {
         return $this->getRepository()->getValueList($type, $filter, $limit);
-    }
-
-    /**
-     * Alterations from core:
-     *  Include extended field objects if retrieving lead fields.
-     *
-     * @param bool|true $byGroup
-     * @param bool|true $alphabetical
-     * @param array     $filters
-     *
-     * @return array
-     */
-    public function getFieldList(
-        $byGroup = true,
-        $alphabetical = true,
-        $filters = ['isPublished' => true, 'object' => 'lead']
-    ) {
-        if (empty($filters['object']) || 'lead' != $filters['object']) {
-            return parent::getFieldList($byGroup, $alphabetical, $filters);
-        }
-
-        $forceFilters = [];
-        foreach ($filters as $col => $val) {
-            if ('object' === $col && 'lead' === $val) {
-                $forceFilters[] = [
-                    'column' => "f.{$col}",
-                    'expr'   => 'in',
-                    'value'  => ['lead', 'extendedField', 'extendedFieldSecure'],
-                ];
-            } else {
-                $forceFilters[] = [
-                    'column' => "f.{$col}",
-                    'expr'   => 'eq',
-                    'value'  => $val,
-                ];
-            }
-        }
-
-        // The rest of this method is the same as core...
-        $fields     = $this->getEntities(
-            [
-                'filter'     => [
-                    'force' => $forceFilters,
-                ],
-                'orderBy'    => 'f.order',
-                'orderByDir' => 'asc',
-            ]
-        );
-        $leadFields = [];
-        foreach ($fields as $f) {
-            if ($byGroup) {
-                $fieldName                              = $this->translator->trans(
-                    'mautic.lead.field.group.'.$f->getGroup()
-                );
-                $leadFields[$fieldName][$f->getAlias()] = $f->getLabel();
-            } else {
-                $leadFields[$f->getAlias()] = $f->getLabel();
-            }
-        }
-        if ($alphabetical) {
-            // Sort the groups
-            uksort($leadFields, 'strnatcmp');
-            if ($byGroup) {
-                // Sort each group by translation
-                foreach ($leadFields as $group => &$fieldGroup) {
-                    uasort($fieldGroup, 'strnatcmp');
-                }
-            }
-        }
-
-        return $leadFields;
-    }
-
-    /**
-     * Alterations from core:
-     *  Include extended field objects if retrieving lead fields
-     *
-     * @param string $object
-     *
-     * @return array
-     */
-    public function getPublishedFieldArrays($object = 'lead')
-    {
-        if ('lead' !== $object) {
-            return parent::getPublishedFieldArrays($object);
-        }
-
-        return $this->getEntities(
-            [
-                'filter'         => [
-                    'force' => [
-                        [
-                            'column' => 'f.isPublished',
-                            'expr'   => 'eq',
-                            'value'  => true,
-                        ],
-                        [
-                            'column' => 'f.object',
-                            'expr'   => 'in',
-                            'value'  => ['lead', 'extendedField', 'extendedFieldSecure'],
-                        ],
-                    ],
-                ],
-                'hydration_mode' => 'HYDRATE_ARRAY',
-            ]
-        );
     }
 
     /**

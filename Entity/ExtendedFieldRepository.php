@@ -65,19 +65,6 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
     }
 
     /**
-     * Get a list of leads.
-     *
-     * @param array $args
-     *
-     * @return \Doctrine\ORM\Tools\Pagination\Paginator|void
-     */
-    public function getEntities(array $args = [])
-    {
-        // @todo - Create this method?
-        // return $this->getLeadsWithCustomFields('lead', $args);
-    }
-
-    /**
      * @return $this|\Doctrine\DBAL\Query\QueryBuilder
      */
     public function getEntitiesDbalQueryBuilder()

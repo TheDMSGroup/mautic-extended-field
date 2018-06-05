@@ -65,3 +65,19 @@ Choose a release that matches your version of Mautic.
 
 Need to implement Permission pass methods for any ExtendedFieldSecure data type
 display, edit or retrieval.
+
+# Review and refactor for 2.14.x
+
+Compiler passes to refactor:
+- ExtendedFieldModel - done.
+- OverrideLeadModel - done.
+- OverrideLeadRepository
+- OverrideListModel
+
+Internal overrides to refactor:
+- OverrideLeadFieldRepository
+
+Errors/Notices to be resolved:
+- Saving a new extended field: 
+-- Undefined index: no in /Users/hd/mautic-eb/mautic/app/bundles/LeadBundle/Model/ListModel.php on line 756
+-- Undefined index: yes in /Users/hd/mautic-eb/mautic/app/bundles/LeadBundle/Model/ListModel.php on line 757
