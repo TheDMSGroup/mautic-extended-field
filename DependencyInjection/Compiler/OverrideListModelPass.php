@@ -22,17 +22,10 @@ class OverrideListModelPass implements CompilerPassInterface
 {
     /**
      * @param ContainerBuilder $container
-     *
-     * OVERRIDES the service from the lead bundle :
-     * 'mautic.lead.model.list' => [
-     * 'class'     => 'Mautic\LeadBundle\Model\ListModel',
-     *   'arguments' => [
-     *      'mautic.helper.core_parameters',
-     *    ],
-     *  ],
      */
     public function process(ContainerBuilder $container)
     {
+        /** @var \Mautic\LeadBundle\Model\ListModel $definition */
         $definition = $container->getDefinition('mautic.lead.model.list');
         $definition->setClass(OverrideListModel::class);
     }

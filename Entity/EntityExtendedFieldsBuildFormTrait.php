@@ -24,6 +24,10 @@ use Symfony\Component\Validator\Constraints\NotBlank;
  */
 trait EntityExtendedFieldsBuildFormTrait
 {
+    /**
+     * @param FormBuilderInterface $builder
+     * @param array                $options
+     */
     private function getFormExtendedFields(FormBuilderInterface $builder, array $options)
     {
         $fieldValues = [];

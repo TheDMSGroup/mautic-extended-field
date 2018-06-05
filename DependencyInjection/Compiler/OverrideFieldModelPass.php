@@ -24,24 +24,19 @@ class OverrideFieldModelPass implements CompilerPassInterface
 {
     /**
      * @param ContainerBuilder $container
-     *
-     * OVERRIDES the service from the lead bundle :
-     * 'mautic.lead.model.field' => [
-     *  'class'     => 'Mautic\LeadBundle\Model\FieldModel',
-     *   'arguments' => [
-     *      'mautic.schema.helper.factory',
-     *    ],
-     *  ],
      */
     public function process(ContainerBuilder $container)
     {
+        /** @var \Mautic\FormBundle\Model\FieldModel $definition */
         $definition = $container->getDefinition('mautic.lead.model.field');
         $definition->setClass(ExtendedFieldModel::class);
 
-        $definition3 = $container->getDefinition('mautic.lead.model.lead');
-        $definition3->setClass(OverrideLeadModel::class);
+        /** @var \Mautic\LeadBundle\Model\LeadModel $definition */
+        $definition = $container->getDefinition('mautic.lead.model.lead');
+        $definition->setClass(OverrideLeadModel::class);
 
-        $definition4 = $container->getDefinition('mautic.lead.repository.lead');
-        $definition4->setClass(OverrideLeadRepository::class);
+        /** @var \Doctrine\ORM\EntityRepository $definition */
+        $definition = $container->getDefinition('mautic.lead.repository.lead');
+        $definition->setClass(OverrideLeadRepository::class);
     }
 }
