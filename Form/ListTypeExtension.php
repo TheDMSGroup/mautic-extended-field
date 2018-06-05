@@ -1,12 +1,12 @@
 <?php
-/**
- * Mautic List Type Form Extension
- * Created by Scott Shipman.
+
+/*
+ * @copyright   2018 Mautic Contributors. All rights reserved
+ * @author      Mautic
  *
- * Date: 1/30/18
+ * @link        http://mautic.org
  *
- * Updates the Mautic Lead Bundle LeadType.php for Object field choice values
- * to use a new getFormExtendedFields($builder, $options);
+ * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Form;
@@ -16,6 +16,9 @@ use Symfony\Component\Form\AbstractTypeExtension;
 
 /**
  * Class ListTypeExtension.
+ *
+ * Updates the Mautic Lead Bundle LeadType.php for Object field choice values
+ * to use a new getFormExtendedFields($builder, $options);
  */
 class ListTypeExtension extends AbstractTypeExtension
 {

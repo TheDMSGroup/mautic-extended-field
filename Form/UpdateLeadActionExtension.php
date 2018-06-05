@@ -1,10 +1,12 @@
 <?php
-/**
- * Created by scottshipman
- * Date: 2/22/18.
+
+/*
+ * @copyright   2018 Mautic Contributors. All rights reserved
+ * @author      Mautic
  *
- * Overrides the MauticLeadBundle:UpdateLeadAction Form Type
- * so that extendedField objects are included in Field list
+ * @link        http://mautic.org
+ *
+ * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Form;
@@ -20,6 +22,12 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Validator\Constraints\Email;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
+/**
+ * Class UpdateLeadActionExtension.
+ *
+ * Overrides the MauticLeadBundle:UpdateLeadAction Form Type
+ * so that extendedField objects are included in Field list
+ */
 class UpdateLeadActionExtension extends AbstractTypeExtension
 {
     /** @var MauticFactory */

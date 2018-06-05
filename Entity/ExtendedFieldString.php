@@ -1,7 +1,7 @@
 <?php
 
 /*
- * @copyright   2014 Mautic Contributors. All rights reserved
+ * @copyright   2018 Mautic Contributors. All rights reserved
  * @author      Mautic
  *
  * @link        http://mautic.org
@@ -15,7 +15,6 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * Class ExtendedFieldString
- * {@inheritdoc}
  */
 class ExtendedFieldString extends ExtendedFieldCommon
 {

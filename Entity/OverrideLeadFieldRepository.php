@@ -1,7 +1,7 @@
 <?php
 
 /*
- * @copyright   2014 Mautic Contributors. All rights reserved
+ * @copyright   2018 Mautic Contributors. All rights reserved
  * @author      Scott Shipman
  *
  * @link        http://mautic.org
@@ -34,32 +34,6 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
     {
         parent::__construct($em, $class);
         $this->fieldModel = $fieldModel;
-    }
-
-    /**
-     * @param string $field
-     *
-     * @return null|array
-     */
-    public function getExtendedField($field)
-    {
-        $qf = $this->_em->getConnection()->createQueryBuilder();
-        $qf->select('lf.id, lf.object, lf.type, lf.alias, lf.field_group, lf.label')
-            ->from(MAUTIC_TABLE_PREFIX.'lead_fields', 'lf')
-            ->where(
-                $qf->expr()->andX(
-                    $qf->expr()->eq('lf.alias', ':alias'),
-                    $qf->expr()->orX(
-                        $qf->expr()->eq('lf.object', $qf->expr()->literal('extendedField')),
-                        $qf->expr()->eq('lf.object', $qf->expr()->literal('extendedFieldSecure'))
-                    )
-                )
-            )
-            ->setParameter('alias', $field);
-
-        $fieldConfig = $qf->execute()->fetch();
-
-        return $fieldConfig;
     }
 
     /**
@@ -172,16 +146,16 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                 } else {
                     switch ($operatorExpr) {
                         case 'startsWith':
-                            $operatorExpr    = 'like';
-                            $value           = $value.'%';
+                            $operatorExpr = 'like';
+                            $value        = $value.'%';
                             break;
                         case 'endsWith':
-                            $operatorExpr   = 'like';
-                            $value          = '%'.$value;
+                            $operatorExpr = 'like';
+                            $value        = '%'.$value;
                             break;
                         case 'contains':
-                            $operatorExpr   = 'like';
-                            $value          = '%'.$value.'%';
+                            $operatorExpr = 'like';
+                            $value        = '%'.$value.'%';
                             break;
                     }
 
@@ -199,6 +173,32 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
 
             return !empty($result['id']);
         }
+    }
+
+    /**
+     * @param string $field
+     *
+     * @return null|array
+     */
+    public function getExtendedField($field)
+    {
+        $qf = $this->_em->getConnection()->createQueryBuilder();
+        $qf->select('lf.id, lf.object, lf.type, lf.alias, lf.field_group, lf.label')
+            ->from(MAUTIC_TABLE_PREFIX.'lead_fields', 'lf')
+            ->where(
+                $qf->expr()->andX(
+                    $qf->expr()->eq('lf.alias', ':alias'),
+                    $qf->expr()->orX(
+                        $qf->expr()->eq('lf.object', $qf->expr()->literal('extendedField')),
+                        $qf->expr()->eq('lf.object', $qf->expr()->literal('extendedFieldSecure'))
+                    )
+                )
+            )
+            ->setParameter('alias', $field);
+
+        $fieldConfig = $qf->execute()->fetch();
+
+        return $fieldConfig;
     }
 
     /**

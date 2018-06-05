@@ -1,11 +1,12 @@
 <?php
-/**
- * Mautic Extended Field Form Extension
- * Created by Scott Shipman.
+
+/*
+ * @copyright   2018 Mautic Contributors. All rights reserved
+ * @author      Mautic
  *
- * Date: 1/30/18
+ * @link        http://mautic.org
  *
- * Updates the Mautic Lead Bundle FieldType.php for Object field choice values
+ * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Form;
@@ -15,6 +16,11 @@ use Mautic\LeadBundle\Form\Type\FieldType;
 use Symfony\Component\Form\AbstractTypeExtension;
 use Symfony\Component\Form\FormBuilderInterface;
 
+/**
+ * Class ExtendedFieldExtension.
+ *
+ * Updates the Mautic Lead Bundle FieldType.php for Object field choice values
+ */
 class ExtendedFieldExtension extends AbstractTypeExtension
 {
     protected $coreParameters;

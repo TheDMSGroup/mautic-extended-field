@@ -1,7 +1,7 @@
 <?php
 
 /*
- * @copyright   2014 Mautic Contributors. All rights reserved
+ * @copyright   2018 Mautic Contributors. All rights reserved
  * @author      Mautic
  *
  * @link        http://mautic.org
@@ -16,26 +16,15 @@ use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Mautic\CoreBundle\Doctrine\Helper\ColumnSchemaHelper;
 use Mautic\LeadBundle\Entity\LeadField;
-use Mautic\LeadBundle\Model\FieldModel as FieldModel;
+use Mautic\LeadBundle\Model\FieldModel;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadFieldRepository;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 
 /**
  * Class ExtendedFieldModel
- * {@inheritdoc}
  */
 class ExtendedFieldModel extends FieldModel
 {
-    /**
-     * {@inheritdoc}
-     *
-     * @return string
-     */
-    //  public function getPermissionBase()
-    //  {
-//    return 'lead:leads';
-    //  }
-
     /**
      * @return OverrideLeadFieldRepository
      */

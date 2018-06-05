@@ -163,6 +163,48 @@ trait ExtendedFieldRepositoryTrait
     }
 
     /**
+     * Join all the EAV data into one consumable array.
+     *
+     * @param array $extendedFieldList
+     * @param array $lead_ids
+     *
+     * @return array
+     */
+    public function getExtendedFieldValuesMultiple(
+        $extendedFieldList = [],
+        $lead_ids = []
+    ) {
+        if (empty($extendedFieldList)) {
+            return [];
+        }
+        $eq       = $this->getEntityManager()->getConnection();
+        $count    = 0;
+        $where_in = !empty($lead_ids) ? 'WHERE lead_id IN ('.implode(',', $lead_ids).')' : '';
+        $ex_expr  = '';
+        foreach ($extendedFieldList as $k => $details) {
+            $fieldModel = $this->leadFieldModel;
+            $dataType   = $fieldModel->getSchemaDefinition($details['alias'], $details['type']);
+            $dataType   = $dataType['type'];
+            $secure     = 'extendedFieldSecure' === $details['object'] ? '_secure' : '';
+            $tableName  = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
+            $method     = $count > 0 ? ' UNION SELECT' : 'SELECT';
+            ++$count;
+
+            $ex_expr .= "$method t$count.lead_id, t$count.lead_field_id, t$count.value, lf.alias FROM $tableName t$count LEFT JOIN lead_fields lf ON t$count.lead_field_id = lf.id $where_in";
+        }
+        $ex_query = $eq->prepare($ex_expr);
+        $ex_query->execute();
+        $results = $ex_query->fetchAll();
+        // group results by lead_id
+        $leads = [];
+        foreach ($results as $result) {
+            $leads[$result['lead_id']][$result['alias']] = $result['value'];
+        }
+
+        return $leads;
+    }
+
+    /**
      * @param array  $values
      * @param bool   $byGroup
      * @param string $object
@@ -230,8 +272,6 @@ trait ExtendedFieldRepositoryTrait
     }
 
     /**
-     * {@inheritdoc}
-     *
      * @param $entity
      * @param $flush
      */
@@ -567,48 +607,5 @@ trait ExtendedFieldRepositoryTrait
         }
 
         return $result;
-    }
-
-    /**
-     * @param array $extendedFieldList
-     * @param array $lead_ids
-     *
-     * @return array
-     */
-    public function getExtendedFieldValuesMultiple(
-        $extendedFieldList = [],
-        $lead_ids = []
-    ) {
-        if (empty($extendedFieldList)) {
-            return [];
-        }
-        // get a query builder for extendedField values to get.
-        $eq       = $this->getEntityManager()->getConnection();
-        $count    = 0;
-        $where_in = !empty($lead_ids) ? 'WHERE lead_id IN ('.implode(',', $lead_ids).')' : '';
-        $ex_expr  = '';
-        foreach ($extendedFieldList as $k => $details) {
-            $fieldModel = $this->leadFieldModel;
-            $dataType   = $fieldModel->getSchemaDefinition($details['alias'], $details['type']);
-            $dataType   = $dataType['type'];
-            // get extendedField Filters first
-            // its an extended field, build a join expressions
-            $secure    = 'extendedFieldSecure' === $details['object'] ? '_secure' : '';
-            $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
-            $method    = $count > 0 ? ' UNION SELECT' : 'SELECT';
-            ++$count;
-
-            $ex_expr .= "$method t$count.lead_id, t$count.lead_field_id, t$count.value, lf.alias FROM $tableName t$count LEFT JOIN lead_fields lf ON t$count.lead_field_id = lf.id $where_in";
-        }
-        $ex_query = $eq->prepare($ex_expr);
-        $ex_query->execute();
-        $results = $ex_query->fetchAll();
-        // group results by lead_id
-        $leads = [];
-        foreach ($results as $result) {
-            $leads[$result['lead_id']][$result['alias']] = $result['value'];
-        }
-
-        return $leads;
     }
 }

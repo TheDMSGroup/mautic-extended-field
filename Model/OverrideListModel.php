@@ -1,14 +1,12 @@
 <?php
 
 /*
- * @copyright   2014 Mautic Contributors. All rights reserved
- * @author      Scott Shipman
+ * @copyright   2018 Mautic Contributors. All rights reserved
+ * @author      Mautic
  *
  * @link        http://mautic.org
  *
- * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
- *
- * Overrides the LeadBundle ListModel.php to handle extendedField filter types
+ * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html\
  */
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
@@ -19,8 +17,9 @@ use Mautic\LeadBundle\Model\ListModel;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadListRepository as OverrideLeadListRepository;
 
 /**
- * Class OverrideListModel
- * {@inheritdoc}
+ * Class OverrideListModel.
+ *
+ * Overrides the LeadBundle ListModel.php to handle extendedField filter types
  */
 class OverrideListModel extends ListModel
 {

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * @copyright   2014 Mautic Contributorextfld. All rights reserved
+ * @copyright   2018 Mautic Contributors. All rights reserved
  * @author      Mautic
  *
  * @link        http://mautic.org
@@ -24,8 +24,6 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
     use CustomFieldRepositoryTrait;
 
     /**
-     * {@inheritdoc}
-     *
      * @param int $id should be concat of lead (lead_id) and leadField (field name)
      *
      * @return mixed|null

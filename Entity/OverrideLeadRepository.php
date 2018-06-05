@@ -1,7 +1,7 @@
 <?php
 
 /*
- * @copyright   2014 Mautic Contributors. All rights reserved
+ * @copyright   2018 Mautic Contributors. All rights reserved
  * @author      Scott Shipman
  *
  * @link        http://mautic.org
@@ -467,8 +467,6 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     }
 
     /**
-     * {@inheritdoc}
-     *
      * @param int $id
      *
      * @return mixed|null

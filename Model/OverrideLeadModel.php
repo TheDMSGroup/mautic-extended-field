@@ -1,14 +1,12 @@
 <?php
 
 /*
- * @copyright   2014 Mautic Contributors. All rights reserved
- * @author      Scott Shipman
+ * @copyright   2018 Mautic Contributors. All rights reserved
+ * @author      Mautic
  *
  * @link        http://mautic.org
  *
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
- *
- *
  */
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
@@ -26,8 +24,7 @@ use Mautic\LeadBundle\Model\LeadModel;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
 
 /**
- * Class OverrideLeadModel
- * {@inheritdoc}
+ * Class OverrideLeadModel.
  */
 class OverrideLeadModel extends LeadModel
 {
@@ -67,10 +64,10 @@ class OverrideLeadModel extends LeadModel
      * Overrides the LeadBundle LeadModel.php instance of saveEntity
      * prevents calling parent:: and replaces with custom doSave() method.
      *
-     * {@inheritdoc}
-     *
      * @param Lead $entity
      * @param bool $unlock
+     *
+     * @throws \Doctrine\ORM\ORMException
      */
     public function saveEntity($entity, $unlock = true)
     {
@@ -166,8 +163,6 @@ class OverrideLeadModel extends LeadModel
     /**
      * Overrides the LeadBundle LeadModel.php instance of getRepository()
      * forces using the OverrideLeadRepository instead.
-     *
-     * {@inheritdoc}
      *
      * @return \MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository
      */
@@ -470,6 +465,7 @@ class OverrideLeadModel extends LeadModel
     }
 
     /** Add lead to company
+     *
      * @param array      $companies
      * @param array|Lead $lead
      *

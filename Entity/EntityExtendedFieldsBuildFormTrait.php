@@ -1,5 +1,14 @@
 <?php
 
+/*
+ * @copyright   2018 Mautic Contributors. All rights reserved
+ * @author      Mautic
+ *
+ * @link        http://mautic.org
+ *
+ * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
+ */
+
 namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
 use Mautic\CoreBundle\Helper\DateTimeHelper;
@@ -10,6 +19,9 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Validator\Constraints\Email;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
+/**
+ * Trait EntityExtendedFieldsBuildFormTrait.
+ */
 trait EntityExtendedFieldsBuildFormTrait
 {
     private function getFormExtendedFields(FormBuilderInterface $builder, array $options)
