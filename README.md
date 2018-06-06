@@ -78,6 +78,7 @@ Internal overrides to refactor:
 - ExtendedFieldRepositoryTrait - done
 - EntityExtendedFieldsBuildFormTrait - done (could use more refactoring)
 - OverrideLeadFieldRepository - done
+- LeadTypeExtension - done
 
 Errors/Notices to be resolved:
 - Saving a new extended field: 
