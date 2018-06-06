@@ -18,12 +18,13 @@ use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadListRepository as 
 
 /**
  * Class OverrideListModel.
- *
- * Overrides the LeadBundle ListModel.php to handle extendedField filter types
  */
 class OverrideListModel extends ListModel
 {
     /**
+     * Alterations to core:
+     *  Return OverrideLeadListRepository instead of LeadListRepository.
+     *
      * @return OverrideLeadListRepository
      */
     public function getRepository()
@@ -39,10 +40,10 @@ class OverrideListModel extends ListModel
     }
 
     /**
-     * Overrides the getChoiceFields()method from the ListModel in LeadBundle
-     * in order to correct a form validation error on field operator choice types.
-     *
      * Get a list of field choices for filters.
+     *
+     * Alterations to core:
+     *  Form validation to support extended fields.
      *
      * @return array
      */

@@ -72,7 +72,7 @@ Compiler passes to refactor:
 - ExtendedFieldModel - done.
 - OverrideLeadModel - done.
 - OverrideLeadRepository - done
-- OverrideListModel
+- OverrideListModel - done
 
 Internal overrides to refactor:
 - ExtendedFieldRepositoryTrait - done
