@@ -49,6 +49,7 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
         }
 
         if (null != $entity && isset($extendedFieldId)) {
+            // @todo - likely needs refactoring...
             $fieldValues = $this->getFieldValues($extendedFieldId, true, 'extendedField');
             $entity->setFields($fieldValues);
         }

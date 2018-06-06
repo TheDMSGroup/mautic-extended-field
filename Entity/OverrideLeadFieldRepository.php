@@ -182,8 +182,9 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
      */
     public function getExtendedField($field)
     {
+        // @todo - Refactor to getEntities.
         $qf = $this->_em->getConnection()->createQueryBuilder();
-        $qf->select('lf.id, lf.object, lf.type, lf.alias, lf.field_group, lf.label')
+        $qf->select('lf.id, lf.object, lf.type, lf.alias, lf.field_group as "group", lf.object, lf.label')
             ->from(MAUTIC_TABLE_PREFIX.'lead_fields', 'lf')
             ->where(
                 $qf->expr()->andX(

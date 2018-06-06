@@ -61,20 +61,22 @@ Choose a release that matches your version of Mautic.
 
 ## TODO
 
-#### Permissions for Secure types
-
-Need to implement Permission pass methods for any ExtendedFieldSecure data type
-display, edit or retrieval.
+- Permissions for Secure fields
+-- Need to implement Permission pass methods for any ExtendedFieldSecure data type display, edit or retrieval.
+- Support retrieving leads by unique IDs that are also extended fields.
+-- Override LeadRepository::getLeadIdsByUniqueFields to join and pivot on columns.
 
 # Review and refactor for 2.14.x
 
 Compiler passes to refactor:
 - ExtendedFieldModel - done.
 - OverrideLeadModel - done.
-- OverrideLeadRepository
+- OverrideLeadRepository - done
 - OverrideListModel
 
 Internal overrides to refactor:
+- ExtendedFieldRepositoryTrait - done
+- EntityExtendedFieldsBuildFormTrait - done (could use more refactoring)
 - OverrideLeadFieldRepository
 
 Errors/Notices to be resolved:

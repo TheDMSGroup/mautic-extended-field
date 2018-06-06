@@ -14,7 +14,7 @@ namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Class ExtendedFieldFloat
+ * Class ExtendedFieldFloat.
  */
 class ExtendedFieldFloat extends ExtendedFieldCommon
 {

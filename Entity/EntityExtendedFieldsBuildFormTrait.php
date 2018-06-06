@@ -21,10 +21,17 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 
 /**
  * Trait EntityExtendedFieldsBuildFormTrait.
+ *
+ * Replaces EntityFieldsBuildFormTrait.
  */
 trait EntityExtendedFieldsBuildFormTrait
 {
     /**
+     * Alterations to core:
+     *  Checks field for existance of isPublished, isRequired, group, precision (to prevent warnings).
+     *
+     * @todo - If other methods are resolved, we can drop this method and this trait entirely.
+     *
      * @param FormBuilderInterface $builder
      * @param array                $options
      */
@@ -69,6 +76,12 @@ trait EntityExtendedFieldsBuildFormTrait
 
             switch ($type) {
                 case 'number':
+                    if (empty($properties['precision'])) {
+                        $properties['precision'] = null;
+                    } //ensure default locale is used
+                    else {
+                        $properties['precision'] = (int) $properties['precision'];
+                    }
 
                     if ('' === $value) {
                         // Prevent transform errors
@@ -274,10 +287,9 @@ trait EntityExtendedFieldsBuildFormTrait
                         $alias,
                         $type,
                         [
-                            'required'   => isset($field['isRequired']) ? $field['isRequired'] : false,
-                            'label'      => $field['label'],
-                            'label_attr' => ['class' => 'control-label'],
-
+                            'required'    => isset($field['isRequired']) ? $field['isRequired'] : false,
+                            'label'       => $field['label'],
+                            'label_attr'  => ['class' => 'control-label'],
                             'attr'        => $attr,
                             'data'        => $value,
                             'mapped'      => $mapped,

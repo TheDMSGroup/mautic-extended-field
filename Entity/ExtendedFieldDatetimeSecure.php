@@ -14,7 +14,7 @@ namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Class ExtendedFieldDatetimeSecure
+ * Class ExtendedFieldDatetimeSecure.
  */
 class ExtendedFieldDatetimeSecure extends ExtendedFieldCommon
 {

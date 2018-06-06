@@ -450,12 +450,15 @@ class OverrideLeadListRepository extends LeadListRepository
 
         if (!$secure) {
             $q->select('partial l.{id, label, alias, object, type}')
-                ->andWhere($q->expr()->eq('l.object', ':object'))
-                ->setParameter('object', $object);
+                ->andWhere(
+                    $q->expr()->eq('l.object', $q->expr()->literal('extendedField'))
+                );
         } else {
             $q->select('partial l.{id, label, alias, object, type}')
-                ->andWhere($q->expr()->like('l.object', ':object'))
-                ->setParameter('object', "%$object%");
+                ->andWhere($q->expr()->orX(
+                    $q->expr()->eq('l.object', $q->expr()->literal('extendedField')),
+                    $q->expr()->eq('l.object', $q->expr()->literal('extendedFieldSecure'))
+                ));
         }
 
         $q->andWhere(

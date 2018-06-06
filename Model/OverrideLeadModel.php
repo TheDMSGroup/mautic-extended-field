@@ -12,12 +12,9 @@
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
-use Mautic\LeadBundle\Entity\Company;
 use Mautic\LeadBundle\Entity\CompanyLead;
 use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Entity\LeadField;
-use Mautic\LeadBundle\Event\LeadChangeCompanyEvent;
-use Mautic\LeadBundle\LeadEvents;
 use Mautic\LeadBundle\Model\LeadModel;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
 
@@ -26,9 +23,8 @@ use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
  */
 class OverrideLeadModel extends LeadModel
 {
-
     /**
-     * Alterations from core:
+     * Alterations to core:
      *  Returns OverrideLeadRepository.
      *
      * @return \MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository
@@ -40,7 +36,7 @@ class OverrideLeadModel extends LeadModel
         $metastart = new ClassMetadata(Lead::class);
         $repo      = new OverrideLeadRepository($this->em, $metastart, $this->leadFieldModel);
 
-        // The rest of this method functions the same to core (with the exception of avoiding $this->repoSetup):
+        // The rest of this method functions similar to core (with the exception of avoiding $this->repoSetup):
         $repo->setDispatcher($this->dispatcher);
 
         if (!$repoSetup) {
@@ -63,7 +59,7 @@ class OverrideLeadModel extends LeadModel
     }
 
     /**
-     * Alterations from core:
+     * Alterations to core:
      *  Includes extended objects.
      *  Adds 'object' to the array for later use within this plugin.
      *
@@ -78,6 +74,7 @@ class OverrideLeadModel extends LeadModel
         $array = [];
 
         foreach ($fields as $field) {
+            // $field should never be an instance of LeadField... old plugin BC here.
             if ($field instanceof LeadField) {
                 $alias = $field->getAlias();
                 if ($field->isPublished() and 'Company' !== $field->getObject()) {
@@ -90,10 +87,14 @@ class OverrideLeadModel extends LeadModel
                     $array[$group][$alias]['object'] = $field->getObject();
                 }
             } else {
-                if ((isset($field['isPublished']) && $field['isPublished']) ||
+                if (
+                    (isset($field['isPublished']) && $field['isPublished']) ||
+                    // @todo - "is_published" shouldn't be used anymore, confirm:
                     (isset($field['is_published']) && $field['is_published']) &&
-                    'company' !== $field['object']) {
+                    in_array($field['object'], ['lead', 'extendedField', 'extendedFieldSecure'])
+                ) {
                     $alias                           = $field['alias'];
+                    // @todo - "field_group" shouldn't be used anymore, confirm:
                     $group                           = isset($field['group']) ? $field['group'] : $field['field_group'];
                     $array[$group][$alias]['id']     = $field['id'];
                     $array[$group][$alias]['group']  = $group;
@@ -103,7 +104,7 @@ class OverrideLeadModel extends LeadModel
                     $array[$group][$alias]['object'] = $field['object'];
                 }
             }
-        }
+        }// in_array($field['object'], ['lead', 'extendedField', 'extendedFieldSecure'])
 
         //make sure each group key is present
         $groups = ['core', 'social', 'personal', 'professional'];
@@ -117,7 +118,7 @@ class OverrideLeadModel extends LeadModel
     }
 
     /**
-     * Alterations from core:
+     * Alterations to core:
      *  One line uses $this->saveEntity($lead); instead of the core repo.
      *
      * @param $companyId

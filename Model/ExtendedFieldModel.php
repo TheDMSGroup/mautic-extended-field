@@ -20,7 +20,7 @@ use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadFieldRepository;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 
 /**
- * Class ExtendedFieldModel
+ * Class ExtendedFieldModel.
  */
 class ExtendedFieldModel extends FieldModel
 {
@@ -37,7 +37,7 @@ class ExtendedFieldModel extends FieldModel
     /**
      * Save an extended field.
      *
-     * Alterations from core:
+     * Alterations to core:
      *  The save uses OverrideLeadFieldRepository if the field is extended.
      *  We also prevent alias collisions (as it wouldn't be a column definition).
      *
@@ -110,7 +110,7 @@ class ExtendedFieldModel extends FieldModel
     /**
      * Returns lead custom fields.
      *
-     * Alterations from core:
+     * Alterations to core:
      *  Include extended objects when various methods attempt to get fields of object 'lead'.
      *
      * @param $args
@@ -159,7 +159,7 @@ class ExtendedFieldModel extends FieldModel
     /**
      * Get list of custom field values for autopopulate fields.
      *
-     * Alterations from core:
+     * Alterations to core:
      *  Uses OverrideLeadFieldRepository.
      *
      * @param $type
@@ -174,7 +174,7 @@ class ExtendedFieldModel extends FieldModel
     }
 
     /**
-     * Alterations from core:
+     * Alterations to core:
      *  If an extended field entity, delete entries in xref tables instead of dropping a column.
      *
      * @param object $entity
