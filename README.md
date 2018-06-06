@@ -79,8 +79,4 @@ Internal overrides to refactor:
 - EntityExtendedFieldsBuildFormTrait - done (could use more refactoring)
 - OverrideLeadFieldRepository - done
 - LeadTypeExtension - done
-
-Errors/Notices to be resolved:
-- Saving a new extended field: 
--- Undefined index: no in /Users/hd/mautic-eb/mautic/app/bundles/LeadBundle/Model/ListModel.php on line 756
--- Undefined index: yes in /Users/hd/mautic-eb/mautic/app/bundles/LeadBundle/Model/ListModel.php on line 757
+- UpdateLeadActionExtension - done

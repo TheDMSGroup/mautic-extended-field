@@ -19,16 +19,22 @@ use Symfony\Component\Form\AbstractTypeExtension;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 
+/**
+ * Class LeadTypeExtension
+ */
 class LeadTypeExtension extends AbstractTypeExtension
 {
     use EntityFieldsBuildFormTrait {
         getFormFields as getFormFieldsExtended;
     }
 
+    /** @var \Mautic\CoreBundle\Translation\Translator */
     private $translator;
 
+    /** @var MauticFactory */
     private $factory;
 
+    /** @var CompanyModel */
     private $companyModel;
 
     /**
@@ -53,7 +59,7 @@ class LeadTypeExtension extends AbstractTypeExtension
     }
 
     /**
-     * Overrides LeadType::getFormFields().
+     * Appends LeadType::buildForm().
      *
      * Alterations to core:
      *  Appends extended objects to the form.
