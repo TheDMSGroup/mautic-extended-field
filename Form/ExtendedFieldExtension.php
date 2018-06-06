@@ -29,7 +29,7 @@ class ExtendedFieldExtension extends AbstractTypeExtension
 
     public function __construct(MauticFactory $factory)
     {
-        /** @var CoreParametersHelper coreParameters */
+        /* @var CoreParametersHelper coreParameters */
         $this->coreParameters = $factory->getDispatcher()->getContainer()->get('mautic.helper.core_parameters');
     }
 

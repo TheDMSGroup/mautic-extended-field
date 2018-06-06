@@ -20,7 +20,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 
 /**
- * Class LeadTypeExtension
+ * Class LeadTypeExtension.
  */
 class LeadTypeExtension extends AbstractTypeExtension
 {
