@@ -9,12 +9,6 @@
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-use Mautic\LeadBundle\Form\Type\FieldType;
-use Mautic\LeadBundle\Form\Type\LeadType;
-use Mautic\LeadBundle\Form\Type\ListType;
-use Mautic\LeadBundle\Form\Type\UpdateLeadActionType;
-use MauticPlugin\MauticExtendedFieldBundle\EventListener\ConfigSubscriber;
-
 return [
     'name'        => 'Extended Fields',
     'description' => 'Extend Mautic custom fields for scalability and HIPAA/PCI compliance.',

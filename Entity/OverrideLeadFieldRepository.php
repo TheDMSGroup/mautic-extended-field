@@ -41,7 +41,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
     }
 
     /**
-     * Overrides LeadFieldRepository::compareValue()
+     * Overrides LeadFieldRepository::compareValue().
      *
      * Alterations to core:
      *  If the field is extended a join is added and the property is set to "x.value",

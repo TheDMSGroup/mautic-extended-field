@@ -53,7 +53,7 @@ class LeadTypeExtension extends AbstractTypeExtension
     }
 
     /**
-     * Overrides LeadType::getFormFields()
+     * Overrides LeadType::getFormFields().
      *
      * Alterations to core:
      *  Appends extended objects to the form.
