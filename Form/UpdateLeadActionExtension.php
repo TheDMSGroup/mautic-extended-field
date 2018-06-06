@@ -25,7 +25,7 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 /**
  * Class UpdateLeadActionExtension.
  *
- * Overrides the MauticLeadBundle:UpdateLeadAction Form Type
+ * Overrides MauticLeadBundle:UpdateLeadAction() Form Type
  * so that extendedField objects are included in Field list
  */
 class UpdateLeadActionExtension extends AbstractTypeExtension

@@ -57,7 +57,7 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     }
 
     /**
-     * Overrides LeadRepository::getEntity.
+     * Overrides LeadRepository::getEntity().
      *
      * Alterations to core:
      *  Uses getExtendedFieldValues instead of getFieldValues to prevent recursion (otherwise identical).
