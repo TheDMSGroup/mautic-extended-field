@@ -1,7 +1,7 @@
 <?php
 
 /*
- * @copyright   2014 Mautic Contributors. All rights reserved
+ * @copyright   2018 Mautic Contributors. All rights reserved
  * @author      Mautic
  *
  * @link        http://mautic.org
@@ -101,7 +101,7 @@ abstract class ExtendedFieldCommon extends CommonEntity implements CustomFieldEn
      */
     public function getPrimaryIdentifier()
     {
-        return $this->lead.'@'.$this->leadField;  // I dont know what this should be right now, so for now using this
+        return $this->lead.'@'.$this->leadField;
     }
 
     /**

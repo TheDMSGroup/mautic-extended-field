@@ -1,7 +1,7 @@
 <?php
 
 /*
- * @copyright   2014 Mautic Contributors. All rights reserved
+ * @copyright   2018 Mautic Contributors. All rights reserved
  * @author      Scott Shipman
  *
  * @link        http://mautic.org
@@ -20,26 +20,26 @@ use Doctrine\ORM\Query;
 use Doctrine\ORM\QueryBuilder;
 use Mautic\CoreBundle\Helper\SearchStringHelper;
 use Mautic\LeadBundle\Entity\CustomFieldRepositoryInterface;
-use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Entity\LeadRepository;
 use Mautic\LeadBundle\Model\FieldModel;
 
 /**
  * Class OverrideLeadRepository.
+ *
+ * Overrides: LeadRepository
+ *
+ * Alterations to core:
+ *  Uses ExtendedFieldRepositoryTrait.
+ *  Constructs with FieldModel (used for schema definitions).
  */
 class OverrideLeadRepository extends LeadRepository implements CustomFieldRepositoryInterface
 {
-    // use CustomFieldRepositoryTrait;
     use ExtendedFieldRepositoryTrait;
 
     /** @var FieldModel */
     public $leadFieldModel;
 
-    /**
-     * Stores a boolean if args has extended field filters.
-     *
-     * @var array
-     */
+    /** @var array */
     protected $extendedFieldFilters = [];
 
     /** @var array */
@@ -59,6 +59,63 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     }
 
     /**
+     * Overrides LeadRepository::getEntity().
+     *
+     * Alterations to core:
+     *  Uses getExtendedFieldValues instead of getFieldValues to prevent recursion (otherwise identical).
+     *
+     * @param int $id
+     *
+     * @return mixed|null
+     *
+     * Gets the lead object with all core and custom fields
+     */
+    public function getEntity($id = 0)
+    {
+        try {
+            $q = $this->createQueryBuilder($this->getTableAlias());
+            if (is_array($id)) {
+                $this->buildSelectClause($q, $id);
+                $contactId = (int) $id['id'];
+            } else {
+                $q->select('l, u, i')
+                    ->leftJoin('l.ipAddresses', 'i')
+                    ->leftJoin('l.owner', 'u');
+                $contactId = $id;
+            }
+            $q->andWhere($this->getTableAlias().'.id = :id')
+                ->setParameter('id', (int) $contactId);
+            $entity = $q->getQuery()->getSingleResult();
+        } catch (\Exception $e) {
+            $entity = null;
+        }
+
+        if (null === $entity) {
+            return $entity;
+        }
+
+        if (!empty($this->triggerModel)) {
+            $entity->setColor($this->triggerModel->getColorForLeadPoints($entity->getPoints()));
+        }
+
+        // Alterations to core start.
+        $fieldValues = $this->getExtendedFieldValues($id, true, 'lead');
+        // Alterations to core end.
+        $entity->setFields($fieldValues);
+
+        $entity->setAvailableSocialFields($this->availableSocialFields);
+
+        return $entity;
+    }
+
+    /**
+     * Duplicates CommonRepository::buildWhereClause but with extended field capability.
+     *
+     * Alterations to core:
+     *  Adds the $extendedFieldFilters property, to be used subsequently by other methods.
+     *  Replaces addAdvancedSearchWhereClause with addExtendedAdvancedSearchWhereClause.
+     *  Adds left joins for extended object filters.
+     *
      * @param \Doctrine\ORM\QueryBuilder $q
      * @param array                      $args
      * @param array                      $extendedFieldFilters
@@ -75,7 +132,9 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
         $advancedFilterStrings        = [];
         $queryParameters              = [];
         $queryExpression              = $q->expr()->andX();
-        $this->extendedFieldFilters   = $extendedFieldFilters;
+        // Alteration to core start.
+        $this->extendedFieldFilters = $extendedFieldFilters;
+        // Alteration to core end.
 
         if (isset($args['ids'])) {
             $ids = array_map('intval', $args['ids']);
@@ -100,7 +159,7 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
             if (is_array($filter)) {
                 if (!empty($filter['where'])) {
                     // build clauses from array
-                    $this->buildExtendedWhereClauseFromArray($q, $filter['where']);
+                    $this->buildWhereClauseFromArray($q, $filter['where']);
                 } elseif (!empty($filter['criteria']) || !empty($filter['force'])) {
                     $criteria = !empty($filter['criteria']) ? $filter['criteria'] : $filter['force'];
                     if (is_array($criteria)) {
@@ -146,11 +205,10 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
                 }
                 $this->advancedFilterCommands = $advancedFilters->commands;
 
-                list($expr, $parameters) = $this->addExtendedAdvancedSearchWhereClause(
-                    $q,
-                    $advancedFilters,
-                    $extendedFieldFilters
-                );
+                // Alteration to core start.
+                // Original: list($expr, $parameters) = $this->addAdvancedSearchWhereClause($q, $advancedFilters);
+                list($expr, $parameters) = $this->addExtendedAdvancedSearchWhereClause($q, $advancedFilters);
+                // Alteration to core end.
                 $this->appendExpression($queryExpression, $expr);
 
                 if (is_array($parameters)) {
@@ -164,6 +222,7 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
             $q->andWhere($queryExpression);
         }
 
+        // Alteration to core start.
         // Add joins for extended fields
         foreach ($this->extendedFieldFilters as $extendedFilter) {
             $leadFieldModel   = $this->leadFieldModel;
@@ -179,6 +238,7 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
 
             $q->leftjoin('l', $tableName, $tableAlias, $extendedJoinExpr);
         }
+        // Alteration to core end.
 
         // Parameters have to be set even if there are no expressions just in case a search command
         // passed back a parameter it used
@@ -192,128 +252,15 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     }
 
     /**
-     * @param \Doctrine\DBAL\Query\QueryBuilder $query
-     * @param array                             $clauses [['expr' => 'expression', 'col' => 'DB column',
-     *                                                   'val' => 'value to search for']]
-     * @param                                   $expr
-     */
-    protected function buildExtendedWhereClauseFromArray($query, array $clauses, $expr = null)
-    {
-        $isOrm       = $query instanceof QueryBuilder;
-        $columnValue = [
-            'eq',
-            'neq',
-            'lt',
-            'lte',
-            'gt',
-            'gte',
-            'like',
-            'notLike',
-            'in',
-            'notIn',
-            'between',
-            'notBetween',
-        ];
-        $justColumn  = ['isNull', 'isNotNull', 'isEmpty', 'isNotEmpty'];
-        $andOr       = ['andX', 'orX'];
-
-        if ($clauses && is_array($clauses)) {
-            foreach ($clauses as $clause) {
-                if (!empty($clause['internal']) && 'formula' === $clause['expr']) {
-                    $whereClause = array_key_exists('value', $clause) ? $clause['value'] : $clause['val'];
-                    if ($expr) {
-                        $expr->add($whereClause);
-                    } else {
-                        $query->andWhere($whereClause);
-                    }
-
-                    continue;
-                }
-
-                if (in_array($clause['expr'], $andOr)) {
-                    $composite = $query->expr()->{$clause['expr']}();
-                    $this->buildWhereClauseFromArray($query, $clause['val'], $composite);
-
-                    if (null === $expr) {
-                        $query->andWhere($composite);
-                    } else {
-                        $expr->add($composite);
-                    }
-                } else {
-                    $clause = $this->validateWhereClause($clause);
-                    $column = (false === strpos($clause['col'], '.')) ? $this->getTableAlias(
-                        ).'.'.$clause['col'] : $clause['col'];
-
-                    $whereClause = null;
-                    switch ($clause['expr']) {
-                        case 'between':
-                        case 'notBetween':
-                            if (is_array($clause['val']) && 2 === count($clause['val'])) {
-                                $not   = 'notBetween' === $clause['expr'] ? ' NOT' : '';
-                                $param = $this->generateRandomParameterName();
-                                $query->setParameter($param, $clause['val'][0]);
-                                $param2 = $this->generateRandomParameterName();
-                                $query->setParameter($param2, $clause['val'][1]);
-
-                                $whereClause = $column.$not.' BETWEEN :'.$param.' AND :'.$param2;
-                            }
-                            break;
-                        case 'isEmpty':
-                        case 'isNotEmpty':
-                            if ('empty' === $clause['expr']) {
-                                $whereClause = $query->expr()->orX(
-                                    $query->expr()->eq($column, $query->expr()->literal('')),
-                                    $query->expr()->isNull($column)
-                                );
-                            } else {
-                                $whereClause = $query->expr()->andX(
-                                    $query->expr()->neq($column, $query->expr()->literal('')),
-                                    $query->expr()->isNotNull($column)
-                                );
-                            }
-                            break;
-                        case 'in':
-                        case 'notIn':
-                            if (!$isOrm) {
-                                $whereClause = $query->expr()->{$clause['expr']}($column, (array) $clause['val']);
-                            } else {
-                                $param       = $this->generateRandomParameterName();
-                                $whereClause = $query->expr()->{$clause['expr']}($column, ':'.$param);
-                                $query->setParameter($param, $clause['val']);
-                            }
-                        // no break
-                        default:
-                            if (method_exists($query->expr(), $clause['expr'])) {
-                                if (in_array($clause['expr'], $columnValue)) {
-                                    $param       = $this->generateRandomParameterName();
-                                    $whereClause = $query->expr()->{$clause['expr']}($column, ':'.$param);
-                                    $query->setParameter($param, $clause['val']);
-                                } elseif (in_array($clause['expr'], $justColumn)) {
-                                    $whereClause = $query->expr()->{$clause['expr']}($column);
-                                }
-                            }
-                    }
-
-                    if ($whereClause) {
-                        if ($expr) {
-                            $expr->add($whereClause);
-                        } else {
-                            $query->andWhere($whereClause);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
+     * Alterations to core:
+     *  Uses parseExtendedSearchFilters instead of parseSearchFilters.
+     *
      * @param \Doctrine\ORM\QueryBuilder $qb
      * @param object                     $filters
-     * @param                            $extendedFieldFilters
      *
      * @return array
      */
-    protected function addExtendedAdvancedSearchWhereClause($qb, $filters, $extendedFieldFilters)
+    protected function addExtendedAdvancedSearchWhereClause($qb, $filters)
     {
         $parseFilters = [];
         if (isset($filters->root[0])) {
@@ -343,6 +290,11 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     }
 
     /**
+     * Extends CommonRepository::parseSearchFilters for extended fields.
+     *
+     * Alterations to core:
+     *  Uses addExtendedAdvancedSearchWhereClause instead of addAdvancedSearchWhereClause
+     *
      * @param $parseFilters
      * @param $qb
      * @param $expressions
@@ -352,19 +304,22 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     {
         foreach ($parseFilters as $f) {
             if (isset($f->children)) {
-                list($expr, $params) = $this->addExtendedAdvancedSearchWhereClause(
-                    $qb,
-                    $f,
-                    $this->extendedFieldFilters
-                );
+                list($expr, $params) = $this->addExtendedAdvancedSearchWhereClause($qb, $f);
             } else {
                 if (!empty($f->command)) {
                     // is this an Extended Field Filter?
                     if (in_array($f->command, array_keys($this->extendedFieldFilters))) {
-                        // do special where clause for extendedFields
-                        list($expr, $params) = $this->addStandardExtendedlWhereClause($qb, $f);
+                        // Change the where clause to use the extended table alias.
+                        $extendedFilter = $this->extendedFieldFilters[$f->command];
+                        $schema         = $this->leadFieldModel->getSchemaDefinition(
+                            $extendedFilter['alias'],
+                            $extendedFilter['type']
+                        );
+                        $secure              = 'extendedFieldSecure' === $extendedFilter['object'] ? '_secure' : '';
+                        $tableAlias          = $schema['type'].$secure.$extendedFilter['id'];
+                        list($expr, $params) = $this->addStandardCatchAllWhereClause($qb, $f, [$tableAlias.'.value']);
                     } elseif ($this->isSupportedSearchCommand($f->command, $f->string)) {
-                        list($expr, $params) = $this->addExtendedSearchCommandWhereClause($qb, $f);
+                        list($expr, $params) = $this->addSearchCommandWhereClause($qb, $f);
                     } else {
                         //treat the command:string as if its a single word
                         $f->string           = $f->command.':'.$f->string;
@@ -384,300 +339,18 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
         }
     }
 
-    /**
-     * @param \Doctrine\ORM\QueryBuilder $q
-     * @param object                     $filter
+    /*
+     * @todo - Support retrieving leads by unique IDs that are also extended fields.
      *
-     * @return array
-     */
-    protected function addStandardExtendedlWhereClause(&$q, $filter)
-    {
-        $unique         = $this->generateRandomParameterName(
-        ); //ensure that the string has a unique parameter identifier
-        $string         = $filter->string;
-        $extendedFilter = $this->extendedFieldFilters[$filter->command];
-
-        $leadFieldModel = $this->leadFieldModel;
-        $dataType       = $leadFieldModel->getSchemaDefinition($extendedFilter['alias'], $extendedFilter['type']);
-        $dataType       = $dataType['type'];
-        $secure         = 'extendedFieldSecure' === $extendedFilter['object'] ? '_secure' : '';
-        $tableAlias     = $dataType.$secure.$extendedFilter['id'];
-        $col            = $tableAlias.'.value';
-
-        if (!$filter->strict) {
-            if (false === strpos($string, '%')) {
-                $string = "$string%";
-            }
-        }
-
-        $ormQb = true;
-
-        if ($q instanceof QueryBuilder) {
-            $xFunc    = 'orX';
-            $exprFunc = 'like';
-        } else {
-            $ormQb = false;
-            if ($filter->not) {
-                $xFunc    = 'andX';
-                $exprFunc = 'notLike';
-            } else {
-                $xFunc    = 'orX';
-                $exprFunc = 'like';
-            }
-        }
-
-        $expr = $q->expr()->$xFunc();
-
-        $expr->add(
-            $q->expr()->$exprFunc($col, ":$unique")
-        );
-
-        if ($ormQb && $filter->not) {
-            $expr = $q->expr()->not($expr);
-        }
-
-        return [
-            $expr,
-            ["$unique" => $string],
-        ];
-    }
-
-    /**
-     * @param \Doctrine\ORM\QueryBuilder $q
-     * @param                            $filter
-     *
-     * @return array
-     */
-    protected function addExtendedSearchCommandWhereClause($q, $filter)
-    {
-        $command = $filter->command;
-        $expr    = false;
-
-        switch ($command) {
-            case $this->translator->trans('mautic.core.searchcommand.ids'):
-            case $this->translator->trans('mautic.core.searchcommand.ids', [], null, 'en_US'):
-                $expr = $this->getIdsExpr($q, $filter);
-                break;
-        }
-
-        return [
-            $expr,
-            [],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @param int $id
-     *
-     * @return mixed|null
-     *
-     * Gets the lead object with all core and custom fields
-     */
-    public function getEntity($id = 0)
-    {
-        try {
-            $q = $this->createQueryBuilder($this->getTableAlias());
-            if (is_array($id)) {
-                $this->buildSelectClause($q, $id);
-                $contactId = (int) $id['id'];
-            } else {
-                $q->select('l, u, i')
-                    ->leftJoin('l.ipAddresses', 'i')
-                    ->leftJoin('l.owner', 'u');
-                $contactId = $id;
-            }
-            $q->andWhere($this->getTableAlias().'.id = '.(int) $contactId);
-            $entity = $q->getQuery()->getSingleResult();
-        } catch (\Exception $e) {
-            $entity = null;
-        }
-
-        if (null != $entity) {
-            if (!empty($this->triggerModel)) {
-                $entity->setColor($this->triggerModel->getColorForLeadPoints($entity->getPoints()));
-            }
-
-            $fieldValues = $this->getExtendedFieldValues($id, true, 'lead');
-            $entity->setFields($fieldValues);
-
-            $entity->setAvailableSocialFields($this->availableSocialFields);
-        }
-
-        return $entity;
-    }
-
-    /**
-     * Get a list of leads.
-     *
-     * @param array $args
-     *
-     * @return array
-     */
-    public function getEntities(array $args = [])
-    {
-        $contacts = $this->getEntitiesWithCustomFields(
-            'lead',
-            $args,
-            function ($r) {
-                if (!empty($this->triggerModel)) {
-                    $r->setColor($this->triggerModel->getColorForLeadPoints($r->getPoints()));
-                }
-                $r->setAvailableSocialFields($this->availableSocialFields);
-            }
-        );
-
-        $contactCount = isset($contacts['results']) ? count($contacts['results']) : count($contacts);
-        if ($contactCount && (!empty($args['withPrimaryCompany']) || !empty($args['withChannelRules']))) {
-            $withTotalCount = (array_key_exists('withTotalCount', $args) && $args['withTotalCount']);
-            /** @var Lead[] $tmpContacts */
-            $tmpContacts = ($withTotalCount) ? $contacts['results'] : $contacts;
-
-            $withCompanies   = !empty($args['withPrimaryCompany']);
-            $withPreferences = !empty($args['withChannelRules']);
-            $contactIds      = array_keys($tmpContacts);
-
-            if ($withCompanies) {
-                $companies = $this->getEntityManager()->getRepository(
-                    'MauticLeadBundle:Company'
-                )->getCompaniesForContacts($contactIds);
-            }
-
-            if ($withPreferences) {
-                /** @var FrequencyRuleRepository $frequencyRepo */
-                $frequencyRepo  = $this->getEntityManager()->getRepository('MauticLeadBundle:FrequencyRule');
-                $frequencyRules = $frequencyRepo->getFrequencyRules(null, $contactIds);
-
-                /** @var DoNotContactRepository $dncRepository */
-                $dncRepository = $this->getEntityManager()->getRepository('MauticLeadBundle:DoNotContact');
-                $dncRules      = $dncRepository->getChannelList(null, $contactIds);
-            }
-
-            foreach ($contactIds as $id) {
-                if ($withCompanies && isset($companies[$id]) && !empty($companies[$id])) {
-                    $primary = null;
-
-                    // Try to find the primary company
-                    foreach ($companies[$id] as $company) {
-                        if (1 == $company['is_primary']) {
-                            $primary = $company;
-                        }
-                    }
-
-                    // If no primary was found, just grab the first
-                    if (empty($primary)) {
-                        $primary = $companies[$id][0];
-                    }
-
-                    if (is_array($tmpContacts[$id])) {
-                        $tmpContacts[$id]['primaryCompany'] = $primary;
-                    } elseif ($tmpContacts[$id] instanceof Lead) {
-                        $tmpContacts[$id]->setPrimaryCompany($primary);
-                    }
-                }
-
-                if ($withPreferences) {
-                    $contactFrequencyRules = (isset($frequencyRules[$id])) ? $frequencyRules[$id] : [];
-                    $contactDncRules       = (isset($dncRules[$id])) ? $dncRules[$id] : [];
-
-                    $channelRules = Lead::generateChannelRules($contactFrequencyRules, $contactDncRules);
-                    if (is_array($tmpContacts[$id])) {
-                        $tmpContacts[$id]['channelRules'] = $channelRules;
-                    } elseif ($tmpContacts[$id] instanceof Lead) {
-                        $tmpContacts[$id]->setChannelRules($channelRules);
-                    }
-                }
-            }
-
-            if ($withTotalCount) {
-                $contacts['results'] = $tmpContacts;
-            } else {
-                $contacts = $tmpContacts;
-            }
-        }
-
-        return $contacts;
-    }
-
-    /**
-     * Overrides instance from LeadRepository, called by PluginBundle::pushLead.
-     *
-     * Get a contact entity with the primary company data populated.
-     *
-     * The primary company data will be a flat array on the entity
-     * with a key of `primaryCompany`
-     *
-     * @param mixed $entity
-     *
-     * @return mixed|null
-     */
-    public function getEntityWithPrimaryCompany($entity)
-    {
-        if (is_int($entity)) {
-            $entity = $this->getEntity($entity);
-        }
-
-        if ($entity instanceof Lead) {
-            $id        = $entity->getId();
-            $companies = $this->getEntityManager()->getRepository('MauticLeadBundle:Company')->getCompaniesForContacts(
-                [$id]
-            );
-
-            if (!empty($companies[$id])) {
-                $primary = null;
-
-                foreach ($companies as $company) {
-                    if (isset($company['is_primary']) && 1 == $company['is_primary']) {
-                        $primary = $company;
-                    }
-                }
-
-                if (empty($primary)) {
-                    $primary = $companies[$id][0];
-                }
-
-                $entity->setPrimaryCompany($primary);
-            }
-        }
-
-        return $entity;
-    }
-
-    /**
-     * **********   NOT USED YET  ***********************.
-     *
-     * Overrides LeadBundle instance of getLeadIdsByUniqueFields
-     * to handle extended field table schema differences from lead table
-     * IE - needs a join and pivot on columns
-     *
-     * Get list of lead Ids by unique field data.
+     * Alterations to core:
+     *  Override LeadRepository::getLeadIdsByUniqueFields to join and pivot on columns.
      *
      * @param     $uniqueFieldsWithData is an array of columns & values to filter by
      * @param int $leadId               is the current lead id. Added to query to skip and find other leads
      *
      * @return array
      */
-    public function getLeadIdsByUniqueFields($uniqueFieldsWithData, $leadId = null)
-    {
-        $q = $this->getEntityManager()->getConnection()->createQueryBuilder()
-            ->select('l.id')
-            ->from(MAUTIC_TABLE_PREFIX.'leads', 'l');
-
-        // loop through the fields and
-        foreach ($uniqueFieldsWithData as $col => $val) {
-            $q->orWhere("l.$col = :".$col)
-                ->setParameter($col, $val);
-        }
-
-        // if we have a lead ID lets use it
-        if (!empty($leadId)) {
-            // make sure that its not the id we already have
-            $q->andWhere('l.id != '.$leadId);
-        }
-
-        $results = $q->execute()->fetchAll();
-
-        return $results;
-    }
+    // public function getLeadIdsByUniqueFields($uniqueFieldsWithData, $leadId = null)
+    // {
+    // }
 }

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * @copyright   2014 Mautic Contributors. All rights reserved
+ * @copyright   2018 Mautic Contributors. All rights reserved
  * @author      Mautic
  *
  * @link        http://mautic.org
@@ -14,28 +14,16 @@ namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\ORM\Mapping\ClassMetadata;
-use Mautic\CoreBundle\Doctrine\Helper\ColumnSchemaHelper;
 use Mautic\LeadBundle\Entity\LeadField;
-use Mautic\LeadBundle\Model\FieldModel as FieldModel;
+use Mautic\LeadBundle\Model\FieldModel;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadFieldRepository;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 
 /**
- * Class ExtendedFieldModel
- * {@inheritdoc}
+ * Class ExtendedFieldModel.
  */
 class ExtendedFieldModel extends FieldModel
 {
-    /**
-     * {@inheritdoc}
-     *
-     * @return string
-     */
-    //  public function getPermissionBase()
-    //  {
-//    return 'lead:leads';
-    //  }
-
     /**
      * @return OverrideLeadFieldRepository
      */
@@ -47,46 +35,38 @@ class ExtendedFieldModel extends FieldModel
     }
 
     /**
-     * @param      $entity
-     * @param bool $unlock
+     * Save an extended field.
      *
-     * @return mixed|void
+     * Alterations to core:
+     *  The save uses OverrideLeadFieldRepository if the field is extended.
+     *  We also prevent alias collisions (as it wouldn't be a column definition).
+     *
+     * @param object $entity
+     * @param bool   $unlock
      *
      * @throws DBALException
      * @throws DriverException
+     * @throws \Doctrine\DBAL\Schema\SchemaException
      * @throws \Mautic\CoreBundle\Exception\SchemaException
      */
     public function saveEntity($entity, $unlock = true)
     {
+        if (!$this->isExtendedField($entity)) {
+            parent::saveEntity($entity, $unlock);
+
+            return;
+        }
+
         if (!$entity instanceof LeadField) {
             throw new MethodNotAllowedHttpException(['LeadEntity']);
         }
 
         $isNew = $entity->getId() ? false : true;
-        //set some defaults
-        // custom table names
-        $dataType  = $this->getSchemaDefinition($entity->getAlias(), $entity->getType());
-        $dataType  = $dataType['type'];
-        $secure    = 'extendedFieldSecure' === $entity->getObject() ? '_secure' : '';
-        $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
-
         $this->setTimestamps($entity, $isNew, $unlock);
-        $objects = [
-            'lead'                => 'leads',
-            'company'             => 'companies',
-            'extendedField'       => $tableName,
-            'extendedFieldSecure' => $tableName,
-        ];
-        $alias   = $entity->getAlias();
-        $object  = $objects[$entity->getObject()];
-
+        $alias = $entity->getAlias();
         if ($isNew) {
             if (empty($alias)) {
                 $alias = $entity->getName();
-            }
-
-            if (empty($object)) {
-                $object = $objects[$entity->getObject()];
             }
 
             // clean the alias
@@ -94,107 +74,26 @@ class ExtendedFieldModel extends FieldModel
 
             // make sure alias is not already taken
             $repo      = $this->getRepository();
-            $testAlias = $alias;
             $aliases   = $repo->getAliases($entity->getId(), false, true, $entity->getObject());
-            $count     = (int) in_array($testAlias, $aliases);
-            $aliasTag  = $count;
-
-            while ($count) {
-                $testAlias = $alias.$aliasTag;
-                $count     = (int) in_array($testAlias, $aliases);
-                ++$aliasTag;
+            $aliasTag  = 1;
+            $testAlias = $alias;
+            while (in_array($testAlias, $aliases)) {
+                $testAlias = $alias.$aliasTag++;
             }
-
-            if ($testAlias != $alias) {
-                $alias = $testAlias;
-            }
-
-            $entity->setAlias($alias);
+            $entity->setAlias($testAlias);
         }
 
-        $type = $entity->getType();
-
-        if ('time' == $type) {
-            //time does not work well with list filters
+        // Special treatment for time (same as core).
+        if ('time' == $entity->getType()) {
             $entity->setIsListable(false);
         }
 
-        // Save the entity now if it's an existing entity
+        // Presave and postsave (same as core, but using OverrideLeadFieldRepository).
+        $event = $this->dispatchEvent('pre_save', $entity, $isNew);
+        $this->getRepository()->saveEntity($entity);
+        $this->dispatchEvent('post_save', $entity, $isNew, $event);
 
-        if (!$isNew) {
-            $event = $this->dispatchEvent('pre_save', $entity, $isNew);
-            $this->getRepository()->saveEntity($entity);
-            $this->dispatchEvent('post_save', $entity, $isNew, $event);
-        }
-
-        // Create the field as its own column in the leads table.
-        // dont do this for extendedField or extendedFieldSecure object types
-        if (!$this->isExtendedField($entity)) {
-            /** @var ColumnSchemaHelper $leadsSchema */
-            $leadsSchema = $this->schemaHelperFactory->getSchemaHelper('column', $object);
-            $isUnique    = $entity->getIsUniqueIdentifier();
-            // If the column does not exist in the contacts table, add it
-            if (!$leadsSchema->checkColumnExists($alias)) {
-                $schemaDefinition = self::getSchemaDefinition($alias, $type, $isUnique);
-
-                $leadsSchema->addColumn($schemaDefinition);
-
-                try {
-                    $leadsSchema->executeChanges();
-                    $isCreated = true;
-                } catch (DriverException $e) {
-                    $this->logger->addWarning($e->getMessage());
-
-                    if (1118 === $e->getErrorCode() /* ER_TOO_BIG_ROWSIZE */) {
-                        $isCreated = false;
-                        throw new DBALException($this->translator->trans('mautic.core.error.max.field'));
-                    } else {
-                        throw $e;
-                    }
-                }
-            }
-            // Update the unique_identifier_search index and add an index for this field
-            /** @var \Mautic\CoreBundle\Doctrine\Helper\IndexSchemaHelper $modifySchema */
-            $modifySchema = $this->schemaHelperFactory->getSchemaHelper('index', $object);
-
-            if ('string' == $schemaDefinition['type']) {
-                try {
-                    $modifySchema->addIndex([$alias], $alias.'_search');
-                    $modifySchema->allowColumn($alias);
-
-                    if ($isUnique) {
-                        // Get list of current uniques
-                        $uniqueIdentifierFields = $this->getUniqueIdentifierFields();
-
-                        // Always use email
-                        $indexColumns   = ['email'];
-                        $indexColumns   = array_merge($indexColumns, array_keys($uniqueIdentifierFields));
-                        $indexColumns[] = $alias;
-
-                        // Only use three to prevent max key length errors
-                        $indexColumns = array_slice($indexColumns, 0, 3);
-                        $modifySchema->addIndex($indexColumns, 'unique_identifier_search');
-                    }
-
-                    $modifySchema->executeChanges();
-                } catch (DriverException $e) {
-                    if (1069 === $e->getErrorCode() /* ER_TOO_MANY_KEYS */) {
-                        $this->logger->addWarning($e->getMessage());
-                    } else {
-                        throw $e;
-                    }
-                }
-            }
-        }
-
-        // If this is a new contact field, and it was successfully added to the contacts table, save it
-        if (true === $isNew) {
-            $event = $this->dispatchEvent('pre_save', $entity, $isNew);
-            $this->getRepository()->saveEntity($entity);
-            $this->dispatchEvent('post_save', $entity, $isNew, $event);
-        }
-
-        // Update order of the other fields.
+        // Update order of the other fields (same as core).
         $this->reorderFieldsByEntity($entity);
     }
 
@@ -209,33 +108,59 @@ class ExtendedFieldModel extends FieldModel
     }
 
     /**
+     * Returns lead custom fields.
+     *
+     * Alterations to core:
+     *  Include extended objects when various methods attempt to get fields of object 'lead'.
+     *
+     * @param $args
+     *
      * @return array
      */
-    public function getLeadFields()
+    public function getEntities(array $args = [])
     {
-        if (false) { // TODO change this to a permission base
-            // get extended and lead ONLY
-            $expr = [
-                'filter' => [
-                    'force' => [
-                        'column' => 'f.object',
-                        'expr'   => 'neq',
-                        'value'  => 'extendedFieldSecure',
-                    ],
-                ],
-            ];
-        } else {
-            //get all of 'em (no filters)
-            $expr = [];
+        // @todo - use permission base to exclude secure if necessary.
+        $replacementFilter = [
+            'column' => 'f.object',
+            'expr'   => 'in',
+            'value'  => ['lead', 'extendedField', 'extendedFieldSecure'],
+        ];
+        foreach ($args as $type => &$arg) {
+            if ('filter' === $type) {
+                foreach ($arg as $key => &$filter) {
+                    if ('force' === $key) {
+                        foreach ($filter as $forceKey => &$forceFilter) {
+                            if (
+                                !empty($forceFilter['column'])
+                                && 'f.object' == $forceFilter['column']
+                                && !empty($forceFilter['expr'])
+                                && 'eq' == $forceFilter['expr']
+                                && !empty($forceFilter['value'])
+                                && 'lead' == $forceFilter['value']
+                            ) {
+                                $forceFilter = $replacementFilter;
+                            }
+                        }
+                    } elseif ('object' === $key && 'lead' === $filter) {
+                        // Move the filter to force mode in order to replace.
+                        if (!isset($arg['force'])) {
+                            $arg['force'] = [];
+                        }
+                        $arg['force'][] = $replacementFilter;
+                        unset($arg[$key]);
+                    }
+                }
+            }
         }
 
-        $leadFields = $this->getEntities($expr);
-
-        return $leadFields;
+        return parent::getEntities($args);
     }
 
     /**
      * Get list of custom field values for autopopulate fields.
+     *
+     * Alterations to core:
+     *  Uses OverrideLeadFieldRepository.
      *
      * @param $type
      * @param $filter
@@ -245,148 +170,42 @@ class ExtendedFieldModel extends FieldModel
      */
     public function getLookupResults($type, $filter = '', $limit = 10)
     {
-        $repo = $this->getRepository();
-
-        return $repo->getValueList($type, $filter, $limit);
+        return $this->getRepository()->getValueList($type, $filter, $limit);
     }
 
     /**
-     * @param bool|true $byGroup
-     * @param bool|true $alphabetical
-     * @param array     $filters
+     * Alterations to core:
+     *  If an extended field entity, delete entries in xref tables instead of dropping a column.
      *
-     * @return array
-     */
-    public function getFieldList(
-        $byGroup = true,
-        $alphabetical = true,
-        $filters = [
-            'isPublished' => true,
-            //'object' => 'lead'  instead, get all non-company fields (lead, extendedField, extendedFieldSecure)
-        ]
-    ) {
-        $forceFilters = [];
-        foreach ($filters as $col => $val) {
-            $forceFilters[] = [
-                'column' => "f.{$col}",
-                'expr'   => 'eq',
-                'value'  => $val,
-            ];
-        }
-        // Get a list of custom form fields
-        $fields = $this->getEntities(
-            [
-                'filter'     => [
-                    'force' => $forceFilters,
-                ],
-                'orderBy'    => 'f.order',
-                'orderByDir' => 'asc',
-            ]
-        );
-
-        $leadFields = [];
-
-        foreach ($fields as $f) {
-            if ($byGroup) {
-                $fieldName                              = $this->translator->trans(
-                    'mautic.lead.field.group.'.$f->getGroup()
-                );
-                $leadFields[$fieldName][$f->getAlias()] = $f->getLabel();
-            } else {
-                $leadFields[$f->getAlias()] = $f->getLabel();
-            }
-        }
-
-        if ($alphabetical) {
-            // Sort the groups
-            uksort($leadFields, 'strnatcmp');
-
-            if ($byGroup) {
-                // Sort each group by translation
-                foreach ($leadFields as $group => &$fieldGroup) {
-                    uasort($fieldGroup, 'strnatcmp');
-                }
-            }
-        }
-
-        return $leadFields;
-    }
-
-    /**
-     * @param string $object
+     * @param object $entity
      *
-     * @return array
-     */
-    public function getPublishedFieldArrays($object = 'lead')
-    {
-        // if object is lead, get all objects except company else get the requested object
-        if ('lead' == $object) {
-            $value = 'company';
-            $expr  = 'neq';
-        } else {
-            $value = $object;
-            $expr  = 'eq';
-        }
-
-        return $this->getEntities(
-            [
-                'filter'         => [
-                    'force' => [
-                        [
-                            'column' => 'f.isPublished',
-                            'expr'   => 'eq',
-                            'value'  => true,
-                        ],
-                        [
-                            'column' => 'f.object',
-                            'expr'   => $expr,
-                            'value'  => $value,
-                        ],
-                    ],
-                ],
-                'hydration_mode' => 'HYDRATE_ARRAY',
-            ]
-        );
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @param  $entity
+     * @throws \Mautic\CoreBundle\Exception\SchemaException
      */
     public function deleteEntity($entity)
     {
-        if ($this->isExtendedField($entity)) {
-            $dataType      = $this->getSchemaDefinition($entity->getName(), $entity->getType());
-            $dataType      = $dataType['type'];
-            $secure        = 'extendedFieldSecure' === $entity->getObject() ? '_secure' : '';
-            $extendedTable = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
-            $column        = [
-                'lead_field_id' => $entity->getId(),
-            ];
-
-            $this->em->getConnection()->delete(
-                $extendedTable,
-                $column
-            );
-
-            $id    = $entity->getId();
-            $event = $this->dispatchEvent('pre_delete', $entity);
-            $this->getRepository()->deleteEntity($entity);
-
-            //set the id for use in events
-            $entity->deletedId = $id;
-            $this->dispatchEvent('post_delete', $entity, false, $event);
-        } else {
-            parent::deleteEntity($entity);
-
-            $objects = ['lead' => 'leads', 'company' => 'companies'];
-            $object  = $objects[$entity->getObject()];
-
-            //remove the column from the leads table
-            $leadsSchema = $this->schemaHelperFactory->getSchemaHelper('column', $object);
-            $leadsSchema->dropColumn($entity->getAlias());
-            $leadsSchema->executeChanges();
+        if (!$this->isExtendedField($entity)) {
+            return parent::deleteEntity($entity);
         }
+
+        // Pre-delete event (same as core).
+        $id    = $entity->getId();
+        $event = $this->dispatchEvent('pre_delete', $entity);
+        $this->getRepository()->deleteEntity($entity);
+
+        $schema        = $this->getSchemaDefinition($entity->getName(), $entity->getType());
+        $secure        = 'extendedFieldSecure' === $entity->getObject() ? '_secure' : '';
+        $extendedTable = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$schema['type'].$secure.'_xref';
+        $column        = [
+            'lead_field_id' => $entity->getId(),
+        ];
+        $this->em->getConnection()->delete(
+            $extendedTable,
+            $column
+        );
+
+        // Post-delete event (same as core).
+        // set the id for use in events
+        $entity->deletedId = $id;
+        $this->dispatchEvent('post_delete', $entity, false, $event);
     }
 }

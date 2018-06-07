@@ -1,26 +1,35 @@
 <?php
-/**
- * Mautic Extended Field Form Extension
- * Created by Scott Shipman.
+
+/*
+ * @copyright   2018 Mautic Contributors. All rights reserved
+ * @author      Mautic
  *
- * Date: 1/30/18
+ * @link        http://mautic.org
  *
- * Updates the Mautic Lead Bundle FieldType.php for Object field choice values
+ * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Form;
 
 use Mautic\CoreBundle\Factory\MauticFactory;
+use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\LeadBundle\Form\Type\FieldType;
 use Symfony\Component\Form\AbstractTypeExtension;
 use Symfony\Component\Form\FormBuilderInterface;
 
+/**
+ * Class ExtendedFieldExtension.
+ *
+ * Updates the Mautic Lead Bundle FieldType.php for Object field choice values.
+ */
 class ExtendedFieldExtension extends AbstractTypeExtension
 {
+    /** @var CoreParametersHelper */
     protected $coreParameters;
 
     public function __construct(MauticFactory $factory)
     {
+        /* @var CoreParametersHelper coreParameters */
         $this->coreParameters = $factory->getDispatcher()->getContainer()->get('mautic.helper.core_parameters');
     }
 
@@ -44,13 +53,17 @@ class ExtendedFieldExtension extends AbstractTypeExtension
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         // change default option to "extendedField" from "lead" when plugin is enabled and config set
-        $no_lead_table = $this->coreParameters->getParameter('disable_lead_table_fields', false);
-        if ($no_lead_table) {
+        $disallowLead = $this->coreParameters->getParameter('disable_lead_table_fields', false);
+        if ($disallowLead) {
             $options['data']->setObject('extendedField');
         }
 
-        $disabled = (!empty($options['data'])) ? $options['data']->isFixed() : false;
-        $new      = (!empty($options['data']) && $options['data']->getAlias()) ? false : true;
+        $disabled = !empty($options['data']) ? $options['data']->isFixed() : false;
+        $new      = !empty($options['data']) && $options['data']->getAlias() ? false : true;
+        $default  = !empty($options['data']) ? $options['data']->getObject() : null;
+        if (!$default) {
+            $default = $disallowLead ? 'extendedField' : 'lead';
+        }
         $builder->add(
             'object',
             'choice',
@@ -62,9 +75,9 @@ class ExtendedFieldExtension extends AbstractTypeExtension
                     'mautic.lead.extendedFieldSecure' => 'extendedFieldSecure',
                 ],
                 'choices_as_values' => true,
-                'choice_attr'       => function ($key, $val, $index) use ($no_lead_table) {
+                'choice_attr'       => function ($key, $val, $index) use ($disallowLead) {
                     // set "Contact" option disabled to true based on key or index of the choice.
-                    if ('lead' === $key && $no_lead_table) {
+                    if ('lead' === $key && $disallowLead) {
                         return ['disabled' => 'disabled'];
                     } else {
                         return [];
@@ -79,6 +92,7 @@ class ExtendedFieldExtension extends AbstractTypeExtension
                 ],
                 'required'          => false,
                 'disabled'          => ($disabled || !$new),
+                'data'              => $default,
             ]
         );
     }

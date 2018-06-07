@@ -1,7 +1,7 @@
 <?php
 
 /*
- * @copyright   2014 Mautic Contributors. All rights reserved
+ * @copyright   2018 Mautic Contributors. All rights reserved
  * @author      Scott Shipman
  *
  * @link        http://mautic.org
@@ -15,8 +15,9 @@ namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\ClassMetadata;
-use Mautic\LeadBundle\Entity\LeadFieldRepository as LeadFieldRepository;
-use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel as ExtendedFieldModel;
+use Mautic\CoreBundle\Helper\InputHelper;
+use Mautic\LeadBundle\Entity\LeadFieldRepository;
+use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
 
 class OverrideLeadFieldRepository extends LeadFieldRepository
 {
@@ -25,6 +26,9 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
 
     /**
      * OverrideLeadFieldRepository constructor.
+     *
+     * Alterations to core:
+     *  Includes fieldModel for later use in discerning schema types of fields.
      *
      * @param EntityManager      $em
      * @param ClassMetadata      $class
@@ -37,37 +41,12 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
     }
 
     /**
-     * @param string $field
+     * Overrides LeadFieldRepository::compareValue().
      *
-     * @return null|array
-     */
-    public function getExtendedField($field)
-    {
-        $qf = $this->_em->getConnection()->createQueryBuilder();
-        $qf->select('lf.id, lf.object, lf.type, lf.alias, lf.field_group, lf.label')
-            ->from(MAUTIC_TABLE_PREFIX.'lead_fields', 'lf')
-            ->where(
-                $qf->expr()->andX(
-                    $qf->expr()->eq('lf.alias', ':alias'),
-                    $qf->expr()->orX(
-                        $qf->expr()->eq('lf.object', $qf->expr()->literal('extendedField')),
-                        $qf->expr()->eq('lf.object', $qf->expr()->literal('extendedFieldSecure'))
-                    )
-                )
-            )
-            ->setParameter('alias', $field);
-
-        $fieldConfig = $qf->execute()->fetch();
-
-        return $fieldConfig;
-    }
-
-    /**
-     * Overrides LeadBundle compareValue() method.
-     *
-     * Compare a form result value with defined value for defined lead.
-     * to handle extended field table schema differences from lead table
-     * IE - needs a join and pivot on columns
+     * Alterations to core:
+     *  If the field is extended a join is added and the property is set to "x.value",
+     *      otherwise this method is identical to core, but will have to be updated frequently due to the nature
+     *      of this core method. It is always expanding, but is not extensible by overriding.
      *
      * @param int    $lead         ID
      * @param int    $field        alias
@@ -78,6 +57,14 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
      */
     public function compareValue($lead, $field, $value, $operatorExpr)
     {
+        // Alterations to core start.
+        // Run the standard compareValue if not an extended field for better BC.
+        $extendedField = $this->getExtendedField($field);
+        if (!$extendedField) {
+            return parent::compareValue($lead, $field, $value, $operatorExpr);
+        }
+        // Alterations to core end.
+
         $q = $this->_em->getConnection()->createQueryBuilder();
         $q->select('l.id')
             ->from(MAUTIC_TABLE_PREFIX.'leads', 'l');
@@ -105,25 +92,24 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                 return false;
             }
         } else {
-            // Standard field / UTM field / Extended field
-            $extendedField = $this->getExtendedField($field);
-            if ($extendedField) {
-                $secure    = 'extendedFieldSecure' === $extendedField['object'] ? '_secure' : '';
-                $schemaDef = $this->fieldModel->getSchemaDefinition(
-                    $extendedField['alias'],
-                    $extendedField['type']
-                );
-                $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$schemaDef['type'].$secure.'_xref';
-                $q->join('l', $tableName, 'x', 'l.id = x.lead_id AND '.$extendedField['id'].' = x.lead_field_id');
-                $property = 'x.value';
-            } elseif (in_array($field, ['utm_campaign', 'utm_content', 'utm_medium', 'utm_source', 'utm_term'])) {
+            // Standard field / UTM field
+            $utmField = in_array($field, ['utm_campaign', 'utm_content', 'utm_medium', 'utm_source', 'utm_term']);
+            if ($utmField) {
                 $q->join('l', MAUTIC_TABLE_PREFIX.'lead_utmtags', 'u', 'l.id = u.lead_id');
-                $q->orderBy('u.date_added', 'DESC');
-                $q->setMaxResults(1);
                 $property = 'u.'.$field;
             } else {
                 $property = 'l.'.$field;
             }
+
+            // Alterations to core start.
+            // We already know this is an extended field, so add out join and override the property.
+            $secure    = 'extendedFieldSecure' === $extendedField['object'] ? '_secure' : '';
+            $schema    = $this->fieldModel->getSchemaDefinition($extendedField['alias'], $extendedField['type']);
+            $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$schema['type'].$secure.'_xref';
+            $q->join('l', $tableName, 'x', 'l.id = x.lead_id AND '.$extendedField['id'].' = x.lead_field_id');
+            $property = 'x.value';
+            // Alterations to core end.
+
             if ('empty' === $operatorExpr || 'notEmpty' === $operatorExpr) {
                 $q->where(
                     $q->expr()->andX(
@@ -156,6 +142,28 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                 )
                     ->setParameter('lead', (int) $lead)
                     ->setParameter('value', $value);
+            } elseif ('in' === $operatorExpr || 'notIn' === $operatorExpr) {
+                $value = $q->expr()->literal(
+                    InputHelper::clean($value)
+                );
+
+                $value = trim($value, "'");
+                if ('not' === substr($operatorExpr, 0, 3)) {
+                    $operator = 'NOT REGEXP';
+                } else {
+                    $operator = 'REGEXP';
+                }
+
+                $expr = $q->expr()->andX(
+                    $q->expr()->eq('l.id', ':lead')
+                );
+
+                $expr->add(
+                    'l.'.$field." $operator '\\\\|?$value\\\\|?'"
+                );
+
+                $q->where($expr)
+                    ->setParameter('lead', (int) $lead);
             } else {
                 $expr = $q->expr()->andX(
                     $q->expr()->eq('l.id', ':lead')
@@ -194,7 +202,11 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                     ->setParameter('lead', (int) $lead)
                     ->setParameter('value', $value);
             }
-
+            if ($utmField) {
+                // Match only against the latest UTM properties.
+                $q->orderBy('u.date_added', 'DESC');
+                $q->setMaxResults(1);
+            }
             $result = $q->execute()->fetch();
 
             return !empty($result['id']);
@@ -202,9 +214,36 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
     }
 
     /**
-     * Gets a list of unique values from fields for autocompletes.
-     * Overrides the method defined in CustomFieldRepositoryTrait
-     * to included extended field value lookups.
+     * Get an extended field given the field alias.
+     *
+     * @param string $alias
+     *
+     * @return null|array
+     */
+    private function getExtendedField($alias)
+    {
+        $qf = $this->_em->getConnection()->createQueryBuilder();
+        $qf->select('lf.id, lf.object, lf.type, lf.alias, lf.field_group as "group", lf.object, lf.label')
+            ->from(MAUTIC_TABLE_PREFIX.'lead_fields', 'lf')
+            ->where(
+                $qf->expr()->andX(
+                    $qf->expr()->eq('lf.alias', ':alias'),
+                    $qf->expr()->orX(
+                        $qf->expr()->eq('lf.object', $qf->expr()->literal('extendedField')),
+                        $qf->expr()->eq('lf.object', $qf->expr()->literal('extendedFieldSecure'))
+                    )
+                )
+            )
+            ->setParameter('alias', $alias);
+
+        return $qf->execute()->fetch();
+    }
+
+    /**
+     * Overrides CustomFieldRepositoryTrait::getValueList().
+     *
+     * Alterations to core:
+     *  Includes extended field values.
      *
      * @param        $field
      * @param string $search
@@ -236,8 +275,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             $col   = $this->getTableAlias().'.'.$field;
         }
 
-        $q
-            ->select("DISTINCT $col AS $field")
+        $q->select("DISTINCT $col AS $field")
             ->from($table, $alias);
 
         if (!empty($extendedField)) {

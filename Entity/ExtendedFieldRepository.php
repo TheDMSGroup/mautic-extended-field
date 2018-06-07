@@ -1,7 +1,7 @@
 <?php
 
 /*
- * @copyright   2014 Mautic Contributorextfld. All rights reserved
+ * @copyright   2018 Mautic Contributors. All rights reserved
  * @author      Mautic
  *
  * @link        http://mautic.org
@@ -24,8 +24,6 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
     use CustomFieldRepositoryTrait;
 
     /**
-     * {@inheritdoc}
-     *
      * @param int $id should be concat of lead (lead_id) and leadField (field name)
      *
      * @return mixed|null
@@ -51,6 +49,7 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
         }
 
         if (null != $entity && isset($extendedFieldId)) {
+            // @todo - likely needs refactoring...
             $fieldValues = $this->getFieldValues($extendedFieldId, true, 'extendedField');
             $entity->setFields($fieldValues);
         }
@@ -64,19 +63,6 @@ class ExtendedFieldRepository extends CommonRepository implements CustomFieldRep
     public function getTableAlias()
     {
         // just nothing
-    }
-
-    /**
-     * Get a list of leads.
-     *
-     * @param array $args
-     *
-     * @return \Doctrine\ORM\Tools\Pagination\Paginator|void
-     */
-    public function getEntities(array $args = [])
-    {
-        // @todo - Create this method?
-        // return $this->getLeadsWithCustomFields('lead', $args);
     }
 
     /**

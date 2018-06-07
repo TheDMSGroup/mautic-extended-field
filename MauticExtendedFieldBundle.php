@@ -1,10 +1,10 @@
 <?php
 
 /*
- * @copyright   Mautic, Inc. All rights reserved
- * @author      Mautic, Inc
+ * @copyright   2018 Mautic Contributors. All rights reserved
+ * @author      Mautic
  *
- * @link        https://mautic.org
+ * @link        http://mautic.org
  *
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
@@ -18,14 +18,14 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 /**
  * Class MauticExtendedFieldBundle.
+ *
+ * Implements Compiler Passes to Override the Lead Bundle FieldModel
+ * https://symfony.com/doc/2.8/service_container/compiler_passes.html
+ * allows to add a custom extendedField object value.
  */
 class MauticExtendedFieldBundle extends PluginBundleBase
 {
     /**
-     * Implements Compiler Passes to Override the Lead Bundle FieldModel
-     * https://symfony.com/doc/2.8/service_container/compiler_passes.html
-     * allows to add a custom extendedField object value.
-     *
      * @param ContainerBuilder $container
      */
     public function build(ContainerBuilder $container)
