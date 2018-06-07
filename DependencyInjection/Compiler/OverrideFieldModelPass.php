@@ -1,13 +1,12 @@
 <?php
-/**
- * Created scottshipman
- *  OVERRIDES the service from the lead bundle :
- *  'mautic.lead.model.field' => [
- *   'class'     => 'Mautic\LeadBundle\Model\FieldModel',
- *    'arguments' => [
- *        'mautic.schema.helper.factory',
- *     ],
- *    ],.
+
+/*
+ * @copyright   2018 Mautic Contributors. All rights reserved
+ * @author      Mautic
+ *
+ * @link        http://mautic.org
+ *
+ * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
 namespace MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler;
@@ -18,17 +17,26 @@ use MauticPlugin\MauticExtendedFieldBundle\Model\OverrideLeadModel;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
+/**
+ * Class OverrideFieldModelPass.
+ */
 class OverrideFieldModelPass implements CompilerPassInterface
 {
+    /**
+     * @param ContainerBuilder $container
+     */
     public function process(ContainerBuilder $container)
     {
+        /** @var \Mautic\FormBundle\Model\FieldModel $definition */
         $definition = $container->getDefinition('mautic.lead.model.field');
         $definition->setClass(ExtendedFieldModel::class);
 
-        $definition3 = $container->getDefinition('mautic.lead.model.lead');
-        $definition3->setClass(OverrideLeadModel::class);
+        /** @var \Mautic\LeadBundle\Model\LeadModel $definition */
+        $definition = $container->getDefinition('mautic.lead.model.lead');
+        $definition->setClass(OverrideLeadModel::class);
 
-        $definition4 = $container->getDefinition('mautic.lead.repository.lead');
-        $definition4->setClass(OverrideLeadRepository::class);
+        /** @var \Doctrine\ORM\EntityRepository $definition */
+        $definition = $container->getDefinition('mautic.lead.repository.lead');
+        $definition->setClass(OverrideLeadRepository::class);
     }
 }

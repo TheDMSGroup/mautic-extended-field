@@ -4,60 +4,63 @@ namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
 use Doctrine\DBAL\Query\QueryBuilder;
 use Mautic\LeadBundle\Entity\CustomFieldEntityTrait;
-use Mautic\LeadBundle\Helper\CustomFieldHelper;
 
 /**
  * Trait ExtendedFieldRepositoryTrait.
+ *
+ * Used by: OverrideLeadRepository
+ * Overrides: CustomFieldRepositoryTrait
+ *
+ * When used in addition to CustomFieldRepositoryTrait, it overrides:
+ *  CustomFieldRepositoryTrait::getCustomFieldList
+ *  CustomFieldRepositoryTrait::saveEntity
+ *  CustomFieldRepositoryTrait::getEntitiesWithCustomFields
+ *
+ * Adds:
+ *  getExtendedFieldValues          (used in OverrideLeadRepository, but only calls getExtendedFieldValuesMultiple now)
+ *  getExtendedFieldValuesMultiple  (used only here)
+ *  formatExtendedFieldValues       (used only here)
+ *  getExtendedFieldFilters         (used only here)
  */
 trait ExtendedFieldRepositoryTrait
 {
     use CustomFieldEntityTrait;
 
     /** @var array */
-    protected $customExtendedFieldList = [];
-
-    /** @var array */
-    protected $customExtendedFieldSecureList = [];
-
-    /** @var array */
-    protected $customLeadFieldList = [];
+    protected $customFieldListByObject = [];
 
     /**
+     * Alterations to core:
+     *  Include extended objects when requesting lead custom fields.
+     *
+     * Merging:
+     *  When merging to core, the core method should instead use getEntities instead of a query,
+     *      then we won't have to modify the method for extended field compatibility.
+     *  The original method doesn't seem to be cognizant of object changes.
+     *
      * @param string $object
      *
      * @return array [$fields, $fixedFields]
      */
     public function getCustomFieldList($object)
     {
-        if ('lead' == $object) {
-            $thisList = $this->customLeadFieldList;
-        } else {
-            $thisList = 'extendedField' == $object ? $this->customExtendedFieldList : $this->customExtendedFieldSecureList;
-        }
-
-        if (empty($thisList)) {
-            //Get the list of custom fields
-            $fq = $this->getEntityManager()
-                ->getConnection()
-                ->createQueryBuilder();
-
-            // if object==lead we really want everything but company
-            if ('lead' == $object) {
-                $objectexpr = 'company';
-                $expr       = 'neq';
-            } else {
-                $expr       = 'eq';
-                $objectexpr = $object;
+        if (empty($this->customFieldListByObject[$object])) {
+            if ('lead' !== $object) {
+                return parent::getCustomFieldList($object);
             }
 
-            $fq->select(
-                'f.id, f.label, f.alias, f.type, f.field_group as "group", f.object, f.is_fixed'
-            )
+            //Get the list of custom fields
+            /** @var QueryBuilder $fq */
+            $fq = $this->getEntityManager()->getConnection()->createQueryBuilder();
+            $fq->select('f.id, f.label, f.alias, f.type, f.field_group as "group", f.object, f.is_fixed')
                 ->from(MAUTIC_TABLE_PREFIX.'lead_fields', 'f')
                 ->where('f.is_published = :published')
-                ->andWhere($fq->expr()->$expr('object', ':object'))
-                ->setParameter('published', true, 'boolean')
-                ->setParameter('object', $objectexpr);
+                ->andWhere($fq->expr()->orX(
+                    $fq->expr()->eq('f.object', $fq->expr()->literal('lead')),
+                    $fq->expr()->eq('f.object', $fq->expr()->literal('extendedField')),
+                    $fq->expr()->eq('f.object', $fq->expr()->literal('extendedFieldSecure'))
+                ))
+                ->setParameter('published', true, 'boolean');
             $results = $fq->execute()->fetchAll();
 
             $fields      = [];
@@ -71,22 +74,16 @@ trait ExtendedFieldRepositoryTrait
 
             unset($results);
 
-            if ('extendedField' == $object) {
-                $this->customExtendedFieldList = [$fields, $fixedFields];
-                $thisList                      = $this->customExtendedFieldList;
-            } elseif ('extendedFieldSecure' == $object) {
-                $this->customExtendedFieldSecureList = [$fields, $fixedFields];
-                $thisList                            = $this->customExtendedFieldSecureList;
-            } else {
-                $this->customLeadFieldList = [$fields, $fixedFields];
-                $thisList                  = $this->customLeadFieldList;
-            }
+            $this->customFieldListByObject[$object] = [$fields, $fixedFields];
         }
 
-        return $thisList;
+        return $this->customFieldListByObject[$object];
     }
 
     /**
+     * Extends:
+     *  getFieldValues to include extended field values.
+     *
      * @param        $id      (from leads table) identifies the lead
      * @param bool   $byGroup
      * @param string $object  = "extendedField" or "extendedFieldSecure"
@@ -98,144 +95,95 @@ trait ExtendedFieldRepositoryTrait
         $byGroup = true,
         $object = 'lead'
     ) {
-        //use DBAL to get entity fields
+        if ('lead' !== $object) {
+            return $this->getFieldValues($id, $byGroup, $object);
+        }
 
-        if ('lead' == $object) {
-            $fields = $this->getFieldValues($id, false, 'lead');
+        $fields = $this->getFieldValues($id, false, $object);
 
-            // Discern which fields are extended.
-            $extendedFieldList = [];
-            foreach ($fields as $key => $field) {
-                if (in_array($field['object'], ['extendedField', 'extendedFieldSecure'])) {
-                    $extendedFieldList[$key] = $field;
-                }
+        $values = [];
+        foreach ($fields as $key => $value) {
+            $values[$key] = $value['value'];
+        }
+
+        // Discern which fields are extended.
+        $extendedFieldList = [];
+        foreach ($fields as $key => $field) {
+            if (in_array($field['object'], ['extendedField', 'extendedFieldSecure'])) {
+                $extendedFieldList[$key] = $field;
             }
-            // Get the values of the extended fields.
-            $extendedFieldValues = $this->getExtendedFieldValuesMultiple($extendedFieldList, [$id]);
-            if ($extendedFieldValues) {
-                $extendedFieldValues = reset($extendedFieldValues);
-            }
+        }
+
+        // Get the values of the extended fields.
+        $extendedFieldValues = $this->getExtendedFieldValuesMultiple($extendedFieldList, [$id]);
+        if ($extendedFieldValues) {
+            $extendedFieldValues = reset($extendedFieldValues);
+
             // Update the extended fields with the values retrieved.
             foreach ($extendedFieldList as $key => $field) {
                 if (isset($extendedFieldValues[$key])) {
-                    $fields[$key]['value'] = $extendedFieldValues[$key];
+                    $values[$key] = $extendedFieldValues[$key];
                 } else {
                     // The value would be an ID so we should always nullify.
-                    $fields[$key]['value'] = null;
+                    $values[$key] = null;
                 }
             }
-        } else {
-            $fields = $this->getFieldValues($id, $byGroup, $object);
         }
 
-        // Old method was to get every field individually, rather than a UNION select, leaving here for posterity.
-        // foreach ($customExtendedFieldList[0] as $key => $customExtendedField) {
-        //     if (false !== strpos($customExtendedField['object'], 'extendedField')) {
-        //         // 'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref');
-        //         $fieldModel = $this->leadFieldModel;
-        //         $dataType   = $fieldModel->getSchemaDefinition(
-        //             $customExtendedField['alias'],
-        //             $customExtendedField['type']
-        //         );
-        //         $dataType   = $dataType['type'];
-        //         $secure     = 'extendedFieldSecure' == $object ? true : false;
-        //         $tableName  = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.($secure ? '_secure' : '').'_xref';
-        //
-        //         $fq = $this->getEntityManager()
-        //             ->getConnection()
-        //             ->createQueryBuilder();
-        //         $fq->select('f.lead_id, f.lead_field_id, f.value')
-        //             ->from($tableName, 'f')
-        //             ->where('f.lead_field_id = :lead_field_id')
-        //             ->andWhere($fq->expr()->eq('lead_id', ':lead_id'))
-        //             ->setParameter('lead_field_id', $customExtendedField['id'])
-        //             ->setParameter('lead_id', $id);
-        //         $values                = $fq->execute()->fetchAll();
-        //         $fields[$key]['value'] = !empty($values[0]) ? $values[0]['value'] : null;
-        //     }
-        // }
-
-        return $this->formatExtendedFieldValues(
-            $fields,
-            $byGroup,
-            $object
-        ); // should always be 0=>values, want just values
+        return $this->formatFieldValues($values, $byGroup, $object);
     }
 
     /**
-     * @param array  $values
-     * @param bool   $byGroup
-     * @param string $object
+     * Join all the EAV data into one consumable array.
+     *
+     * @param array $extendedFieldList
+     * @param array $lead_ids
      *
      * @return array
      */
-    protected function formatExtendedFieldValues(
-        $values,
-        $byGroup = true,
-        $object = 'extendedField'
+    private function getExtendedFieldValuesMultiple(
+        $extendedFieldList = [],
+        $lead_ids = []
     ) {
-        list($fields, $fixedFields) = $this->getCustomFieldList($object);
+        if (empty($extendedFieldList)) {
+            return [];
+        }
+        $eq       = $this->getEntityManager()->getConnection();
+        $count    = 0;
+        $where_in = !empty($lead_ids) ? 'WHERE lead_id IN ('.implode(',', $lead_ids).')' : '';
+        $ex_expr  = '';
+        foreach ($extendedFieldList as $k => $details) {
+            $fieldModel = $this->leadFieldModel;
+            $schema     = $fieldModel->getSchemaDefinition($details['alias'], $details['type']);
+            $secure     = 'extendedFieldSecure' === $details['object'] ? '_secure' : '';
+            $tableName  = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$schema['type'].$secure.'_xref';
+            $method     = $count > 0 ? ' UNION SELECT' : 'SELECT';
+            ++$count;
 
-        $this->removeNonFieldColumns($fields, $fixedFields);
+            $ex_expr .= "$method t$count.lead_id, t$count.lead_field_id, t$count.value, lf.alias FROM $tableName t$count LEFT JOIN lead_fields lf ON t$count.lead_field_id = lf.id $where_in";
+        }
+        $ex_query = $eq->prepare($ex_expr);
+        $ex_query->execute();
+        $results = $ex_query->fetchAll();
 
-        // Reorder leadValues based on field order
-
-        $fieldValues = [];
-
-        //loop over results to put fields in something that can be assigned to the entities
-        foreach ($values as $k => $r) {
-            if (!empty($values[$k])) {
-                if (isset($r['value'])) {
-                    $r = CustomFieldHelper::fixValueType(
-                        $fields[$k]['type'],
-                        $r['value']
-                    );
-                    if (!is_null($r)) {
-                        switch ($fields[$k]['type']) {
-                            case 'number':
-                                $r = (float) $r;
-                                break;
-                            case 'boolean':
-                                $r = (int) $r;
-                                break;
-                        }
-                    }
-                } else {
-                    $r = null;
-                }
-            } else {
-                $r = null;
-            }
-            if ($byGroup) {
-                $fieldValues[$fields[$k]['group']][$fields[$k]['alias']]          = $fields[$k];
-                $fieldValues[$fields[$k]['group']][$fields[$k]['alias']]['value'] = $r;
-            } else {
-                $fieldValues[$fields[$k]['alias']]          = $fields[$k];
-                $fieldValues[$fields[$k]['alias']]['value'] = $r;
-            }
-            unset($fields[$k]);
+        // Group results by lead_id.
+        $leads = [];
+        foreach ($results as $row => $result) {
+            $leads[$result['lead_id']][$result['alias']] = $result['value'];
+            unset($results[$row]);
         }
 
-        if ($byGroup) {
-            //make sure each group key is present
-            $groups = $this->getFieldGroups();
-            foreach ($groups as $g) {
-                if (!isset($fieldValues[$g])) {
-                    $fieldValues[$g] = [];
-                }
-            }
-        }
-
-        return $fieldValues;
+        return $leads;
     }
 
     /**
-     * {@inheritdoc}
+     * Alterations to core:
+     *  Saves all extended field data in xref tables.
      *
      * @param $entity
      * @param $flush
      */
-    public function saveExtendedEntity($entity, $flush = true)
+    public function saveEntity($entity, $flush = true)
     {
         $this->preSaveEntity($entity);
 
@@ -258,80 +206,74 @@ trait ExtendedFieldRepositoryTrait
         // Get Extended Fields to separate from standard Update statement.
         $extendedFields = [];
         $fieldList      = $this->getCustomFieldList('lead');
-        foreach ($fields as $fieldname => $value) {
-            if (in_array($fieldList[0][$fieldname]['object'], ['extendedField', 'extendedFieldSecure'])) {
-                $extendedFields[$fieldname]['value']  = $value;
-                $extendedFields[$fieldname]['type']   = $fieldList[0][$fieldname]['type'];
-                $extendedFields[$fieldname]['id']     = $fieldList[0][$fieldname]['id'];
-                $extendedFields[$fieldname]['name']   = $fieldname;
-                $extendedFields[$fieldname]['secure'] = $fieldList[0][$fieldname]['object'] === 'extendedFieldSecure';
-                unset($fields[$fieldname]);
-                // I'm leaving this in here, commented out, as a life lesson :)
-                // break;
+        foreach ($fields as $alias => $value) {
+            if (in_array($fieldList[0][$alias]['object'], ['extendedField', 'extendedFieldSecure'])) {
+                // Depends on object added by alteration in organizeFieldsByGroup.
+                $extendedFields[$alias]['object'] = $fieldList[0][$alias]['object'];
+                $extendedFields[$alias]['id']     = $fieldList[0][$alias]['id'];
+                $extendedFields[$alias]['type']   = $fieldList[0][$alias]['type'];
+                $extendedFields[$alias]['alias']  = $alias;
+                $extendedFields[$alias]['value']  = $value;
+                unset($fields[$alias]);
             }
         }
 
-        // Save standard/core fields.
+        $this->prepareDbalFieldsForSave($fields);
+
+        // Save standard/core fields (same as core).
         if (!empty($fields)) {
-            $table = $this->getEntityManager()->getClassMetadata(
-                $this->getClassName()
-            )->getTableName();
-            $this->prepareDbalFieldsForSave($fields);
-            $this->getEntityManager()->getConnection()->update(
-                $table,
-                $fields,
-                ['id' => $entity->getId()]
-            );
+            $table = $this->getEntityManager()->getClassMetadata($this->getClassName())->getTableName();
+            $this->getEntityManager()->getConnection()->update($table, $fields, ['id' => $entity->getId()]);
         }
 
+        // Now to update extended fields if there were any to be updated.
+        // @todo - Refactor to merge inserts/updates by type to reduce query count when saving many fields.
         if (!empty($extendedFields)) {
-            foreach ($extendedFields as $extendedField => $values) {
-                $fieldModel    = $this->leadFieldModel;
-                $dataType      = $fieldModel->getSchemaDefinition($values['name'], $values['type']);
-                $dataType      = $dataType['type'];
-                $column        = [
-                    'lead_field_id' => $values['id'],
-                    'value'         => $values['value'],
+            foreach ($extendedFields as $extendedField) {
+                $fieldModel = $this->leadFieldModel;
+                $schema     = $fieldModel->getSchemaDefinition($extendedField['alias'], $extendedField['type']);
+                $columns    = [
+                    'value' => $extendedField['value'],
                 ];
-                $extendedTable = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.($values['secure'] ? '_secure' : '').'_xref';
-                $this->prepareDbalFieldsForSave($column);
+                $secure     = 'extendedFieldSecure' === $extendedField['object'] ? '_secure' : '';
+                $tableName  = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$schema['type'].$secure.'_xref';
+                $this->prepareDbalFieldsForSave($columns);
 
                 if (
                     isset($changes['fields'])
-                    && isset($changes['fields'][$values['name']])
-                    && is_null($changes['fields'][$values['name']][0])
-                    && !empty($changes['fields'][$values['name']][1])
+                    && isset($changes['fields'][$extendedField['alias']])
+                    && is_null($changes['fields'][$extendedField['alias']][0])
+                    && !empty($changes['fields'][$extendedField['alias']][1])
                 ) {
-                    // Need to do an insert, no previous value for this lead id
-                    $column['lead_id'] = $entity->getId();
+                    // Need to do an insert, no previous value exists for this lead.
+                    $columns['lead_id']       = $entity->getId();
+                    $columns['lead_field_id'] = $extendedField['id'];
                     $this->getEntityManager()->getConnection()->insert(
-                        $extendedTable,
-                        $column
+                        $tableName,
+                        $columns
                     );
                 } else {
                     if (
                         isset($changes['fields'])
-                        && !empty($changes['fields'][$values['name']][0])
-                        && empty($changes['fields'][$values['name']][1])
+                        && !empty($changes['fields'][$extendedField['alias']][0])
+                        && empty($changes['fields'][$extendedField['alias']][1])
                     ) {
                         // Need to delete the row from db table because new value is empty
-                        $lead_id = $entity->getId();
-                        $column  = [
-                            'lead_field_id' => $values['id'],
-                            'lead_id'       => $lead_id,
-                        ];
                         $this->getEntityManager()->getConnection()->delete(
-                            $extendedTable,
-                            $column
-                        );
-                    } else {
-                        // Update the lead.
-                        $this->getEntityManager()->getConnection()->update(
-                            $extendedTable,
-                            $column,
+                            $tableName,
                             [
                                 'lead_id'       => $entity->getId(),
-                                'lead_field_id' => $values['id'],
+                                'lead_field_id' => $extendedField['id'],
+                            ]
+                        );
+                    } else {
+                        // Update the lead field with a new value.
+                        $this->getEntityManager()->getConnection()->update(
+                            $tableName,
+                            $columns,
+                            [
+                                'lead_id'       => $entity->getId(),
+                                'lead_field_id' => $extendedField['id'],
                             ]
                         );
                     }
@@ -343,6 +285,10 @@ trait ExtendedFieldRepositoryTrait
     }
 
     /**
+     * Alterations to core:
+     *  If extended fields are being used, it uses ExtendedBuildWhereClause instead of buildWhereClause.
+     *  Overlays field values with extended field values.
+     *
      * @param      $object
      * @param      $args
      * @param null $resultsCallback
@@ -354,14 +300,7 @@ trait ExtendedFieldRepositoryTrait
         $args,
         $resultsCallback = null
     ) {
-        $originalArgs               = $args;
         list($fields, $fixedFields) = $this->getCustomFieldList($object);
-        $extendedFieldList          = [];
-        foreach ($fields as $k => $field) {
-            if (in_array($field['object'], ['extendedField', 'extendedFieldSecure'])) {
-                $extendedFieldList[$k] = $field;
-            }
-        }
 
         //Fix arguments if necessary
         $args = $this->convertOrmProperties($this->getClassName(), $args);
@@ -370,20 +309,27 @@ trait ExtendedFieldRepositoryTrait
         /** @var QueryBuilder $dq */
         $dq = isset($args['qb']) ? $args['qb'] : $this->getEntitiesDbalQueryBuilder();
 
-        // check to see if $args has any extendedFields
+        // Generate where clause first to know if we need to use distinct on primary ID or not
+        $this->useDistinctCount = false;
+
+        // Alteration to core start.
+        // Check to see if $args has any extendedFields.
+        $extendedFieldList = [];
+        foreach ($fields as $k => $field) {
+            if (in_array($field['object'], ['extendedField', 'extendedFieldSecure'])) {
+                $extendedFieldList[$k] = $field;
+            }
+        }
         $extendedFieldFilters = !empty($this->ExtendedFieldFilters) ? $this->ExtendedFieldFilters : $this->getExtendedFieldFilters(
             $args,
             $extendedFieldList
         );
-
-        // Generate where clause first to know if we need to use distinct on primary ID or not
-        $this->useDistinctCount = false;
-
         if (!empty($extendedFieldFilters)) {
             $this->ExtendedBuildWhereClause($dq, $args, $extendedFieldFilters);
         } else {
             $this->buildWhereClause($dq, $args);
         }
+        // Alteration to core end.
 
         // Distinct is required here to get the correct count when group by is used due to applied filters
         $countSelect = ($this->useDistinctCount) ? 'COUNT(DISTINCT('.$this->getTableAlias(
@@ -394,8 +340,6 @@ trait ExtendedFieldRepositoryTrait
         if ($groupBy = $dq->getQueryPart('groupBy')) {
             $dq->resetQueryPart('groupBy');
         }
-
-        // $query = $dq->getSQL(); // debug purposes only
 
         //get a total count
         $result = $dq->execute()->fetchAll();
@@ -415,18 +359,19 @@ trait ExtendedFieldRepositoryTrait
             $dq->resetQueryPart('select');
             $this->buildSelectClause($dq, $args);
 
-            // $query = $dq->getSQL(); // debug purposes only
-
             $results = $dq->execute()->fetchAll();
 
             //loop over results to put fields in something that can be assigned to the entities
             $fieldValues         = [];
             $groups              = $this->getFieldGroups();
+
+            // Alteration to core start.
             $lead_ids            = array_map('reset', $results);
             $extendedFieldValues = $this->getExtendedFieldValuesMultiple(
                 $extendedFieldList,
                 $lead_ids
             );
+            // Alteration to core end.
 
             foreach ($results as $result) {
                 $id = $result['id'];
@@ -438,13 +383,16 @@ trait ExtendedFieldRepositoryTrait
                         $fieldValues[$id][$fields[$k]['group']][$fields[$k]['alias']]          = $fields[$k];
                         $fieldValues[$id][$fields[$k]['group']][$fields[$k]['alias']]['value'] = $r;
                     }
-                    // And...add the extended field to result if the current lead has that field value
+
+                    // Alteration to core start.
+                    // Add the extended field to result if the current lead has that field value
                     foreach ($extendedFieldList as $fieldToAdd => $e_config) {
-                        // todo Apply filters from extended fields
+                        // @todo - Apply filters from extended fields
                         $e_value                                                                                 = isset($extendedFieldValues[$id][$fieldToAdd]) ? $extendedFieldValues[$id][$fieldToAdd] : null;
                         $fieldValues[$id][$fields[$fieldToAdd]['group']][$fields[$fieldToAdd]['alias']]          = $fields[$fieldToAdd];
                         $fieldValues[$id][$fields[$fieldToAdd]['group']][$fields[$fieldToAdd]['alias']]['value'] = $e_value;
                     }
+                    // Alteration to core end.
                 }
 
                 //make sure each group key is present
@@ -476,6 +424,7 @@ trait ExtendedFieldRepositoryTrait
                 $order .= ' ELSE '.$count.' END) AS HIDDEN ORD';
 
                 //ORM - generates lead entities
+                /** @var \Doctrine\ORM\QueryBuilder $q */
                 $q = $this->getEntitiesOrmQueryBuilder($order);
                 $this->buildSelectClause($dq, $args);
 
@@ -490,6 +439,7 @@ trait ExtendedFieldRepositoryTrait
                     ->getResult();
 
                 //assign fields
+                /** @var Lead $r */
                 foreach ($results as $r) {
                     $id = $r->getId();
                     $r->setFields($fieldValues[$id]);
@@ -511,6 +461,8 @@ trait ExtendedFieldRepositoryTrait
     }
 
     /**
+     * Discern search filters that are bound to extended fields.
+     *
      * @param string|array $args
      * @param array        $extendedFieldList
      *
@@ -519,32 +471,31 @@ trait ExtendedFieldRepositoryTrait
     private function getExtendedFieldFilters($args, $extendedFieldList)
     {
         $result = [];
-
         if (isset($args['filter'])) {
-            foreach (array_keys($extendedFieldList) as $extendedField) {
-                // @todo - this strpos checking will need to be refactored to use regex and check word boundries.
+            foreach (array_keys($extendedFieldList) as $alias) {
+                // @todo - Instead of strpos use regex w/ word boundry, loop below needs cleanup.
                 if (
                     isset($args['filter']['string'])
                     && (
                         (
                             is_string($args['filter']['string']) && false !== strpos(
                                 $args['filter']['string'],
-                                $extendedField
+                                $alias
                             )
                         )
                         || (
                             is_string($args['filter']['force']) && false !== strpos(
                                 $args['filter']['force'],
-                                $extendedField
+                                $alias
                             )
                         )
                     )
                 ) {
                     // field is in the filter array somewhere
-                    $result[$extendedField] = $extendedFieldList[$extendedField];
+                    $result[$alias] = $extendedFieldList[$alias];
                     continue;
                 }
-                $extendedFieldLength = strlen($extendedField);
+                $extendedFieldLength = strlen($alias);
                 foreach (['string', 'force'] as $type) {
                     if (
                         isset($args['filter'][$type])
@@ -555,8 +506,8 @@ trait ExtendedFieldRepositoryTrait
                                 if (substr(
                                         $filter['column'],
                                         strlen($filter['column']) - $extendedFieldLength - 1
-                                    ) == '.'.$extendedField) {
-                                    $result[$extendedField] = $extendedFieldList[$extendedField];
+                                    ) == '.'.$alias) {
+                                    $result[$alias] = $extendedFieldList[$alias];
                                     continue;
                                 }
                             }
@@ -567,48 +518,5 @@ trait ExtendedFieldRepositoryTrait
         }
 
         return $result;
-    }
-
-    /**
-     * @param array $extendedFieldList
-     * @param array $lead_ids
-     *
-     * @return array
-     */
-    public function getExtendedFieldValuesMultiple(
-        $extendedFieldList = [],
-        $lead_ids = []
-    ) {
-        if (empty($extendedFieldList)) {
-            return [];
-        }
-        // get a query builder for extendedField values to get.
-        $eq       = $this->getEntityManager()->getConnection();
-        $count    = 0;
-        $where_in = !empty($lead_ids) ? 'WHERE lead_id IN ('.implode(',', $lead_ids).')' : '';
-        $ex_expr  = '';
-        foreach ($extendedFieldList as $k => $details) {
-            $fieldModel = $this->leadFieldModel;
-            $dataType   = $fieldModel->getSchemaDefinition($details['alias'], $details['type']);
-            $dataType   = $dataType['type'];
-            // get extendedField Filters first
-            // its an extended field, build a join expressions
-            $secure    = 'extendedFieldSecure' === $details['object'] ? '_secure' : '';
-            $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
-            $method    = $count > 0 ? ' UNION SELECT' : 'SELECT';
-            ++$count;
-
-            $ex_expr .= "$method t$count.lead_id, t$count.lead_field_id, t$count.value, lf.alias FROM $tableName t$count LEFT JOIN lead_fields lf ON t$count.lead_field_id = lf.id $where_in";
-        }
-        $ex_query = $eq->prepare($ex_expr);
-        $ex_query->execute();
-        $results = $ex_query->fetchAll();
-        // group results by lead_id
-        $leads = [];
-        foreach ($results as $result) {
-            $leads[$result['lead_id']][$result['alias']] = $result['value'];
-        }
-
-        return $leads;
     }
 }

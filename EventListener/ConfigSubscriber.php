@@ -1,5 +1,14 @@
 <?php
 
+/*
+ * @copyright   2018 Mautic Contributors. All rights reserved
+ * @author      Mautic
+ *
+ * @link        http://mautic.org
+ *
+ * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
+ */
+
 namespace MauticPlugin\MauticExtendedFieldBundle\EventListener;
 
 use Mautic\ConfigBundle\ConfigEvents;
@@ -126,18 +135,40 @@ class ConfigSubscriber extends CommonSubscriber
      */
     private function convertToExtendedFieldQuery()
     {
-        $this->fieldModel = $this->dispatcher->getContainer()->get('mautic.lead.model.field');
-        $this->leadModel  = $this->dispatcher->getContainer()->get('mautic.lead.model.lead');
+        $this->fieldModel   = $this->dispatcher->getContainer()->get('mautic.lead.model.field');
+        $this->leadModel    = $this->dispatcher->getContainer()->get('mautic.lead.model.lead');
+        $this->selectParts  = $this->query->getQueryPart('select');
+        $this->orderByParts = $this->query->getQueryPart('orderBy');
+        $this->groupByParts = $this->query->getQueryPart('groupBy');
+        $this->filters      = $this->event->getReport()->getFilters();
+        $this->where        = $this->query->getQueryPart('where');
+        $this->fieldTables  = isset($this->fieldTables) ? $this->fieldTables : [];
+        $this->count        = 0;
+        if (!$this->extendedFields) {
+            // Previous method deprecated:
+            // $this->extendedFields = $this->leadModel->getExtendedEntities(['keys' => 'alias']);
 
-        $this->selectParts    = $this->query->getQueryPart('select');
-        $this->orderByParts   = $this->query->getQueryPart('orderBy');
-        $this->groupByParts   = $this->query->getQueryPart('groupBy');
-        $this->filters        = $this->event->getReport()->getFilters();
-        $this->where          = $this->query->getQueryPart('where');
-        $args                 = ['keys' => 'alias'];
-        $this->extendedFields = $this->leadModel->getExtendedEntities($args);
-        $this->fieldTables    = isset($this->fieldTables) ? $this->fieldTables : [];
-        $this->count          = 0;
+            // @todo - check permissions before including Secure.
+            $fields = $this->leadModel->getEntities(
+                [
+                    [
+                        'column' => 'f.isPublished',
+                        'expr'   => 'eq',
+                        'value'  => true,
+                    ],
+                    'force'          => [
+                        'column' => 'f.object',
+                        'expr'   => 'in',
+                        'value'  => ['extendedField', 'extendedFieldSecure'],
+                    ],
+                    'hydration_mode' => 'HYDRATE_ARRAY',
+                ]
+            );
+            // Key by alias.
+            foreach ($fields as $field) {
+                $this->extendedFields[$field['alias']] = $field;
+            }
+        }
 
         $this->alterSelect();
         if (method_exists($this->event, 'getQuery')) { // identify ReportQueryEvent instance in backwards compatible way

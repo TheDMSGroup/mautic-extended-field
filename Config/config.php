@@ -1,19 +1,13 @@
 <?php
 
 /*
- * @copyright   2016 Mautic, Inc. All rights reserved
- * @author      Mautic, Inc
+ * @copyright   2018 Mautic Contributors. All rights reserved
+ * @author      Mautic
  *
- * @link        https://mautic.org
+ * @link        http://mautic.org
  *
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
-
-use Mautic\LeadBundle\Form\Type\FieldType;
-use Mautic\LeadBundle\Form\Type\LeadType;
-use Mautic\LeadBundle\Form\Type\ListType;
-use Mautic\LeadBundle\Form\Type\UpdateLeadActionType;
-use MauticPlugin\MauticExtendedFieldBundle\EventListener\ConfigSubscriber;
 
 return [
     'name'        => 'Extended Fields',
@@ -27,7 +21,7 @@ return [
     'services'    => [
         'events' => [
             'mautic.extended_field.config.subscriber' => [
-                'class' => ConfigSubscriber::class,
+                'class' => 'MauticPlugin\MauticExtendedFieldBundle\EventListener\ConfigSubscriber',
             ],
         ],
         'forms'  => [
@@ -43,7 +37,7 @@ return [
                 'arguments'    => ['mautic.factory'],
                 'tag'          => 'form.type_extension',
                 'tagArguments' => [
-                    'extended_type' => UpdateLeadActionType::class,
+                    'extended_type' => 'Mautic\LeadBundle\Form\Type\UpdateLeadActionType',
                 ],
             ],
             'mautic.form.extension.extended_field'    => [
@@ -51,7 +45,7 @@ return [
                 'arguments'    => ['mautic.factory'],
                 'tag'          => 'form.type_extension',
                 'tagArguments' => [
-                    'extended_type' => FieldType::class,
+                    'extended_type' => 'Mautic\LeadBundle\Form\Type\FieldType',
                 ],
             ],
             'mautic.form.extension.extended_lead'     => [
@@ -59,7 +53,7 @@ return [
                 'arguments'    => ['mautic.factory', 'mautic.lead.model.company'],
                 'tag'          => 'form.type_extension',
                 'tagArguments' => [
-                    'extended_type' => LeadType::class,
+                    'extended_type' => 'Mautic\LeadBundle\Form\Type\LeadType',
                 ],
             ],
             'mautic.form.extension.extended_list'     => [
@@ -76,7 +70,7 @@ return [
                 ],
                 'tag'          => 'form.type_extension',
                 'tagArguments' => [
-                    'extended_type' => ListType::class,
+                    'extended_type' => 'Mautic\LeadBundle\Form\Type\ListType',
                 ],
             ],
         ],
