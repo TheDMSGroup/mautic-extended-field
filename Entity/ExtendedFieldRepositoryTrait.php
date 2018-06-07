@@ -8,6 +8,9 @@ use Mautic\LeadBundle\Entity\CustomFieldEntityTrait;
 /**
  * Trait ExtendedFieldRepositoryTrait.
  *
+ * Used by: OverrideLeadRepository
+ * Overrides: CustomFieldRepositoryTrait
+ *
  * When used in addition to CustomFieldRepositoryTrait, it overrides:
  *  CustomFieldRepositoryTrait::getCustomFieldList
  *  CustomFieldRepositoryTrait::saveEntity
@@ -215,17 +218,12 @@ trait ExtendedFieldRepositoryTrait
             }
         }
 
+        $this->prepareDbalFieldsForSave($fields);
+
         // Save standard/core fields (same as core).
         if (!empty($fields)) {
-            $table = $this->getEntityManager()->getClassMetadata(
-                $this->getClassName()
-            )->getTableName();
-            $this->prepareDbalFieldsForSave($fields);
-            $this->getEntityManager()->getConnection()->update(
-                $table,
-                $fields,
-                ['id' => $entity->getId()]
-            );
+            $table = $this->getEntityManager()->getClassMetadata($this->getClassName())->getTableName();
+            $this->getEntityManager()->getConnection()->update($table, $fields, ['id' => $entity->getId()]);
         }
 
         // Now to update extended fields if there were any to be updated.

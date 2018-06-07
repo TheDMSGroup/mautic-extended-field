@@ -26,6 +26,8 @@ use Mautic\LeadBundle\Model\FieldModel;
 /**
  * Class OverrideLeadRepository.
  *
+ * Overrides: LeadRepository
+ *
  * Alterations to core:
  *  Uses ExtendedFieldRepositoryTrait.
  *  Constructs with FieldModel (used for schema definitions).
