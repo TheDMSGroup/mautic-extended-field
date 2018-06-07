@@ -2,17 +2,21 @@
 
 ![](Assets/img/icon.png?raw=true)
 
-Allows near-infinite custom fields.
+Features:
+* Allows for hundreds of custom fields.
+* Prevents outages due to field additions/deletions at large scale (when used exclusively).
+* Allows for separation of data for those with HIPAA/PCI concerns.
 
-This plugin was created to help overcome an anticipated challenge supporting Custom Fields. 
+Out of the box Mautic has a few challenges for companies that need hundreds of fields, or to store millions of leads.
 A full problem definition can be found at https://github.com/mautic/mautic/issues/4139. 
-This plugin is a compromise between a strict EAV approach and current custom field support, and allows an admin to disable the core "Contact" fields in favor of Extended fields when needed.
+This plugin is a compromise between a strict EAV approach and current custom field support, and allows an admin to disable the core "Contact" fields in favor of Extended fields if needed.
 
 ![](Assets/img/screenshot.png?raw=true)
 
 ## Plugin Overview
 
 #### New Schema Structure
+
 When creating a custom field, rather than adding a column to either the Lead (leads) or Company (companies) tables,
 This plugin implements new tables based on field type (boolean, text, choice, etc), and similar tables
 for secure data fields. A total of 14 new tables are created following the table name syntax:
@@ -26,7 +30,8 @@ Each table contains the columns:
 	 `lead_field_id` - the id of the corresponding Custom Field from the `lead_fields` table
 	 `value` - the value for the Custom Field. 
 
-#### Overriding Mutic Lead Bundle
+#### Overriding Mautic Lead Bundle
+
 This plugin takes two approaches to overriding current methods for managing custom fields.
 
 To allow for new Object types for Custom Fields, three form types are overridden
@@ -38,7 +43,7 @@ This Plugin overrides the `FieldType`, `LeadType` and `ListType` form definition
 The other method of overriding the Mautic Lead Bundle is Symfony's Compiler Pass method. 
 This allows the plugin to redirect the Classes used for service definitions from the Mautic Lead Bundle
 to use Classes defined by this plugin.
-The following services were redefined using this methid:
+The following services were redefined using this method:
 
     `mautic.lead.model.field`
     `mautic.form.type.leadfield`
@@ -58,6 +63,7 @@ Choose a release that matches your version of Mautic.
 1. Install by running the command above or by downloading the appropriate version and unpacking the contents into a folder named `/plugins/MauticExtendedFieldBundle`
 2. Go to `/s/plugins/reload`. The Extended Fields plugin should show up. Installation is complete.
 3. When creating new custom fields `/s/contacts/fields/new` select Object "Extended" or "Extended Secure".
+4. Optionally disable "core" lead fields in ExtendedField Settings `/s/config/edit`.
 
 ## TODO
 
@@ -65,6 +71,7 @@ Choose a release that matches your version of Mautic.
 -- Need to implement Permission pass methods for any ExtendedFieldSecure data type display, edit or retrieval.
 - Support retrieving leads by unique IDs that are also extended fields.
 -- Override LeadRepository::getLeadIdsByUniqueFields to join and pivot on columns.
+- Support segmentation by an "empty" extended field (outer join).
 
 # Review and refactor for 2.14.x
 
@@ -81,3 +88,5 @@ Internal overrides to refactor:
 - LeadTypeExtension - done
 - UpdateLeadActionExtension - done
 - ExtendedFieldExtension - done
+
+Icon by [lakshishasri](https://thenounproject.com/lakshishasri/) from the Noun project.

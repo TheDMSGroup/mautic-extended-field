@@ -11,7 +11,7 @@
 
 return [
     'name'        => 'Extended Fields',
-    'description' => 'Extend Mautic custom fields for scalability and HIPAA/PCI compliance.',
+    'description' => 'Extends custom fields for scalability and HIPAA/PCI compliance.',
     'version'     => '2.14',
     'author'      => 'Mautic',
     'parameters'  => [
