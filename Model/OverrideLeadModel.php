@@ -12,9 +12,12 @@
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Mautic\LeadBundle\Entity\CompanyChangeLog;
 use Mautic\LeadBundle\Entity\CompanyLead;
 use Mautic\LeadBundle\Entity\Lead;
+use Mautic\LeadBundle\Entity\LeadEventLog;
 use Mautic\LeadBundle\Entity\LeadField;
+use Mautic\LeadBundle\Helper\IdentifyCompanyHelper;
 use Mautic\LeadBundle\Model\LeadModel;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
 
@@ -93,7 +96,7 @@ class OverrideLeadModel extends LeadModel
                     (isset($field['is_published']) && $field['is_published']) &&
                     in_array($field['object'], ['lead', 'extendedField', 'extendedFieldSecure'])
                 ) {
-                    $alias                           = $field['alias'];
+                    $alias = $field['alias'];
                     // @todo - "field_group" shouldn't be used anymore, confirm:
                     $group                           = isset($field['group']) ? $field['group'] : $field['field_group'];
                     $array[$group][$alias]['id']     = $field['id'];
@@ -163,9 +166,9 @@ class OverrideLeadModel extends LeadModel
         }
 
         if (!empty($companyArray)) {
-            // The following is the only line altered in this method from core.
-            // @todo - patch core to avoid having to do this.
-            $this->saveEntity($lead);
+            // Alteration to core start.
+            $this->getRepository()->saveEntity($lead);
+            // Alteration to core end.
             $this->companyModel->getCompanyLeadRepository()->saveEntities($companyArray, false);
         }
 
@@ -173,5 +176,117 @@ class OverrideLeadModel extends LeadModel
         $this->em->clear(CompanyLead::class);
 
         return ['oldPrimary' => $oldPrimaryCompany, 'newPrimary' => $companyId];
+    }
+
+    /**
+     * Alteration to core:
+     *  Avoid parent::saveEntity recursion.
+     *
+     * @param Lead $entity
+     * @param bool $unlock
+     *
+     * @throws \Doctrine\ORM\ORMException
+     */
+    public function saveEntity($entity, $unlock = true)
+    {
+        $companyFieldMatches = [];
+        $fields              = $entity->getFields();
+        $company             = null;
+
+        //check to see if we can glean information from ip address
+        if (!$entity->imported && count($ips = $entity->getIpAddresses())) {
+            $details = $ips->first()->getIpDetails();
+            // Only update with IP details if none of the following are set to prevent wrong combinations
+            if (empty($fields['core']['city']['value']) && empty($fields['core']['state']['value']) && empty($fields['core']['country']['value']) && empty($fields['core']['zipcode']['value'])) {
+                if (!empty($details['city'])) {
+                    $entity->addUpdatedField('city', $details['city']);
+                    $companyFieldMatches['city'] = $details['city'];
+                }
+
+                if (!empty($details['region'])) {
+                    $entity->addUpdatedField('state', $details['region']);
+                    $companyFieldMatches['state'] = $details['region'];
+                }
+
+                if (!empty($details['country'])) {
+                    $entity->addUpdatedField('country', $details['country']);
+                    $companyFieldMatches['country'] = $details['country'];
+                }
+
+                if (!empty($details['zipcode'])) {
+                    $entity->addUpdatedField('zipcode', $details['zipcode']);
+                }
+            }
+        }
+
+        $updatedFields = $entity->getUpdatedFields();
+        if (isset($updatedFields['company'])) {
+            $companyFieldMatches['company']            = $updatedFields['company'];
+            list($company, $leadAdded, $companyEntity) = IdentifyCompanyHelper::identifyLeadsCompany(
+                $companyFieldMatches,
+                $entity,
+                $this->companyModel
+            );
+            if ($leadAdded) {
+                $entity->addCompanyChangeLogEntry(
+                    'form',
+                    'Identify Company',
+                    'Lead added to the company, '.$company['companyname'],
+                    $company['id']
+                );
+            }
+        }
+
+        $this->processManipulator($entity);
+
+        $this->setEntityDefaultValues($entity);
+
+        // Alteration to core start.
+        // parent::saveEntity($entity, $unlock);
+        $isNew = $this->isNewEntity($entity);
+        $this->setTimestamps($entity, $isNew, $unlock);
+        $event = $this->dispatchEvent('pre_save', $entity, $isNew);
+        $this->getRepository()->saveEntity($entity);
+        $this->dispatchEvent('post_save', $entity, $isNew, $event);
+        // Alteration to core end.
+
+        if (!empty($company)) {
+            // Save after the lead in for new leads created through the API and maybe other places
+            $this->companyModel->addLeadToCompany($companyEntity, $entity);
+            $this->setPrimaryCompany($companyEntity->getId(), $entity->getId());
+        }
+
+        $this->em->clear(CompanyChangeLog::class);
+    }
+
+    /**
+     * Duplication from core:
+     *  Exact copy of LeadModel method (which is private).
+     *
+     * @param Lead $lead
+     */
+    private function processManipulator(Lead $lead)
+    {
+        if ($lead->isNewlyCreated() || $lead->wasAnonymous()) {
+            // Only store an entry once for created and once for identified, not every time the lead is saved
+            $manipulator = $lead->getManipulator();
+            if (null !== $manipulator) {
+                $manipulationLog = new LeadEventLog();
+                $manipulationLog->setLead($lead)
+                    ->setBundle($manipulator->getBundleName())
+                    ->setObject($manipulator->getObjectName())
+                    ->setObjectId($manipulator->getObjectId());
+                if ($lead->isAnonymous()) {
+                    $manipulationLog->setAction('created_contact');
+                } else {
+                    $manipulationLog->setAction('identified_contact');
+                }
+                $description = $manipulator->getObjectDescription();
+                $manipulationLog->setProperties(['object_description' => $description]);
+
+                $lead->addEventLog($manipulationLog);
+                $lead->setManipulator(null);
+            }
+        }
     }
 }
