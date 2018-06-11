@@ -20,6 +20,7 @@ use Doctrine\ORM\Query;
 use Doctrine\ORM\QueryBuilder;
 use Mautic\CoreBundle\Helper\SearchStringHelper;
 use Mautic\LeadBundle\Entity\CustomFieldRepositoryInterface;
+use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Entity\LeadRepository;
 use Mautic\LeadBundle\Model\FieldModel;
 
@@ -52,9 +53,9 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
      * @param ClassMetadata $class
      * @param FieldModel    $fieldModel
      */
-    public function __construct(EntityManager $em, ClassMetadata $class, FieldModel $fieldModel)
+    public function __construct(EntityManager $em, FieldModel $fieldModel)
     {
-        parent::__construct($em, $class);
+        parent::__construct($em, new ClassMetadata(Lead::class));
         $this->leadFieldModel = $fieldModel;
     }
 

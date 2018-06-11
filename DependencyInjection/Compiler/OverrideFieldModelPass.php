@@ -16,6 +16,9 @@ use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
 use MauticPlugin\MauticExtendedFieldBundle\Model\OverrideLeadModel;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Reference;
+
+// use Symfony\Component\DependencyInjection\Reference;
 
 /**
  * Class OverrideFieldModelPass.
@@ -27,16 +30,18 @@ class OverrideFieldModelPass implements CompilerPassInterface
      */
     public function process(ContainerBuilder $container)
     {
-        /** @var \Mautic\FormBundle\Model\FieldModel $definition */
-        $definition = $container->getDefinition('mautic.lead.model.field');
-        $definition->setClass(ExtendedFieldModel::class);
+        $container->getDefinition('mautic.lead.model.field')
+            ->setClass(ExtendedFieldModel::class);
 
-        /** @var \Mautic\LeadBundle\Model\LeadModel $definition */
-        $definition = $container->getDefinition('mautic.lead.model.lead');
-        $definition->setClass(OverrideLeadModel::class);
+        $container->getDefinition('mautic.lead.model.lead')
+            ->setClass(OverrideLeadModel::class);
 
-        /** @var \Doctrine\ORM\EntityRepository $definition */
-        $definition = $container->getDefinition('mautic.lead.repository.lead');
-        $definition->setClass(OverrideLeadRepository::class);
+        $container->getDefinition('mautic.lead.repository.lead')
+            ->setFactory(null)
+            ->setArguments([
+                new Reference('doctrine.orm.entity_manager'),
+                new Reference('mautic.lead.model.field')
+            ])
+            ->setClass(OverrideLeadRepository::class);
     }
 }

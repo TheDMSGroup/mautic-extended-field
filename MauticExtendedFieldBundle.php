@@ -30,9 +30,9 @@ class MauticExtendedFieldBundle extends PluginBundleBase
      */
     public function build(ContainerBuilder $container)
     {
-        parent::build($container);
-
         $container->addCompilerPass(new OverrideFieldModelPass());
         $container->addCompilerPass(new OverrideListModelPass());
+
+        parent::build($container);
     }
 }
