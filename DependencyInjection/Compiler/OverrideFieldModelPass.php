@@ -18,8 +18,6 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
-// use Symfony\Component\DependencyInjection\Reference;
-
 /**
  * Class OverrideFieldModelPass.
  */
@@ -38,10 +36,13 @@ class OverrideFieldModelPass implements CompilerPassInterface
 
         $container->getDefinition('mautic.lead.repository.lead')
             ->setFactory(null)
-            ->setArguments([
-                new Reference('doctrine.orm.entity_manager'),
-                new Reference('mautic.lead.model.field')
-            ])
+            ->setArguments(
+                [
+                    new Reference('doctrine.orm.entity_manager'),
+                    null,
+                    new Reference('mautic.lead.model.field'),
+                ]
+            )
             ->setClass(OverrideLeadRepository::class);
     }
 }

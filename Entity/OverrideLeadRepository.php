@@ -53,9 +53,12 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
      * @param ClassMetadata $class
      * @param FieldModel    $fieldModel
      */
-    public function __construct(EntityManager $em, FieldModel $fieldModel)
+    public function __construct(EntityManager $em, ClassMetadata $class = null, FieldModel $fieldModel)
     {
-        parent::__construct($em, new ClassMetadata(Lead::class));
+        if (!$class) {
+            $class = new ClassMetadata(Lead::class);
+        }
+        parent::__construct($em, $class);
         $this->leadFieldModel = $fieldModel;
     }
 
