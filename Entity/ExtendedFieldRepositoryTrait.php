@@ -118,15 +118,15 @@ trait ExtendedFieldRepositoryTrait
         $extendedFieldValues = $this->getExtendedFieldValuesMultiple($extendedFieldList, [$id]);
         if ($extendedFieldValues) {
             $extendedFieldValues = reset($extendedFieldValues);
+        }
 
-            // Update the extended fields with the values retrieved.
-            foreach ($extendedFieldList as $key => $field) {
-                if (isset($extendedFieldValues[$key])) {
-                    $values[$key] = $extendedFieldValues[$key];
-                } else {
-                    // The value would be an ID so we should always nullify.
-                    $values[$key] = null;
-                }
+        // Update the extended fields with the values retrieved.
+        foreach ($extendedFieldList as $key => $field) {
+            if (isset($extendedFieldValues[$key])) {
+                $values[$key] = $extendedFieldValues[$key];
+            } else {
+                // The value would be an ID so we should always nullify.
+                $values[$key] = null;
             }
         }
 
