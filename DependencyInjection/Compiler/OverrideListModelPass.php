@@ -25,8 +25,8 @@ class OverrideListModelPass implements CompilerPassInterface
      */
     public function process(ContainerBuilder $container)
     {
-        /** @var \Mautic\LeadBundle\Model\ListModel $definition */
-        $definition = $container->getDefinition('mautic.lead.model.list');
-        $definition->setClass(OverrideListModel::class);
+        $container->getDefinition('mautic.lead.model.list')
+            ->setFactory(null)
+            ->setClass(OverrideListModel::class);
     }
 }
