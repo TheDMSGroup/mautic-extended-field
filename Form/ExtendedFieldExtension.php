@@ -52,18 +52,15 @@ class ExtendedFieldExtension extends AbstractTypeExtension
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
+        $new      = !empty($options['data']) && $options['data']->getAlias() ? false : true;
+
         // change default option to "extendedField" from "lead" when plugin is enabled and config set
         $disallowLead = $this->coreParameters->getParameter('disable_lead_table_fields', false);
-        if ($disallowLead) {
+        if ($disallowLead && $new) {
             $options['data']->setObject('extendedField');
         }
-
         $disabled = !empty($options['data']) ? $options['data']->isFixed() : false;
-        $new      = !empty($options['data']) && $options['data']->getAlias() ? false : true;
-        $default  = !empty($options['data']) ? $options['data']->getObject() : null;
-        if (!$default) {
-            $default = $disallowLead ? 'extendedField' : 'lead';
-        }
+
         $builder->add(
             'object',
             'choice',
@@ -92,7 +89,7 @@ class ExtendedFieldExtension extends AbstractTypeExtension
                 ],
                 'required'          => false,
                 'disabled'          => ($disabled || !$new),
-                'data'              => $default,
+                'data'              => $options['data']->getObject(),
             ]
         );
     }

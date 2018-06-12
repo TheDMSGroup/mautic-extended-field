@@ -29,9 +29,11 @@ class OverrideFieldModelPass implements CompilerPassInterface
     public function process(ContainerBuilder $container)
     {
         $container->getDefinition('mautic.lead.model.field')
+            ->setFactory(null)
             ->setClass(ExtendedFieldModel::class);
 
         $container->getDefinition('mautic.lead.model.lead')
+            ->setFactory(null)
             ->setClass(OverrideLeadModel::class);
 
         $container->getDefinition('mautic.lead.repository.lead')
