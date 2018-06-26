@@ -149,7 +149,7 @@ class ConfigSubscriber extends CommonSubscriber
             // $this->extendedFields = $this->leadModel->getExtendedEntities(['keys' => 'alias']);
 
             // @todo - check permissions before including Secure.
-            $fields = $this->leadModel->getEntities(
+            $fields = $this->fieldModel->getEntities(
                 [
                     [
                         'column' => 'f.isPublished',
