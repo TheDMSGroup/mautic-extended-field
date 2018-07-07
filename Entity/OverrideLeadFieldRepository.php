@@ -2,13 +2,11 @@
 
 /*
  * @copyright   2018 Mautic Contributors. All rights reserved
- * @author      Scott Shipman
+ * @author      Digital Media Solutions, LLC
  *
  * @link        http://mautic.org
  *
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
- *
- * Provides methods to override the LeadBundle LeadFieldRepository.php
  */
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
