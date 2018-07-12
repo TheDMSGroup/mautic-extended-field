@@ -143,7 +143,7 @@ class LeadSubscriber extends CommonSubscriber
         }
 
         $partOriginal = strval($part);
-        $partChanged = preg_replace(
+        $partChanged  = preg_replace(
             '/\bl.'.$fieldAlias.' /m',
             $tableAlias.'.value ',
             $partOriginal
