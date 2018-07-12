@@ -300,6 +300,11 @@ trait ExtendedFieldRepositoryTrait
         $args,
         $resultsCallback = null
     ) {
+        // Run core method if we are not dealing with a lead.
+        if ('lead' !== $object) {
+            return parent::getEntitiesWithCustomFields($object, $args, $resultsCallback);
+        }
+
         list($fields, $fixedFields) = $this->getCustomFieldList($object);
 
         //Fix arguments if necessary
