@@ -15,7 +15,6 @@ use Mautic\CoreBundle\EventListener\CommonSubscriber;
 use Mautic\LeadBundle\Event\LeadListFilteringEvent;
 use Mautic\LeadBundle\Event\LeadListQueryBuilderGeneratedEvent;
 use Mautic\LeadBundle\LeadEvents;
-use Mautic\LeadBundle\Segment\Query\Expression\CompositeExpression;
 use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
 
 /**
@@ -78,7 +77,6 @@ class LeadSubscriber extends CommonSubscriber
                     $joinAlias,
                     $joinAlias.'.lead_id = l.id AND '.$joinAlias.'.lead_field_id = '.(int) $field['id']
                 );
-                // $q->addSelect($joinAlias.'.value AS '.$joinAlias.'.'.$alias);
                 $this->aliases[$joinAlias] = $fieldAlias;
             }
         }
@@ -113,14 +111,7 @@ class LeadSubscriber extends CommonSubscriber
                 foreach ($aliases as $joinAlias => $fieldAlias) {
                     foreach (['where', 'orWhere', 'andWhere', 'having', 'orHaving', 'andHaving'] as $type) {
                         if (isset($parts[$type])) {
-                            if (is_array($parts[$type])) {
-                                // Likely not necessary, just being overly cautious.
-                                foreach ($parts[$type] as &$part) {
-                                    $changedParts[$type] = $this->partCorrect($part, $fieldAlias, $joinAlias);
-                                }
-                            } else {
-                                $changedParts[$type] = $this->partCorrect($parts[$type], $fieldAlias, $joinAlias);
-                            }
+                            $changedParts[$type] = $this->partCorrect($parts[$type], $fieldAlias, $joinAlias);
                         }
                     }
                 }
@@ -151,15 +142,10 @@ class LeadSubscriber extends CommonSubscriber
             return $result;
         }
 
-        if ($part instanceof CompositeExpression) {
-            $partOriginal = strval($part);
-        } else {
-            $partOriginal = $part;
-        }
+        $partOriginal = strval($part);
         $partChanged = preg_replace(
             '/\bl.'.$fieldAlias.' /m',
             $tableAlias.'.value ',
-            // $fieldAlias.' ',
             $partOriginal
         );
         if (null !== $partChanged && $partChanged !== $partOriginal) {
