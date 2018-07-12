@@ -90,7 +90,7 @@ class ConfigSubscriber extends CommonSubscriber
         $eventList = [
             ConfigEvents::CONFIG_ON_GENERATE       => ['onConfigGenerate', 0],
             ReportEvents::REPORT_ON_GRAPH_GENERATE => ['onReportGraphGenerate', 20],
-            'mautic.report_query_pre_execute'      => ['onReportQueryPreExecute'],
+            ReportEvents::REPORT_QUERY_PRE_EXECUTE => ['onReportQueryPreExecute'],
         ];
 
         return $eventList;
@@ -146,28 +146,26 @@ class ConfigSubscriber extends CommonSubscriber
         $this->count        = 0;
         if (!$this->extendedFields) {
             // Previous method deprecated:
-            // $this->extendedFields = $this->leadModel->getExtendedEntities(['keys' => 'alias']);
-
-            // @todo - check permissions before including Secure.
-            $fields = $this->fieldModel->getEntities(
-                [
-                    [
-                        'column' => 'f.isPublished',
-                        'expr'   => 'eq',
-                        'value'  => true,
-                    ],
-                    'force'          => [
-                        'column' => 'f.object',
-                        'expr'   => 'in',
-                        'value'  => ['extendedField', 'extendedFieldSecure'],
-                    ],
-                    'hydration_mode' => 'HYDRATE_ARRAY',
-                ]
-            );
-            // Key by alias.
-            foreach ($fields as $field) {
-                $this->extendedFields[$field['alias']] = $field;
-            }
+            // $fields = $this->fieldModel->getEntities(
+            //     [
+            //         [
+            //             'column' => 'f.isPublished',
+            //             'expr'   => 'eq',
+            //             'value'  => true,
+            //         ],
+            //         'force'          => [
+            //             'column' => 'f.object',
+            //             'expr'   => 'in',
+            //             'value'  => ['extendedField', 'extendedFieldSecure'],
+            //         ],
+            //         'hydration_mode' => 'HYDRATE_ARRAY',
+            //     ]
+            // );
+            // // Key by alias.
+            // foreach ($fields as $field) {
+            //     $this->extendedFields[$field['alias']] = $field;
+            // }
+            $this->extendedFields = $this->leadModel->getExtendedFields();
         }
 
         $this->alterSelect();

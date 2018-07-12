@@ -11,34 +11,13 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 
-use Doctrine\ORM\Mapping\ClassMetadata;
-use Mautic\LeadBundle\Entity\LeadList;
 use Mautic\LeadBundle\Model\ListModel;
-use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadListRepository as OverrideLeadListRepository;
 
 /**
  * Class OverrideListModel.
  */
 class OverrideListModel extends ListModel
 {
-    /**
-     * Alterations to core:
-     *  Return OverrideLeadListRepository instead of LeadListRepository.
-     *
-     * @return OverrideLeadListRepository
-     */
-    public function getRepository()
-    {
-        /** @var \Mautic\LeadBundle\Entity\LeadListRepository $repo */
-        $metastart = new ClassMetadata(LeadList::class);
-        $repo      = new OverrideLeadListRepository($this->em, $metastart, $this->factory->getModel('lead.field'));
-
-        $repo->setDispatcher($this->dispatcher);
-        $repo->setTranslator($this->translator);
-
-        return $repo;
-    }
-
     /**
      * Get a list of field choices for filters.
      *

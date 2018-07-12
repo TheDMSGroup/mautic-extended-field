@@ -25,13 +25,83 @@ use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 class ExtendedFieldModel extends FieldModel
 {
     /**
-     * @return OverrideLeadFieldRepository
+     * Method used to get a whitelist of extended fields for query consideration.
+     *
+     * @return array
      */
-    public function getRepository()
+    public function getExtendedFields()
     {
-        $metastart = new ClassMetadata(LeadField::class);
+        $result = [];
+        $fields = $this->getEntities(
+            [
+                'filter'         => [
+                    'where' => [
+                        [
+                            'expr' => 'orX',
+                            'val'  => [
+                                ['column' => 'f.object', 'expr' => 'eq', 'value' => 'extendedField'],
+                                ['column' => 'f.object', 'expr' => 'eq', 'value' => 'extendedFieldSecure'],
+                            ],
+                        ],
+                    ],
+                ],
+                'hydration_mode' => 'HYDRATE_ARRAY',
+            ]
+        );
+        foreach ($fields as $field) {
+            $result[$field['alias']] = $field;
+        }
 
-        return new OverrideLeadFieldRepository($this->em, $metastart, $this);
+        return $result;
+    }
+
+    /**
+     * Returns lead custom fields.
+     *
+     * Alterations to core:
+     *  Include extended objects when various methods attempt to get fields of object 'lead'.
+     *
+     * @param $args
+     *
+     * @return array
+     */
+    public function getEntities(array $args = [])
+    {
+        // @todo - use permission base to exclude secure if necessary.
+        $replacementFilter = [
+            'column' => 'f.object',
+            'expr'   => 'neq',
+            'value'  => ['company'],
+        ];
+        foreach ($args as $type => &$arg) {
+            if ('filter' === $type) {
+                foreach ($arg as $key => &$filter) {
+                    if ('force' === $key) {
+                        foreach ($filter as $forceKey => &$forceFilter) {
+                            if (
+                                !empty($forceFilter['column'])
+                                && 'f.object' == $forceFilter['column']
+                                && !empty($forceFilter['expr'])
+                                && 'eq' == $forceFilter['expr']
+                                && !empty($forceFilter['value'])
+                                && 'lead' == $forceFilter['value']
+                            ) {
+                                $forceFilter = $replacementFilter;
+                            }
+                        }
+                    } elseif ('object' === $key && 'lead' === $filter) {
+                        // Move the filter to force mode in order to replace.
+                        if (!isset($arg['force'])) {
+                            $arg['force'] = [];
+                        }
+                        $arg['force'][] = $replacementFilter;
+                        unset($arg[$key]);
+                    }
+                }
+            }
+        }
+
+        return parent::getEntities($args);
     }
 
     /**
@@ -108,52 +178,13 @@ class ExtendedFieldModel extends FieldModel
     }
 
     /**
-     * Returns lead custom fields.
-     *
-     * Alterations to core:
-     *  Include extended objects when various methods attempt to get fields of object 'lead'.
-     *
-     * @param $args
-     *
-     * @return array
+     * @return OverrideLeadFieldRepository
      */
-    public function getEntities(array $args = [])
+    public function getRepository()
     {
-        // @todo - use permission base to exclude secure if necessary.
-        $replacementFilter = [
-            'column' => 'f.object',
-            'expr'   => 'in',
-            'value'  => ['lead', 'extendedField', 'extendedFieldSecure'],
-        ];
-        foreach ($args as $type => &$arg) {
-            if ('filter' === $type) {
-                foreach ($arg as $key => &$filter) {
-                    if ('force' === $key) {
-                        foreach ($filter as $forceKey => &$forceFilter) {
-                            if (
-                                !empty($forceFilter['column'])
-                                && 'f.object' == $forceFilter['column']
-                                && !empty($forceFilter['expr'])
-                                && 'eq' == $forceFilter['expr']
-                                && !empty($forceFilter['value'])
-                                && 'lead' == $forceFilter['value']
-                            ) {
-                                $forceFilter = $replacementFilter;
-                            }
-                        }
-                    } elseif ('object' === $key && 'lead' === $filter) {
-                        // Move the filter to force mode in order to replace.
-                        if (!isset($arg['force'])) {
-                            $arg['force'] = [];
-                        }
-                        $arg['force'][] = $replacementFilter;
-                        unset($arg[$key]);
-                    }
-                }
-            }
-        }
+        $metastart = new ClassMetadata(LeadField::class);
 
-        return parent::getEntities($args);
+        return new OverrideLeadFieldRepository($this->em, $metastart, $this);
     }
 
     /**
@@ -179,6 +210,7 @@ class ExtendedFieldModel extends FieldModel
      *
      * @param object $entity
      *
+     * @throws \Doctrine\DBAL\Exception\InvalidArgumentException
      * @throws \Mautic\CoreBundle\Exception\SchemaException
      */
     public function deleteEntity($entity)

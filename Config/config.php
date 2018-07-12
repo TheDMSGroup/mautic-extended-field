@@ -23,6 +23,12 @@ return [
             'mautic.extended_field.config.subscriber' => [
                 'class' => 'MauticPlugin\MauticExtendedFieldBundle\EventListener\ConfigSubscriber',
             ],
+            'mautic.extended_field.lead_subscriber'   => [
+                'class'     => 'MauticPlugin\MauticExtendedFieldBundle\EventListener\LeadSubscriber',
+                'arguments' => [
+                    'mautic.lead.model.field',
+                ],
+            ],
         ],
         'forms'  => [
             'mautic.extended_field.form.config' => [
