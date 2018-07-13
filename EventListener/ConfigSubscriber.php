@@ -38,11 +38,6 @@ class ConfigSubscriber extends CommonSubscriber
     protected $fieldModel;
 
     /**
-     * @var
-     */
-    protected $leadModel;
-
-    /**
      * @var array
      */
     protected $selectParts = [];
@@ -136,7 +131,6 @@ class ConfigSubscriber extends CommonSubscriber
     private function convertToExtendedFieldQuery()
     {
         $this->fieldModel   = $this->dispatcher->getContainer()->get('mautic.lead.model.field');
-        $this->leadModel    = $this->dispatcher->getContainer()->get('mautic.lead.model.lead');
         $this->selectParts  = $this->query->getQueryPart('select');
         $this->orderByParts = $this->query->getQueryPart('orderBy');
         $this->groupByParts = $this->query->getQueryPart('groupBy');
@@ -165,7 +159,7 @@ class ConfigSubscriber extends CommonSubscriber
             // foreach ($fields as $field) {
             //     $this->extendedFields[$field['alias']] = $field;
             // }
-            $this->extendedFields = $this->leadModel->getExtendedFields();
+            $this->extendedFields = $this->fieldModel->getExtendedFields();
         }
 
         $this->alterSelect();
@@ -201,7 +195,7 @@ class ConfigSubscriber extends CommonSubscriber
                     $fieldAlias = $partStrings[1];
                 }
 
-                if (isset($this->extendedFields[$fieldAlias]) && $this->extendedFields[$fieldAlias]['object'] != 'lead') {
+                if (isset($this->extendedFields[$fieldAlias])) {
                     // is extended field, so rewrite the SQL part.
                     $dataType  = $this->fieldModel->getSchemaDefinition(
                         $this->extendedFields[$fieldAlias]['alias'],
@@ -245,7 +239,7 @@ class ConfigSubscriber extends CommonSubscriber
                 $partStrings = (explode(' ', $orderByPart));
                 $fieldAlias  = substr($partStrings[0], 2);
 
-                if (isset($this->extendedFields[$fieldAlias]) && $this->extendedFields[$fieldAlias]['object'] != 'lead') {
+                if (isset($this->extendedFields[$fieldAlias])) {
                     // is extended field, so rewrite the SQL part.
                     if (array_key_exists($fieldAlias, $this->fieldTables)) {
                         // set using the existing table alias from the previously altered select statement
@@ -289,7 +283,7 @@ class ConfigSubscriber extends CommonSubscriber
             if (0 === strpos($groupByPart, 'l.')) {
                 // field from the lead table, so check if its an extended
                 $fieldAlias = substr($groupByPart, 2);
-                if (isset($this->extendedFields[$fieldAlias]) && $this->extendedFields[$fieldAlias]['object'] != 'lead') {
+                if (isset($this->extendedFields[$fieldAlias])) {
                     // is extended field, so rewrite the SQL part.
                     if (array_key_exists($fieldAlias, $this->fieldTables)) {
                         // set using the existing table alias from the altered select statement
@@ -330,7 +324,7 @@ class ConfigSubscriber extends CommonSubscriber
             if (0 === strpos($filter['column'], 'l.')) {
                 // field from the lead table, so check if its an extended
                 $fieldAlias = substr($filter['column'], 2);
-                if (isset($this->extendedFields[$fieldAlias]) && $this->extendedFields[$fieldAlias]['object'] != 'lead') {
+                if (isset($this->extendedFields[$fieldAlias])) {
                     // is extended field, so rewrite the SQL part.
                     if (array_key_exists($fieldAlias, $this->fieldTables)) {
                         // set using the existing table alias from the altered select statement
