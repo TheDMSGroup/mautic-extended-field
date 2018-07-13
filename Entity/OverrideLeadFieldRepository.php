@@ -178,16 +178,16 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                 } else {
                     switch ($operatorExpr) {
                         case 'startsWith':
-                            $operatorExpr    = 'like';
-                            $value           = $value.'%';
+                            $operatorExpr = 'like';
+                            $value        = $value.'%';
                             break;
                         case 'endsWith':
-                            $operatorExpr   = 'like';
-                            $value          = '%'.$value;
+                            $operatorExpr = 'like';
+                            $value        = '%'.$value;
                             break;
                         case 'contains':
-                            $operatorExpr   = 'like';
-                            $value          = '%'.$value.'%';
+                            $operatorExpr = 'like';
+                            $value        = '%'.$value.'%';
                             break;
                     }
 
@@ -241,7 +241,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
      * Overrides CustomFieldRepositoryTrait::getValueList().
      *
      * Alterations to core:
-     *  Includes extended field values.
+     *  Different query for extended fields to join correctly.
      *
      * @param        $field
      * @param string $search
@@ -252,8 +252,6 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
      */
     public function getValueList($field, $search = '', $limit = 10, $start = 0)
     {
-        $q = $this->getEntityManager()->getConnection()->createQueryBuilder();
-
         // get list of extendedFields
         if ($extendedField = $this->getExtendedField($field)) {
             $fieldModel = $this->fieldModel;
@@ -266,41 +264,55 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             $table      = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
             $alias      = $dataType.$extendedField['id'];
             $col        = $alias.'.value';
+            $q          = $this->getEntityManager()->getConnection()->createQueryBuilder();
+            $q->select("DISTINCT $col")
+                ->from($table, $alias)
+                ->where($alias.'.lead_field_id = :fieldid')
+                ->setParameter('fieldid', $extendedField['id']);
+            if (!empty($search)) {
+                $q->andWhere("$col LIKE :search")
+                    ->setParameter('search', "{$search}%");
+            }
+
+            $q->orderBy($col);
+
+            if (!empty($limit)) {
+                $q->setFirstResult($start)
+                    ->setMaxResults($limit);
+            }
+
+            $results = $q->execute()->fetchAll();
+
         } else {
-            $alias = 'l';
-            // Not an Extended Field, Carry On.
+            // The following is same as core CustomFieldRepositoryTrait::getValueList()
+            // Includes prefix
             $table = $this->getEntityManager()->getClassMetadata($this->getClassName())->getTableName();
             $col   = $this->getTableAlias().'.'.$field;
-        }
+            $q     = $this->getEntityManager()->getConnection()->createQueryBuilder()
+                ->select("DISTINCT $col")
+                ->from($table, 'l');
 
-        $q->select("DISTINCT $col AS $field")
-            ->from($table, $alias);
-
-        if (!empty($extendedField)) {
-            $q->where("$alias.lead_field_id = :fieldid")
-                ->setParameter('fieldid', $extendedField['id']);
-        } else {
             $q->where(
                 $q->expr()->andX(
                     $q->expr()->neq($col, $q->expr()->literal('')),
                     $q->expr()->isNotNull($col)
                 )
             );
+
+            if (!empty($search)) {
+                $q->andWhere("$col LIKE :search")
+                    ->setParameter('search', "{$search}%");
+            }
+
+            $q->orderBy($col);
+
+            if (!empty($limit)) {
+                $q->setFirstResult($start)
+                    ->setMaxResults($limit);
+            }
+
+            $results = $q->execute()->fetchAll();
         }
-
-        if (!empty($search)) {
-            $q->andWhere("$col LIKE :search")
-                ->setParameter('search', "{$search}%");
-        }
-
-        $q->orderBy($field);
-
-        if (!empty($limit)) {
-            $q->setFirstResult($start)
-                ->setMaxResults($limit);
-        }
-
-        $results = $q->execute()->fetchAll();
 
         return $results;
     }
