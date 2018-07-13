@@ -282,7 +282,6 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             }
 
             $results = $q->execute()->fetchAll();
-
         } else {
             // The following is same as core CustomFieldRepositoryTrait::getValueList()
             // Includes prefix
