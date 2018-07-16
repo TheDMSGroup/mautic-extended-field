@@ -240,4 +240,58 @@ class ExtendedFieldModel extends FieldModel
         $entity->deletedId = $id;
         $this->dispatchEvent('post_delete', $entity, false, $event);
     }
+    /**
+     * @param string $object
+     *
+     * @return array
+     */
+    public function getPublishedFieldArrays($object = 'lead')
+    {
+        if ('company' != $object) {
+            $expr   = 'neq';
+            $object = 'company';
+        } else {
+            $expr = 'eq';
+        }
+
+        return $this->getEntities(
+            [
+                'filter' => [
+                    'force' => [
+                        [
+                            'column' => 'f.isPublished',
+                            'expr'   => 'eq',
+                            'value'  => true,
+                        ],
+                        [
+                            'column' => 'f.object',
+                            'expr'   => $expr,
+                            'value'  => $object,
+                        ],
+                    ],
+                ],
+                'hydration_mode' => 'HYDRATE_ARRAY',
+            ]
+        );
+    }
+
+    /**
+     * @return array
+     */
+    public function getLeadFields()
+    {
+        $leadFields = $this->getEntities([
+            'filter' => [
+                'force' => [
+                    [
+                        'column' => 'f.object',
+                        'expr'   => 'neq',
+                        'value'  => 'company',
+                    ],
+                ],
+            ],
+        ]);
+
+        return $leadFields;
+    }
 }
