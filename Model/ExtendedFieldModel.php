@@ -240,7 +240,7 @@ class ExtendedFieldModel extends FieldModel
         $entity->deletedId = $id;
         $this->dispatchEvent('post_delete', $entity, false, $event);
     }
-    
+
     /**
      * @param string $object
      *
