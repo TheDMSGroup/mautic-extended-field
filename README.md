@@ -89,4 +89,22 @@ Internal overrides to refactor:
 - UpdateLeadActionExtension - done
 - ExtendedFieldExtension - done
 
+# Changes for Report Compatibility
+
+Two Mautic Core PR's have been submitted to facilitate Report compatibility.
+The first, which has been merged into the 2.14.x release, is 
+https://github.com/mautic/mautic/pull/6036 which implements an event
+that the ExtendedField bundle listens for. This event allows 3rd party bundles to
+alter a Report query before execution.
+
+The second PR is 
+https://github.com/mautic/mautic/pull/6330, which 
+moves the dispatch of the event from the first PR, so that optional
+pagination queries execute and return correct Total counts and
+fixes a fatal exception error on certain scenarios. 
+
+    NOTE:  PR #6330 is required
+    for Extended Field Bundle versions 2.13.2 through 2.14.x
+
+
 Icon by [lakshishasri](https://thenounproject.com/lakshishasri/) from the Noun project.
