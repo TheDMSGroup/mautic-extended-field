@@ -445,7 +445,7 @@ class ReportSubscriber extends CommonSubscriber
             'columns'      => array_merge($columns, $segmentColumns, $utmTagColumns, $standardColumns),
             'filters'      => $filters,
         ];
-        $event->addTable(self::SEGMENT_MEMBERSHIP, $data, ReportSubscriber::GROUP_CONTACTS);
+        $event->addTable(self::SEGMENT_MEMBERSHIP, $data, self::GROUP_CONTACTS);
         unset($columns, $filters, $segmentColumns, $data);
     }
 
