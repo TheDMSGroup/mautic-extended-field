@@ -112,7 +112,8 @@ class ReportSubscriber extends CommonSubscriber
      */
     public static function getSubscribedEvents()
     {
-        // Need to set the priority depending on if this is an edit or a view
+        // Need to set the priority depending on if this is a Report edit or a Report Generate/View
+        // and only $_SERVER has necessary data when this method is invoked
         $priority = isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/edit/') !== false ? -20 : 20;
 
         $eventList = [

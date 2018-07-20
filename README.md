@@ -103,8 +103,14 @@ moves the dispatch of the event from the first PR, so that optional
 pagination queries execute and return correct Total counts and
 fixes a fatal exception error on certain scenarios. 
 
-    NOTE:  PR #6330 is required
+    ** NOTE **  PR #6330 is required
     for Extended Field Bundle versions 2.13.2 through 2.14.x
 
+    ** NOTE ** The ReportSubscriber event listener dynamically checks for an edit or
+    view request of reports and dynanically sets priority of the REPORT_ON_BUILD.
+    The REPORT_ON_BUILD and REPORT_ON_GENERATE subscribers exist specifically to add
+    UTM Tags into the Segment Membership Data Source. This is tangental functionality to the core "Extended Fields" purpose
+    and will hopefully go away pending approval of a Core modification that adds UTM Tags into the contacts column list.
+    
 
 Icon by [lakshishasri](https://thenounproject.com/lakshishasri/) from the Noun project.
