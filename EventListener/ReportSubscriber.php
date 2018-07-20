@@ -16,17 +16,16 @@
  * This could be handled by Core, pending approval.
  *
  * This MAY create duplicate lead records because of the One to Many relationship of UTM Tags to Leads.
- *
  */
 
 namespace MauticPlugin\MauticExtendedFieldBundle\EventListener;
 
 use Mautic\CoreBundle\EventListener\CommonSubscriber;
-use Mautic\ReportBundle\Event\ReportGraphEvent;
-use Mautic\ReportBundle\ReportEvents;
 use Mautic\LeadBundle\Report\FieldsBuilder;
 use Mautic\ReportBundle\Event\ReportBuilderEvent;
 use Mautic\ReportBundle\Event\ReportGeneratorEvent;
+use Mautic\ReportBundle\Event\ReportGraphEvent;
+use Mautic\ReportBundle\ReportEvents;
 
 /**
  * Class ConfigSubscriber.
@@ -94,18 +93,15 @@ class ReportSubscriber extends CommonSubscriber
     private $fieldsBuilder;
 
     const SEGMENT_MEMBERSHIP = 'segment.membership';
-    const GROUP_CONTACTS = 'contacts';
+    const GROUP_CONTACTS     = 'contacts';
 
     /**
-     * @param FieldsBuilder     $fieldsBuilder
-     *
+     * @param FieldsBuilder $fieldsBuilder
      */
-
     public function __construct(FieldsBuilder $fieldsBuilder)
     {
         $this->fieldsBuilder     = $fieldsBuilder;
     }
-
 
     /**
      * @return array
@@ -114,18 +110,17 @@ class ReportSubscriber extends CommonSubscriber
     {
         // Need to set the priority depending on if this is a Report edit or a Report Generate/View
         // and only $_SERVER has necessary data when this method is invoked
-        $priority = isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/edit/') !== false ? -20 : 20;
+        $priority = isset($_SERVER['REQUEST_URI']) && false !== strpos($_SERVER['REQUEST_URI'], '/edit/') ? -20 : 20;
 
         $eventList = [
-            ReportEvents::REPORT_ON_BUILD    => ['onReportBuilder', $priority], // Adding UTM Tags into $columns array
-            ReportEvents::REPORT_ON_GENERATE => ['onReportGenerate', -20], // Adding UTM Tags into $columns array
+            ReportEvents::REPORT_ON_BUILD          => ['onReportBuilder', $priority], // Adding UTM Tags into $columns array
+            ReportEvents::REPORT_ON_GENERATE       => ['onReportGenerate', -20], // Adding UTM Tags into $columns array
             ReportEvents::REPORT_ON_GRAPH_GENERATE => ['onReportGraphGenerate', 20],
             ReportEvents::REPORT_QUERY_PRE_EXECUTE => ['onReportQueryPreExecute'],
         ];
 
         return $eventList;
     }
-
 
     /**
      * @param $event
@@ -337,8 +332,7 @@ class ReportSubscriber extends CommonSubscriber
 
     private function alterWhere()
     {
-        if(!empty($where))
-        {
+        if (!empty($where)) {
             $where = $this->where->__toString();
             foreach ($this->filters as $filter) {
                 if (0 === strpos($filter['column'], 'l.')) {
@@ -382,7 +376,6 @@ class ReportSubscriber extends CommonSubscriber
             }
             $this->where = $where;
         }
-
     }
 
     /**
@@ -404,7 +397,6 @@ class ReportSubscriber extends CommonSubscriber
      */
     public function onReportBuilder(ReportBuilderEvent $event)
     {
-
         if (!$event->checkContext([self::SEGMENT_MEMBERSHIP])) {
             return;
         }
@@ -464,14 +456,12 @@ class ReportSubscriber extends CommonSubscriber
      */
     public function onReportGenerate(ReportGeneratorEvent $event)
     {
-
         if (!$event->checkContext([self::SEGMENT_MEMBERSHIP])) {
             return;
         }
 
         $qb = $event->getQueryBuilder();
         $qb->leftJoin('l', MAUTIC_TABLE_PREFIX.'lead_utmtags', 'utm', 'l.id = utm.lead_id');
-
 
         $event->setQueryBuilder($qb);
     }

@@ -24,7 +24,7 @@ return [
                 'class' => 'MauticPlugin\MauticExtendedFieldBundle\EventListener\ConfigSubscriber',
             ],
             'mautic.extended_field.report.subscriber' => [
-                'class' => 'MauticPlugin\MauticExtendedFieldBundle\EventListener\ReportSubscriber',
+                'class'     => 'MauticPlugin\MauticExtendedFieldBundle\EventListener\ReportSubscriber',
                 'arguments' => [
                     'mautic.lead.reportbundle.fields_builder',
                 ],

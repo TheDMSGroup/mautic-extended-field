@@ -14,8 +14,6 @@ namespace MauticPlugin\MauticExtendedFieldBundle\EventListener;
 use Mautic\ConfigBundle\ConfigEvents;
 use Mautic\ConfigBundle\Event\ConfigBuilderEvent;
 use Mautic\CoreBundle\EventListener\CommonSubscriber;
-use Mautic\ReportBundle\Event\ReportGraphEvent;
-use Mautic\ReportBundle\ReportEvents;
 
 /**
  * Class ConfigSubscriber.
@@ -33,7 +31,7 @@ class ConfigSubscriber extends CommonSubscriber
     public static function getSubscribedEvents()
     {
         $eventList = [
-            ConfigEvents::CONFIG_ON_GENERATE       => ['onConfigGenerate', 0]
+            ConfigEvents::CONFIG_ON_GENERATE       => ['onConfigGenerate', 0],
         ];
 
         return $eventList;
@@ -58,5 +56,4 @@ class ConfigSubscriber extends CommonSubscriber
             ]
         );
     }
-
 }
