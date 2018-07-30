@@ -243,7 +243,10 @@ trait ExtendedFieldRepositoryTrait
                     isset($changes['fields'])
                     && isset($changes['fields'][$extendedField['alias']])
                     && is_null($changes['fields'][$extendedField['alias']][0])
-                    && !empty($changes['fields'][$extendedField['alias']][1])
+                    && (
+                        !empty($changes['fields'][$extendedField['alias']][1])
+                        || false == $changes['fields'][$extendedField['alias']][1]
+                    )
                 ) {
                     // Need to do an insert, no previous value exists for this lead.
                     $columns['lead_id']       = $entity->getId();
@@ -257,6 +260,7 @@ trait ExtendedFieldRepositoryTrait
                         isset($changes['fields'])
                         && !empty($changes['fields'][$extendedField['alias']][0])
                         && empty($changes['fields'][$extendedField['alias']][1])
+                        && false !== $changes['fields'][$extendedField['alias']][1]
                     ) {
                         // Need to delete the row from db table because new value is empty
                         $this->getEntityManager()->getConnection()->delete(
