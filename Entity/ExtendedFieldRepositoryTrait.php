@@ -242,44 +242,42 @@ trait ExtendedFieldRepositoryTrait
                 if (
                     isset($changes['fields'])
                     && isset($changes['fields'][$extendedField['alias']])
-                    && is_null($changes['fields'][$extendedField['alias']][0])
-                    && (
-                        !empty($changes['fields'][$extendedField['alias']][1])
-                        || false == $changes['fields'][$extendedField['alias']][1]
-                    )
                 ) {
-                    // Need to do an insert, no previous value exists for this lead.
-                    $columns['lead_id']       = $entity->getId();
-                    $columns['lead_field_id'] = $extendedField['id'];
-                    $this->getEntityManager()->getConnection()->insert(
-                        $tableName,
-                        $columns
-                    );
-                } else {
                     if (
-                        isset($changes['fields'])
-                        && !empty($changes['fields'][$extendedField['alias']][0])
-                        && empty($changes['fields'][$extendedField['alias']][1])
-                        && false !== $changes['fields'][$extendedField['alias']][1]
+                        null === $changes['fields'][$extendedField['alias']][0]
+                        && null !== $changes['fields'][$extendedField['alias']][1]
                     ) {
-                        // Need to delete the row from db table because new value is empty
-                        $this->getEntityManager()->getConnection()->delete(
+                        // Need to do an insert, no previous value exists for this lead.
+                        $columns['lead_id']       = $entity->getId();
+                        $columns['lead_field_id'] = $extendedField['id'];
+                        $this->getEntityManager()->getConnection()->insert(
                             $tableName,
-                            [
-                                'lead_id'       => $entity->getId(),
-                                'lead_field_id' => $extendedField['id'],
-                            ]
+                            $columns
                         );
                     } else {
-                        // Update the lead field with a new value.
-                        $this->getEntityManager()->getConnection()->update(
-                            $tableName,
-                            $columns,
-                            [
-                                'lead_id'       => $entity->getId(),
-                                'lead_field_id' => $extendedField['id'],
-                            ]
-                        );
+                        if (
+                            null !== $changes['fields'][$extendedField['alias']][0]
+                            && null === $changes['fields'][$extendedField['alias']][1]
+                        ) {
+                            // Need to delete the row from db table because new value is empty
+                            $this->getEntityManager()->getConnection()->delete(
+                                $tableName,
+                                [
+                                    'lead_id'       => $entity->getId(),
+                                    'lead_field_id' => $extendedField['id'],
+                                ]
+                            );
+                        } else {
+                            // Update the lead field with a new value.
+                            $this->getEntityManager()->getConnection()->update(
+                                $tableName,
+                                $columns,
+                                [
+                                    'lead_id'       => $entity->getId(),
+                                    'lead_field_id' => $extendedField['id'],
+                                ]
+                            );
+                        }
                     }
                 }
             }
