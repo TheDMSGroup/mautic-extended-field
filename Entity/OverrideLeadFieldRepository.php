@@ -91,13 +91,14 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             }
         } else {
             // Standard field / UTM field
-            $utmField = in_array($field, ['utm_campaign', 'utm_content', 'utm_medium', 'utm_source', 'utm_term']);
-            if ($utmField) {
-                $q->join('l', MAUTIC_TABLE_PREFIX.'lead_utmtags', 'u', 'l.id = u.lead_id');
-                $property = 'u.'.$field;
-            } else {
-                $property = 'l.'.$field;
-            }
+            // Irrelevant for extended fields.
+            // $utmField = in_array($field, ['utm_campaign', 'utm_content', 'utm_medium', 'utm_source', 'utm_term']);
+            // if ($utmField) {
+            //     $q->join('l', MAUTIC_TABLE_PREFIX.'lead_utmtags', 'u', 'l.id = u.lead_id');
+            //     $property = 'u.'.$field;
+            // } else {
+            //     $property = 'l.'.$field;
+            // }
 
             // Alterations to core start.
             // We already know this is an extended field, so add out join and override the property.
@@ -157,7 +158,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                 );
 
                 $expr->add(
-                    'l.'.$field." $operator '\\\\|?$value\\\\|?'"
+                    $property." $operator '\\\\|?$value\\\\|?'"
                 );
 
                 $q->where($expr)
