@@ -92,7 +92,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
         } else {
             // Standard field / UTM field
             // Irrelevant for extended fields.
-            // $utmField = in_array($field, ['utm_campaign', 'utm_content', 'utm_medium', 'utm_source', 'utm_term']);
+            $utmField = in_array($field, ['utm_campaign', 'utm_content', 'utm_medium', 'utm_source', 'utm_term']);
             // if ($utmField) {
             //     $q->join('l', MAUTIC_TABLE_PREFIX.'lead_utmtags', 'u', 'l.id = u.lead_id');
             //     $property = 'u.'.$field;
@@ -126,8 +126,8 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                     )
                 )
                     ->setParameter('lead', (int) $lead);
-            } elseif ('regexp' === $operatorExpr || 'notRegexp' === $operatorExpr) {
-                if ('regexp' === $operatorExpr) {
+            } elseif ('regexp' === $operatorExpr || 'notRegexp' === $operatorExpr || 'like' === $operatorExpr || 'notLike' === $operatorExpr) {
+                if ('regexp' === $operatorExpr || 'like' === $operatorExpr) {
                     $where = $property.' REGEXP  :value';
                 } else {
                     $where = $property.' NOT REGEXP  :value';
