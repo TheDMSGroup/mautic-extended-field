@@ -91,13 +91,14 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             }
         } else {
             // Standard field / UTM field
+            // Irrelevant for extended fields.
             $utmField = in_array($field, ['utm_campaign', 'utm_content', 'utm_medium', 'utm_source', 'utm_term']);
-            if ($utmField) {
-                $q->join('l', MAUTIC_TABLE_PREFIX.'lead_utmtags', 'u', 'l.id = u.lead_id');
-                $property = 'u.'.$field;
-            } else {
-                $property = 'l.'.$field;
-            }
+            // if ($utmField) {
+            //     $q->join('l', MAUTIC_TABLE_PREFIX.'lead_utmtags', 'u', 'l.id = u.lead_id');
+            //     $property = 'u.'.$field;
+            // } else {
+            //     $property = 'l.'.$field;
+            // }
 
             // Alterations to core start.
             // We already know this is an extended field, so add out join and override the property.
@@ -125,8 +126,8 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                     )
                 )
                     ->setParameter('lead', (int) $lead);
-            } elseif ('regexp' === $operatorExpr || 'notRegexp' === $operatorExpr) {
-                if ('regexp' === $operatorExpr) {
+            } elseif ('regexp' === $operatorExpr || 'notRegexp' === $operatorExpr || 'like' === $operatorExpr || 'notLike' === $operatorExpr) {
+                if ('regexp' === $operatorExpr || 'like' === $operatorExpr) {
                     $where = $property.' REGEXP  :value';
                 } else {
                     $where = $property.' NOT REGEXP  :value';
@@ -157,7 +158,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                 );
 
                 $expr->add(
-                    'l.'.$field." $operator '\\\\|?$value\\\\|?'"
+                    $property." $operator '\\\\|?$value\\\\|?'"
                 );
 
                 $q->where($expr)
@@ -252,9 +253,10 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
      */
     public function getValueList($field, $search = '', $limit = 10, $start = 0)
     {
+        $fieldModel = $this->fieldModel;
+
         // get list of extendedFields
         if ($extendedField = $this->getExtendedField($field)) {
-            $fieldModel = $this->fieldModel;
             $dataType   = $fieldModel->getSchemaDefinition(
                 $extendedField['alias'],
                 $extendedField['type']
@@ -285,11 +287,11 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
         } else {
             // The following is same as core CustomFieldRepositoryTrait::getValueList()
             // Includes prefix
-            $table = $this->getEntityManager()->getClassMetadata($this->getClassName())->getTableName();
-            $col   = $this->getTableAlias().'.'.$field;
+            // hardcodes the lead table if its not Extended Field
+            $col   = 'l.'.$field;
             $q     = $this->getEntityManager()->getConnection()->createQueryBuilder()
                 ->select("DISTINCT $col")
-                ->from($table, 'l');
+                ->from('leads', 'l');
 
             $q->where(
                 $q->expr()->andX(
