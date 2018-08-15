@@ -253,9 +253,10 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
      */
     public function getValueList($field, $search = '', $limit = 10, $start = 0)
     {
+        $fieldModel = $this->fieldModel;
+
         // get list of extendedFields
         if ($extendedField = $this->getExtendedField($field)) {
-            $fieldModel = $this->fieldModel;
             $dataType   = $fieldModel->getSchemaDefinition(
                 $extendedField['alias'],
                 $extendedField['type']
@@ -286,11 +287,11 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
         } else {
             // The following is same as core CustomFieldRepositoryTrait::getValueList()
             // Includes prefix
-            $table = $this->getEntityManager()->getClassMetadata($this->getClassName())->getTableName();
-            $col   = $this->getTableAlias().'.'.$field;
+            // hardcodes the lead table if its not Extended Field
+            $col   = 'l.'.$field;
             $q     = $this->getEntityManager()->getConnection()->createQueryBuilder()
                 ->select("DISTINCT $col")
-                ->from($table, 'l');
+                ->from('leads', 'l');
 
             $q->where(
                 $q->expr()->andX(

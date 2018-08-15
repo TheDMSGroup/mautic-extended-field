@@ -244,7 +244,12 @@ trait ExtendedFieldRepositoryTrait
                     && isset($changes['fields'][$extendedField['alias']])
                 ) {
                     if (
-                        null === $changes['fields'][$extendedField['alias']][0]
+                    (null === $changes['fields'][$extendedField['alias']][0]
+                        || (
+                            is_int($changes['fields'][$extendedField['alias']][0])
+                            && 'boolean' == $extendedField['type']
+                        )
+                    )
                         && null !== $changes['fields'][$extendedField['alias']][1]
                     ) {
                         // Need to do an insert, no previous value exists for this lead.
