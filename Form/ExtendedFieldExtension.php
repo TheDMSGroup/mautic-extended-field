@@ -99,16 +99,15 @@ class ExtendedFieldExtension extends AbstractTypeExtension
             'choice',
             [
                 'choices' => [
-                    'core'         => 'mautic.lead.field.group.core',
-                    'personal'     => 'mautic.lead.field.group.personal',
+                    'core'         => 'mautic.lead.field.group.core', // Personally Identifiable
                     'auto'         => 'mautic.lead.field.group.auto',
                     'client'       => 'mautic.lead.field.group.client',
                     'consent'      => 'mautic.lead.field.group.consent',
                     'education'    => 'mautic.lead.field.group.education',
                     'enhancement'  => 'mautic.lead.field.group.enhancement',
                     'finance'      => 'mautic.lead.field.group.finance',
+                    'personal'     => 'mautic.lead.field.group.personal', // Health
                     'home'         => 'mautic.lead.field.group.home',
-                    'health'       => 'mautic.lead.field.group.health',
                     'politics'     => 'mautic.lead.field.group.politics',
                     'professional' => 'mautic.lead.field.group.professional',
                     'social'       => 'mautic.lead.field.group.social',
