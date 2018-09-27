@@ -252,6 +252,8 @@ trait ExtendedFieldRepositoryTrait
 
                         || (
                             // value contained extra space in text/string field detected as change when none really exist
+                            is_string($changes['fields'][$extendedField['alias']][0]) && is_string($changes['fields'][$extendedField['alias']][1])
+                            && 
                             trim($changes['fields'][$extendedField['alias']][0]) === trim($changes['fields'][$extendedField['alias']][1])
                             && $changes['fields'][$extendedField['alias']][0]) !== $changes['fields'][$extendedField['alias']][1]
                         )
