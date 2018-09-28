@@ -10,9 +10,9 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler;
 
+use MauticPlugin\MauticExtendedFieldBundle\Model\OverrideCompanyModel;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use MauticPlugin\MauticExtendedFieldBundle\Model\OverrideCompanyModel;
 
 /**
  * Class OverrideFieldModelPass.
@@ -27,6 +27,5 @@ class OverrideCompanyModelPass implements CompilerPassInterface
         $container->getDefinition('mautic.lead.model.company')
             ->setFactory(null)
             ->setClass(OverrideCompanyModel::class);
-
     }
 }

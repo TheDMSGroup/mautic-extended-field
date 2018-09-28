@@ -10,13 +10,13 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Mautic\LeadBundle\Entity\Company;
 use Mautic\LeadBundle\Entity\CompanyLead;
 use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Event\LeadChangeCompanyEvent;
 use Mautic\LeadBundle\LeadEvents;
 use Mautic\LeadBundle\Model\CompanyModel;
-use Doctrine\ORM\Mapping\ClassMetadata;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
 
 class OverrideCompanyModel extends CompanyModel
@@ -95,7 +95,7 @@ class OverrideCompanyModel extends CompanyModel
                 ]
             );
 
-            if ($companyLead != null) {
+            if (null != $companyLead) {
                 // @deprecated support to be removed in 3.0
                 if ($companyLead->wasManuallyRemoved()) {
                     $companyLead->setManuallyRemoved(false);
@@ -131,7 +131,7 @@ class OverrideCompanyModel extends CompanyModel
             if ($currentCompanyName !== $companyName) {
                 $lead->addUpdatedField('company', $companyName)
                     ->setDateModified(new \DateTime());
-               // $this->em->getRepository('MauticLeadBundle:Lead')->saveEntity($lead);
+                // $this->em->getRepository('MauticLeadBundle:Lead')->saveEntity($lead);
                 $metastart = new ClassMetadata(Lead::class);
                 $repo      = new OverrideLeadRepository($this->em, $metastart, $this->leadFieldModel);
                 $repo->saveEntity($lead);
@@ -152,5 +152,4 @@ class OverrideCompanyModel extends CompanyModel
 
         return $contactAdded;
     }
-
 }
