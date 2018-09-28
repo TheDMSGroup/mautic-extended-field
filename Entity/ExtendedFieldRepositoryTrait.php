@@ -86,9 +86,9 @@ trait ExtendedFieldRepositoryTrait
      * Extends:
      *  getFieldValues to include extended field values.
      *
-     * @param        $id     (from leads table) identifies the lead
+     * @param        $id      (from leads table) identifies the lead
      * @param bool   $byGroup
-     * @param string $object = "extendedField" or "extendedFieldSecure"
+     * @param string $object  = "extendedField" or "extendedFieldSecure"
      *
      * @return array
      */
