@@ -150,23 +150,35 @@ trait ExtendedFieldRepositoryTrait
         if (empty($extendedFieldList)) {
             return [];
         }
-        $eq       = $this->getEntityManager()->getConnection();
-        $count    = 0;
-        $where_in = !empty($lead_ids) ? 'WHERE lead_id IN ('.implode(',', $lead_ids).')' : '';
-        $ex_expr  = '';
-        foreach ($extendedFieldList as $k => $details) {
-            $fieldModel = $this->leadFieldModel;
-            $schema     = $fieldModel->getSchemaDefinition($details['alias'], $details['type']);
-            $secure     = 'extendedFieldSecure' === $details['object'] ? '_secure' : '';
-            $tableName  = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$schema['type'].$secure.'_xref';
-            $method     = $count > 0 ? ' UNION SELECT' : 'SELECT';
-            ++$count;
 
-            $ex_expr .= "$method t$count.lead_id, t$count.lead_field_id, t$count.value, lf.alias FROM $tableName t$count LEFT JOIN lead_fields lf ON t$count.lead_field_id = lf.id $where_in";
+        $eq           = $this->getEntityManager()->getConnection();
+        $lead_ids_str = "'".implode("','", $lead_ids)."'";
+        $main_expr    =
+<<<EOSQL
+        SELECT x.lead_id, x.alias, v.value, v.data_type
+        FROM
+        (
+            SELECT l.id AS lead_id,
+            f.id as lead_field_id,
+            f.alias
+            FROM leads l CROSS JOIN lead_fields f
+            WHERE object IN ('extendedField', 'extendedFieldSecure')
+            AND l.id  IN ($lead_ids_str)
+        ) x
+        INNER JOIN
+        (
+EOSQL;
+        $selects = [];
+        foreach (['string', 'float', 'boolean', 'date', 'datetime', 'time', 'text'] as $data_type) {
+            foreach (['', '_secure'] as $secure) {
+                $selects[] = "SELECT *, '$data_type' AS data_type FROM lead_fields_leads_{$data_type}{$secure}_xref WHERE lead_id IN ($lead_ids_str)";
+            }
         }
-        $ex_query = $eq->prepare($ex_expr);
-        $ex_query->execute();
-        $results = $ex_query->fetchAll();
+        $join_query   = implode(' UNION ', $selects);
+        $closing_expr = ') v USING (lead_id, lead_field_id)';
+        $query        = $eq->prepare($main_expr.$join_query.$closing_expr);
+        $query->execute();
+        $results = $query->fetchAll();
 
         // Group results by lead_id.
         $leads = [];
