@@ -67,14 +67,14 @@ abstract class ExtendedFieldCommon extends CommonEntity implements CustomFieldEn
             $builder->createManyToOne('lead', Lead::class)
                 ->cascadePersist()
                 ->cascadeMerge()
-                ->addJoinColumn('lead_id', 'id')
+                ->addJoinColumn('lead_id', 'id', null, false, 'CASCADE')
                 ->makePrimaryKey()
                 ->build();
 
             $builder->createManyToOne('leadField', LeadField::class)
                 ->cascadePersist()
                 ->cascadeMerge()
-                ->addJoinColumn('lead_field_id', 'id')
+                ->addJoinColumn('lead_field_id', 'id', null, false, 'CASCADE')
                 ->makePrimaryKey()
                 ->build();
 
