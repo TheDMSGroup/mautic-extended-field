@@ -92,5 +92,38 @@ class ExtendedFieldExtension extends AbstractTypeExtension
                 'data'              => $options['data']->getObject(),
             ]
         );
+
+        // Add a bunch more 'custom' groups beside the original 4
+        $builder->add(
+            'group',
+            'choice',
+            [
+                'choices' => [
+                    'core'         => 'mautic.lead.field.group.core', // Personally Identifiable
+                    'auto'         => 'mautic.lead.field.group.auto',
+                    'client'       => 'mautic.lead.field.group.client',
+                    'consent'      => 'mautic.lead.field.group.consent',
+                    'education'    => 'mautic.lead.field.group.education',
+                    'enhancement'  => 'mautic.lead.field.group.enhancement',
+                    'finance'      => 'mautic.lead.field.group.finance',
+                    'personal'     => 'mautic.lead.field.group.personal', // Health
+                    'home'         => 'mautic.lead.field.group.home',
+                    'politics'     => 'mautic.lead.field.group.politics',
+                    'professional' => 'mautic.lead.field.group.professional',
+                    'social'       => 'mautic.lead.field.group.social',
+                    'system'       => 'mautic.lead.field.group.system',
+                ],
+                'attr' => [
+                    'class'   => 'form-control',
+                    'tooltip' => 'mautic.lead.field.form.group.help',
+                ],
+                'expanded'    => false,
+                'multiple'    => false,
+                'label'       => 'mautic.lead.field.group',
+                'empty_value' => false,
+                'required'    => false,
+                'disabled'    => $disabled,
+            ]
+        );
     }
 }

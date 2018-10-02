@@ -12,6 +12,7 @@
 namespace MauticPlugin\MauticExtendedFieldBundle;
 
 use Mautic\PluginBundle\Bundle\PluginBundleBase;
+use MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler\OverrideCompanyModelPass;
 use MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler\OverrideFieldModelPass;
 use MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler\OverrideListModelPass;
 use MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler\OverrideTableSchemaColumnsCachePass;
@@ -34,6 +35,7 @@ class MauticExtendedFieldBundle extends PluginBundleBase
         $container->addCompilerPass(new OverrideFieldModelPass());
         $container->addCompilerPass(new OverrideListModelPass());
         $container->addCompilerPass(new OverrideTableSchemaColumnsCachePass());
+        $container->addCompilerPass(new OverrideCompanyModelPass());
 
         parent::build($container);
     }
