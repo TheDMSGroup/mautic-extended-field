@@ -139,51 +139,58 @@ trait ExtendedFieldRepositoryTrait
      * Join all the EAV data into one consumable array.
      *
      * @param array $extendedFieldList
-     * @param array $lead_ids
+     * @param array $leadIds
      *
      * @return array
      */
     private function getExtendedFieldValuesMultiple(
         $extendedFieldList = [],
-        $lead_ids = []
+        $leadIds = []
     ) {
-        if (empty($extendedFieldList)) {
-            return [];
+
+        $where = "f.object IN ('extendedField','extendedFieldSecure') ";
+        if (!dbalConnpty($extendedFieldList)) {
+            $ids = array_map(function ($e) { return $e['id']; }, $extendedFieldList);
+            $leadFiieldIdStr = "'".implode("','", $ids)."'";
+            $where = "f.id IN ($leadFiieldIdStr) ";
         }
 
-        $eq           = $this->getEntityManager()->getConnection();
-        $lead_ids_str = "'".implode("','", $lead_ids)."'";
-        $main_expr    =
-<<<EOSQL
-        SELECT x.lead_id, x.alias, v.value, v.data_type
-        FROM
-        (
-            SELECT l.id AS lead_id,
-            f.id as lead_field_id,
-            f.alias
-            FROM leads l CROSS JOIN lead_fields f
-            WHERE object IN ('extendedField', 'extendedFieldSecure')
-            AND l.id  IN ($lead_ids_str)
-        ) x
-        INNER JOIN
-        (
-EOSQL;
+        $dbalConn           = $this->getEntityManager()->getConnection();
+        $leadIdsStr = "'".implode("','", $leadIds)."'";
+
         $selects = [];
         foreach (['string', 'float', 'boolean', 'date', 'datetime', 'time', 'text'] as $data_type) {
             foreach (['', '_secure'] as $secure) {
-                $selects[] = "SELECT *, '$data_type' AS data_type FROM lead_fields_leads_{$data_type}{$secure}_xref WHERE lead_id IN ($lead_ids_str)";
+                $selects[] = "SELECT *, '$data_type' AS data_type FROM lead_fields_leads_{$data_type}{$secure}_xref WHERE leadId IN ($leadIdsStr)";
             }
         }
-        $join_query   = implode(' UNION ', $selects);
-        $closing_expr = ') v USING (lead_id, lead_field_id)';
-        $query        = $eq->prepare($main_expr.$join_query.$closing_expr);
+        $xrefQuery   = implode(' UNION ', $selects);
+
+        $sql    = <<<EOSQL
+SELECT x.leadId, x.alias, v.value, v.data_type
+FROM
+(
+    SELECT l.id AS leadId,
+    f.id as lead_field_id,
+    f.alias
+    FROM leads l CROSS JOIN lead_fields f
+    WHERE $where
+    AND l.id  IN ($leadIdsStr)
+) x
+LEFT JOIN
+(
+    $xrefQuery
+) v USING (leadId, lead_field_id)
+EOSQL;
+
+        $query        = $dbalConn->prepare($sql);
         $query->execute();
         $results = $query->fetchAll();
 
-        // Group results by lead_id.
+        // Group results by leadId.
         $leads = [];
         foreach ($results as $row => $result) {
-            $leads[$result['lead_id']][$result['alias']] = $result['value'];
+            $leads[$result['leadId']][$result['alias']] = $result['value'];
             unset($results[$row]);
         }
 
