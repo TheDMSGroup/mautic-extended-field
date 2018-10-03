@@ -3,6 +3,7 @@
 namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
 use Doctrine\DBAL\Query\QueryBuilder;
+use Doctrine\ORM\EntityManager;
 use Mautic\LeadBundle\Entity\CustomFieldEntityTrait;
 
 /**
@@ -147,7 +148,9 @@ trait ExtendedFieldRepositoryTrait
         $extendedFieldList = [],
         $leadIds = []
     ) {
-        $dbalConn           = $this->getEntityManager()->getConnection();
+        /** @var EntityManager $em */
+        $em = $this->getEntityManager();
+
         $leadIdsStr         = "'".implode("','", $leadIds)."'";
 
         $selects = [];
@@ -164,10 +167,10 @@ EOSQL;
         }
         $xrefQuery   = implode("\nUNION\n", $selects);
 
-        $leadsTable      = $this->getModel('lead')->getRepository()->getTableName();
-        $lt              = $this->getModel('lead')->getRepository()->getTableAlias();
-        $leadFieldsTable = $this->getModel('lead.field')->getRepository()->getTableName();
-        $lft             = $this->getModel('lead.field')->getRepository()->getTableAlias();
+        $leadsTable      = $em->getModel('lead')->getRepository()->getTableName();
+        $lt              = $em->getModel('lead')->getRepository()->getTableAlias();
+        $leadFieldsTable = $em->getModel('lead.field')->getRepository()->getTableName();
+        $lft             = $em->getModel('lead.field')->getRepository()->getTableAlias();
 
         $where = "{$lft}.object IN ('extendedField','extendedFieldSecure') ";
         if (!empty($extendedFieldList)) {
@@ -193,7 +196,7 @@ LEFT JOIN
 ) v USING (lead_id, lead_field_id)
 EOSQL;
 
-        $query        = $dbalConn->prepare($sql);
+        $query        = $em->getConnection()->prepare($sql);
         $query->execute();
         $results = $query->fetchAll();
 
