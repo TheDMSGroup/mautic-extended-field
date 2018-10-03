@@ -147,39 +147,50 @@ trait ExtendedFieldRepositoryTrait
         $extendedFieldList = [],
         $leadIds = []
     ) {
-        $where = "f.object IN ('extendedField','extendedFieldSecure') ";
-        if (!dbalConnpty($extendedFieldList)) {
-            $ids             = array_map(function ($e) { return $e['id']; }, $extendedFieldList);
-            $leadFiieldIdStr = "'".implode("','", $ids)."'";
-            $where           = "f.id IN ($leadFiieldIdStr) ";
-        }
-
         $dbalConn           = $this->getEntityManager()->getConnection();
         $leadIdsStr         = "'".implode("','", $leadIds)."'";
 
         $selects = [];
         foreach (['string', 'float', 'boolean', 'date', 'datetime', 'time', 'text'] as $data_type) {
             foreach (['', '_secure'] as $secure) {
-                $selects[] = "SELECT *, '$data_type' AS data_type FROM lead_fields_leads_{$data_type}{$secure}_xref WHERE leadId IN ($leadIdsStr)";
+                $xrefTable = MAUTIC_TABLE_PREFIX."lead_fields_leads_{$data_type}{$secure}_xref";
+
+                $selects[] = <<<EOSQL
+SELECT lead_id, lead_field_id, value, '{$data_type}' AS data_type 
+FROM  {$xrefTable}
+WHERE lead_id IN ({$leadIdsStr})
+EOSQL;
             }
         }
-        $xrefQuery   = implode(' UNION ', $selects);
+        $xrefQuery   = implode("\nUNION\n", $selects);
+
+        $leadsTable      = $this->getModel('lead')->getRepository()->getTableName();
+        $lt              = $this->getModel('lead')->getRepository()->getTableAlias();
+        $leadFieldsTable = $this->getModel('lead.field')->getRepository()->getTableName();
+        $lft             = $this->getModel('lead.field')->getRepository()->getTableAlias();
+
+        $where = "{$lft}.object IN ('extendedField','extendedFieldSecure') ";
+        if (!empty($extendedFieldList)) {
+            $ids             = array_map(function ($e) { return $e['id']; }, $extendedFieldList);
+            $leadFiieldIdStr = "'".implode("','", $ids)."'";
+            $where           = "{$lft}.id IN ({$leadFiieldIdStr}) ";
+        }
 
         $sql    = <<<EOSQL
-SELECT x.leadId, x.alias, v.value, v.data_type
+SELECT x.lead_id, x.alias, v.value, v.data_type
 FROM
 (
-    SELECT l.id AS leadId,
-    f.id as lead_field_id,
-    f.alias
-    FROM leads l CROSS JOIN lead_fields f
-    WHERE $where
-    AND l.id  IN ($leadIdsStr)
+    SELECT {$lt}.id AS lead_id,
+    {$lft}.id as lead_field_id,
+    {$lft}.alias
+    FROM {$leadsTable} {$lt} CROSS JOIN {$leadFieldsTable} {$lft}
+    WHERE {$where}
+    AND {$lt}.id  IN ({$leadIdsStr})
 ) x
 LEFT JOIN
 (
-    $xrefQuery
-) v USING (leadId, lead_field_id)
+    {$xrefQuery}
+) v USING (lead_id, lead_field_id)
 EOSQL;
 
         $query        = $dbalConn->prepare($sql);
