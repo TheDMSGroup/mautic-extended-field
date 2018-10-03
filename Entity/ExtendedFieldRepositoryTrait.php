@@ -151,7 +151,7 @@ trait ExtendedFieldRepositoryTrait
         /** @var EntityManager $em */
         $em = $this->getEntityManager();
 
-        $leadIdsStr         = "'".implode("','", $leadIds)."'";
+        $leadIdsStr = "'".implode("','", $leadIds)."'";
 
         $selects = [];
         foreach (['string', 'float', 'boolean', 'date', 'datetime', 'time', 'text'] as $data_type) {
@@ -167,10 +167,10 @@ EOSQL;
         }
         $xrefQuery   = implode("\nUNION\n", $selects);
 
-        $leadsTable      = $em->getModel('lead')->getRepository()->getTableName();
-        $lt              = $em->getModel('lead')->getRepository()->getTableAlias();
-        $leadFieldsTable = $em->getModel('lead.field')->getRepository()->getTableName();
-        $lft             = $em->getModel('lead.field')->getRepository()->getTableAlias();
+        $leadsTable      = $em->getRepository('MauticLeadBundle:Lead')->getTableName();
+        $lt              = $em->getRepository('MauticLeadBundle:Lead')->getTableAlias();
+        $leadFieldsTable = $em->getRepository('MauticLeadBundle:LeadField')->getTableName();
+        $lft             = $em->getRepository('MauticLeadBundle:LeadField')->getTableAlias();
 
         $where = "{$lft}.object IN ('extendedField','extendedFieldSecure') ";
         if (!empty($extendedFieldList)) {
