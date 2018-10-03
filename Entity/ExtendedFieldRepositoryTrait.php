@@ -3,6 +3,7 @@
 namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
 use Doctrine\DBAL\Query\QueryBuilder;
+use Doctrine\ORM\EntityManager;
 use Mautic\LeadBundle\Entity\CustomFieldEntityTrait;
 
 /**
@@ -139,36 +140,67 @@ trait ExtendedFieldRepositoryTrait
      * Join all the EAV data into one consumable array.
      *
      * @param array $extendedFieldList
-     * @param array $lead_ids
+     * @param array $leadIds
      *
      * @return array
      */
     private function getExtendedFieldValuesMultiple(
         $extendedFieldList = [],
-        $lead_ids = []
+        $leadIds = []
     ) {
-        if (empty($extendedFieldList)) {
-            return [];
-        }
-        $eq       = $this->getEntityManager()->getConnection();
-        $count    = 0;
-        $where_in = !empty($lead_ids) ? 'WHERE lead_id IN ('.implode(',', $lead_ids).')' : '';
-        $ex_expr  = '';
-        foreach ($extendedFieldList as $k => $details) {
-            $fieldModel = $this->leadFieldModel;
-            $schema     = $fieldModel->getSchemaDefinition($details['alias'], $details['type']);
-            $secure     = 'extendedFieldSecure' === $details['object'] ? '_secure' : '';
-            $tableName  = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$schema['type'].$secure.'_xref';
-            $method     = $count > 0 ? ' UNION SELECT' : 'SELECT';
-            ++$count;
+        /** @var EntityManager $em */
+        $em = $this->getEntityManager();
 
-            $ex_expr .= "$method t$count.lead_id, t$count.lead_field_id, t$count.value, lf.alias FROM $tableName t$count LEFT JOIN lead_fields lf ON t$count.lead_field_id = lf.id $where_in";
-        }
-        $ex_query = $eq->prepare($ex_expr);
-        $ex_query->execute();
-        $results = $ex_query->fetchAll();
+        $leadIdsStr = "'".implode("','", $leadIds)."'";
 
-        // Group results by lead_id.
+        $selects = [];
+        foreach (['string', 'float', 'boolean', 'date', 'datetime', 'time', 'text'] as $data_type) {
+            foreach (['', '_secure'] as $secure) {
+                $xrefTable = MAUTIC_TABLE_PREFIX."lead_fields_leads_{$data_type}{$secure}_xref";
+
+                $selects[] = <<<EOSQL
+SELECT lead_id, lead_field_id, value, '{$data_type}' AS data_type 
+FROM  {$xrefTable}
+WHERE lead_id IN ({$leadIdsStr})
+EOSQL;
+            }
+        }
+        $xrefQuery   = implode("\nUNION\n", $selects);
+
+        $leadsTable      = $em->getRepository('MauticLeadBundle:Lead')->getTableName();
+        $lt              = $em->getRepository('MauticLeadBundle:Lead')->getTableAlias();
+        $leadFieldsTable = $em->getRepository('MauticLeadBundle:LeadField')->getTableName();
+        $lft             = $em->getRepository('MauticLeadBundle:LeadField')->getTableAlias();
+
+        $where = "{$lft}.object IN ('extendedField','extendedFieldSecure') ";
+        if (!empty($extendedFieldList)) {
+            $ids             = array_map(function ($e) { return $e['id']; }, $extendedFieldList);
+            $leadFiieldIdStr = "'".implode("','", $ids)."'";
+            $where           = "{$lft}.id IN ({$leadFiieldIdStr}) ";
+        }
+
+        $sql    = <<<EOSQL
+SELECT x.lead_id, x.alias, v.value, v.data_type
+FROM
+(
+    SELECT {$lt}.id AS lead_id,
+    {$lft}.id as lead_field_id,
+    {$lft}.alias
+    FROM {$leadsTable} {$lt} CROSS JOIN {$leadFieldsTable} {$lft}
+    WHERE {$where}
+    AND {$lt}.id  IN ({$leadIdsStr})
+) x
+LEFT JOIN
+(
+    {$xrefQuery}
+) v USING (lead_id, lead_field_id)
+EOSQL;
+
+        $query        = $em->getConnection()->prepare($sql);
+        $query->execute();
+        $results = $query->fetchAll();
+
+        // Group results by leadId.
         $leads = [];
         foreach ($results as $row => $result) {
             $leads[$result['lead_id']][$result['alias']] = $result['value'];
