@@ -200,7 +200,7 @@ EOSQL;
         // Group results by leadId.
         $leads = [];
         foreach ($results as $row => $result) {
-            $leads[$result['leadId']][$result['alias']] = $result['value'];
+            $leads[$result['lead_id']][$result['alias']] = $result['value'];
             unset($results[$row]);
         }
 
