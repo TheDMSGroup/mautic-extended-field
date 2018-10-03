@@ -147,16 +147,15 @@ trait ExtendedFieldRepositoryTrait
         $extendedFieldList = [],
         $leadIds = []
     ) {
-
         $where = "f.object IN ('extendedField','extendedFieldSecure') ";
         if (!dbalConnpty($extendedFieldList)) {
-            $ids = array_map(function ($e) { return $e['id']; }, $extendedFieldList);
+            $ids             = array_map(function ($e) { return $e['id']; }, $extendedFieldList);
             $leadFiieldIdStr = "'".implode("','", $ids)."'";
-            $where = "f.id IN ($leadFiieldIdStr) ";
+            $where           = "f.id IN ($leadFiieldIdStr) ";
         }
 
         $dbalConn           = $this->getEntityManager()->getConnection();
-        $leadIdsStr = "'".implode("','", $leadIds)."'";
+        $leadIdsStr         = "'".implode("','", $leadIds)."'";
 
         $selects = [];
         foreach (['string', 'float', 'boolean', 'date', 'datetime', 'time', 'text'] as $data_type) {
