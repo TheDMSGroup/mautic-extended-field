@@ -312,20 +312,18 @@ EOSQL;
             }
             // Handle inserts/updates in bulk by table.
             if ($insertUpdates) {
-                $values = $bindings = [];
                 foreach ($insertUpdates as $tableName => $leadField) {
+                    $rows = $params = [];
                     foreach ($leadField as $leadFieldId => $value) {
-                        $values[]                          = $leadId.', '.$leadFieldId.', :'.$tableName.$leadFieldId;
-                        $bindings[$tableName.$leadFieldId] = $value;
+                        $key          = $tableName.$leadFieldId;
+                        $rows[]       = $leadId.', '.$leadFieldId.', :'.$key;
+                        $params[$key] = $value;
                     }
-                    $sql  = 'INSERT INTO '.$tableName.' (lead_id, lead_field_id, value) '.
-                        'VALUES ('.implode('),(', $values).') '.
-                        'ON DUPLICATE KEY UPDATE value=VALUES(value);';
+                    $sql  = 'INSERT INTO '.$tableName.' (`lead_id`, `lead_field_id`, `value`) '.
+                        'VALUES ('.implode('),(', $rows).') '.
+                        'ON DUPLICATE KEY UPDATE `value`=VALUES(`value`);';
                     $stmt = $connection->prepare($sql);
-                    foreach ($bindings as $key => $value) {
-                        $stmt->bindParam($key, $value);
-                    }
-                    $stmt->execute();
+                    $stmt->execute($params);
                 }
             }
         }
