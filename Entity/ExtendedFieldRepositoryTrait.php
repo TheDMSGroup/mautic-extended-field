@@ -268,6 +268,9 @@ EOSQL;
         // Now to update extended fields if there were any to be updated.
         if (!empty($extendedFields)) {
             $insertUpdates = $deletions = [];
+            $leadId        = $entity->getId();
+            /** @var \Doctrine\DBAL\Connection $connection */
+            $connection = $this->getEntityManager()->getConnection();
             foreach ($extendedFields as $extendedField) {
                 if (
                     !isset($changes['fields'])
@@ -289,13 +292,14 @@ EOSQL;
                     null !== $changes['fields'][$extendedField['alias']][0]
                     && null === $changes['fields'][$extendedField['alias']][1]
                 ) {
-                    // Removed an existing value, mark for deletion.
-                    if (!isset($deletions[$tableName])) {
-                        $deletions[$tableName] = [];
-                    }
-                    if (!isset($deletions[$tableName][$extendedField['id']])) {
-                        $deletions[$tableName][$extendedField['id']] = null;
-                    }
+                    // Removed an existing value.
+                    $connection->delete(
+                        $tableName,
+                        [
+                            'lead_id'       => $leadId,
+                            'lead_field_id' => $extendedField['id'],
+                        ]
+                    );
                 } else {
                     // Mark for insert/update.
                     if (!isset($insertUpdates[$tableName])) {
@@ -306,12 +310,9 @@ EOSQL;
                     }
                 }
             }
-            $leadId     = $entity->getId();
-            /** @var \Doctrine\DBAL\Connection $connection */
-            $connection = $this->getEntityManager()->getConnection();
-            // Handle inserts/updates.
+            // Handle inserts/updates in bulk by table.
             if ($insertUpdates) {
-                $values     = $bindings = [];
+                $values = $bindings = [];
                 foreach ($insertUpdates as $tableName => $leadField) {
                     foreach ($leadField as $leadFieldId => $value) {
                         $values[]                          = $leadId.', '.$leadFieldId.', :'.$tableName.$leadFieldId;
@@ -325,20 +326,6 @@ EOSQL;
                         $stmt->bindParam($key, $value);
                     }
                     $stmt->execute();
-                }
-            }
-            // Handle deletions (includes nullification).
-            if ($deletions) {
-                foreach ($deletions as $tableName => $leadField) {
-                    foreach ($leadField as $leadFieldId => $value) {
-                        $connection->delete(
-                            $tableName,
-                            [
-                                'lead_id'       => $leadId,
-                                'lead_field_id' => $leadFieldId,
-                            ]
-                        );
-                    }
                 }
             }
         }
