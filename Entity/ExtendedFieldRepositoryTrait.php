@@ -165,7 +165,7 @@ WHERE lead_id IN ({$leadIdsStr})
 EOSQL;
             }
         }
-        $xrefQuery   = implode("\nUNION\n", $selects);
+        $xrefQuery = implode("\nUNION\n", $selects);
 
         $leadsTable      = $em->getRepository('MauticLeadBundle:Lead')->getTableName();
         $lt              = $em->getRepository('MauticLeadBundle:Lead')->getTableAlias();
@@ -174,12 +174,17 @@ EOSQL;
 
         $where = "{$lft}.object IN ('extendedField','extendedFieldSecure') ";
         if (!empty($extendedFieldList)) {
-            $ids             = array_map(function ($e) { return $e['id']; }, $extendedFieldList);
+            $ids             = array_map(
+                function ($e) {
+                    return $e['id'];
+                },
+                $extendedFieldList
+            );
             $leadFiieldIdStr = "'".implode("','", $ids)."'";
             $where           = "{$lft}.id IN ({$leadFiieldIdStr}) ";
         }
 
-        $sql    = <<<EOSQL
+        $sql = <<<EOSQL
 SELECT x.lead_id, x.alias, v.value, v.data_type
 FROM
 (
@@ -196,7 +201,7 @@ LEFT JOIN
 ) v USING (lead_id, lead_field_id)
 EOSQL;
 
-        $query        = $em->getConnection()->prepare($sql);
+        $query = $em->getConnection()->prepare($sql);
         $query->execute();
         $results = $query->fetchAll();
 
@@ -261,73 +266,64 @@ EOSQL;
         }
 
         // Now to update extended fields if there were any to be updated.
-        // @todo - Refactor to merge inserts/updates by type to reduce query count when saving many fields.
         if (!empty($extendedFields)) {
+            $insertUpdates = $deletions = [];
+            $leadId        = $entity->getId();
+            /** @var \Doctrine\DBAL\Connection $connection */
+            $connection = $this->getEntityManager()->getConnection();
             foreach ($extendedFields as $extendedField) {
-                $fieldModel = $this->leadFieldModel;
-                $schema     = $fieldModel->getSchemaDefinition($extendedField['alias'], $extendedField['type']);
-                $columns    = [
+                if (
+                    !isset($changes['fields'])
+                    || !isset($changes['fields'][$extendedField['alias']])
+                ) {
+                    // No change to this extended field detected.
+                    continue;
+                }
+                $schema  = $this->leadFieldModel->getSchemaDefinition($extendedField['alias'], $extendedField['type']);
+                $columns = [
                     'value' => $extendedField['value'],
                 ];
-                $secure     = 'extendedFieldSecure' === $extendedField['object'] ? '_secure' : '';
-                $tableName  = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$schema['type'].$secure.'_xref';
+                // Corrects boolean field values, nothing more at this point.
                 $this->prepareDbalFieldsForSave($columns);
+                $secure    = 'extendedFieldSecure' === $extendedField['object'] ? '_secure' : '';
+                $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$schema['type'].$secure.'_xref';
 
                 if (
-                    isset($changes['fields'])
-                    && isset($changes['fields'][$extendedField['alias']])
+                    null !== $changes['fields'][$extendedField['alias']][0]
+                    && null === $changes['fields'][$extendedField['alias']][1]
                 ) {
-                    if (
-                        (null === $changes['fields'][$extendedField['alias']][0]
-                            || (
-                                is_int($changes['fields'][$extendedField['alias']][0])
-                                && 'boolean' == $extendedField['type']
-                            )
-                            || (
-                                // value contained extra space in text/string field detected as change when none really exist
-                                is_string($changes['fields'][$extendedField['alias']][0])
-                                && is_string($changes['fields'][$extendedField['alias']][1])
-                                && trim($changes['fields'][$extendedField['alias']][0]) === trim(
-                                    $changes['fields'][$extendedField['alias']][1]
-                                )
-                                && $changes['fields'][$extendedField['alias']][0] !==
-                                $changes['fields'][$extendedField['alias']][1]
-                            )
-                        )
-                        && null !== $changes['fields'][$extendedField['alias']][1]
-                    ) {
-                        // Need to do an insert, no previous value exists for this lead.
-                        $columns['lead_id']       = $entity->getId();
-                        $columns['lead_field_id'] = $extendedField['id'];
-                        $this->getEntityManager()->getConnection()->insert(
-                            $tableName,
-                            $columns
-                        );
-                    } else {
-                        if (
-                            null !== $changes['fields'][$extendedField['alias']][0]
-                            && null === $changes['fields'][$extendedField['alias']][1]
-                        ) {
-                            // Need to delete the row from db table because new value is empty
-                            $this->getEntityManager()->getConnection()->delete(
-                                $tableName,
-                                [
-                                    'lead_id'       => $entity->getId(),
-                                    'lead_field_id' => $extendedField['id'],
-                                ]
-                            );
-                        } else {
-                            // Update the lead field with a new value.
-                            $this->getEntityManager()->getConnection()->update(
-                                $tableName,
-                                $columns,
-                                [
-                                    'lead_id'       => $entity->getId(),
-                                    'lead_field_id' => $extendedField['id'],
-                                ]
-                            );
-                        }
+                    // Removed an existing value.
+                    $connection->delete(
+                        $tableName,
+                        [
+                            'lead_id'       => $leadId,
+                            'lead_field_id' => $extendedField['id'],
+                        ]
+                    );
+                } else {
+                    // Mark for insert/update.
+                    if (!isset($insertUpdates[$tableName])) {
+                        $insertUpdates[$tableName] = [];
                     }
+                    if (!isset($insertUpdates[$tableName][$extendedField['id']])) {
+                        $insertUpdates[$tableName][$extendedField['id']] = $columns['value'];
+                    }
+                }
+            }
+            // Handle inserts/updates in bulk by table.
+            if ($insertUpdates) {
+                foreach ($insertUpdates as $tableName => $leadField) {
+                    $rows = $params = [];
+                    foreach ($leadField as $leadFieldId => $value) {
+                        $key          = $tableName.$leadFieldId;
+                        $rows[]       = $leadId.', '.$leadFieldId.', :'.$key;
+                        $params[$key] = $value;
+                    }
+                    $sql  = 'INSERT INTO '.$tableName.' (`lead_id`, `lead_field_id`, `value`) '.
+                        'VALUES ('.implode('),(', $rows).') '.
+                        'ON DUPLICATE KEY UPDATE `value`=VALUES(`value`);';
+                    $stmt = $connection->prepare($sql);
+                    $stmt->execute($params);
                 }
             }
         }
@@ -439,17 +435,16 @@ EOSQL;
                         $fieldValues[$id][$fields[$k]['group']][$fields[$k]['alias']]          = $fields[$k];
                         $fieldValues[$id][$fields[$k]['group']][$fields[$k]['alias']]['value'] = $r;
                     }
-
-                    // Alteration to core start.
-                    // Add the extended field to result if the current lead has that field value
-                    foreach ($extendedFieldList as $fieldToAdd => $e_config) {
-                        // @todo - Apply filters from extended fields
-                        $e_value                                                                                 = isset($extendedFieldValues[$id][$fieldToAdd]) ? $extendedFieldValues[$id][$fieldToAdd] : null;
-                        $fieldValues[$id][$fields[$fieldToAdd]['group']][$fields[$fieldToAdd]['alias']]          = $fields[$fieldToAdd];
-                        $fieldValues[$id][$fields[$fieldToAdd]['group']][$fields[$fieldToAdd]['alias']]['value'] = $e_value;
-                    }
-                    // Alteration to core end.
                 }
+
+                // Alteration to core start.
+                // Add the extended field to result if the current lead has that field value
+                foreach ($extendedFieldList as $fieldToAdd => $e_config) {
+                    $e_value                                                                                 = isset($extendedFieldValues[$id][$fieldToAdd]) ? $extendedFieldValues[$id][$fieldToAdd] : null;
+                    $fieldValues[$id][$fields[$fieldToAdd]['group']][$fields[$fieldToAdd]['alias']]          = $fields[$fieldToAdd];
+                    $fieldValues[$id][$fields[$fieldToAdd]['group']][$fields[$fieldToAdd]['alias']]['value'] = $e_value;
+                }
+                // Alteration to core end.
 
                 //make sure each group key is present
                 foreach ($groups as $g) {
