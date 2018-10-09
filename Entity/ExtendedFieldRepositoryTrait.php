@@ -435,17 +435,16 @@ EOSQL;
                         $fieldValues[$id][$fields[$k]['group']][$fields[$k]['alias']]          = $fields[$k];
                         $fieldValues[$id][$fields[$k]['group']][$fields[$k]['alias']]['value'] = $r;
                     }
-
-                    // Alteration to core start.
-                    // Add the extended field to result if the current lead has that field value
-                    foreach ($extendedFieldList as $fieldToAdd => $e_config) {
-                        // @todo - Apply filters from extended fields
-                        $e_value                                                                                 = isset($extendedFieldValues[$id][$fieldToAdd]) ? $extendedFieldValues[$id][$fieldToAdd] : null;
-                        $fieldValues[$id][$fields[$fieldToAdd]['group']][$fields[$fieldToAdd]['alias']]          = $fields[$fieldToAdd];
-                        $fieldValues[$id][$fields[$fieldToAdd]['group']][$fields[$fieldToAdd]['alias']]['value'] = $e_value;
-                    }
-                    // Alteration to core end.
                 }
+
+                // Alteration to core start.
+                // Add the extended field to result if the current lead has that field value
+                foreach ($extendedFieldList as $fieldToAdd => $e_config) {
+                    $e_value                                                                                 = isset($extendedFieldValues[$id][$fieldToAdd]) ? $extendedFieldValues[$id][$fieldToAdd] : null;
+                    $fieldValues[$id][$fields[$fieldToAdd]['group']][$fields[$fieldToAdd]['alias']]          = $fields[$fieldToAdd];
+                    $fieldValues[$id][$fields[$fieldToAdd]['group']][$fields[$fieldToAdd]['alias']]['value'] = $e_value;
+                }
+                // Alteration to core end.
 
                 //make sure each group key is present
                 foreach ($groups as $g) {
