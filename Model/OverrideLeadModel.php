@@ -247,6 +247,7 @@ class OverrideLeadModel extends LeadModel
         $this->setTimestamps($entity, $isNew, $unlock);
         $event = $this->dispatchEvent('pre_save', $entity, $isNew);
         $this->getRepository()->saveEntity($entity);
+        $this->setFieldValues($entity, $entity->getUpdatedFields(), false, false);
         $this->dispatchEvent('post_save', $entity, $isNew, $event);
         // Alteration to core end.
 
