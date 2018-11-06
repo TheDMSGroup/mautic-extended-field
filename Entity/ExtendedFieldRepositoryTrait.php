@@ -393,12 +393,16 @@ EOSQL;
             $dq->resetQueryPart('groupBy');
         }
 
-        //get a total count
-        $result = $dq->execute()->fetchAll();
-        $total  = ($result) ? $result[0]['count'] : 0;
-
-        if (!$total) {
-            $results = [];
+        if ($args['withTotalCount']) {
+            //get a total count
+            $result = $dq->execute()->fetchAll();
+            $total  = ($result) ? $result[0]['count'] : 0;
+            if (!$total) {
+                return [
+                    'count'   => $total,
+                    'results' => [],
+                ];
+            }
         } else {
             if ($groupBy) {
                 $dq->groupBy($groupBy);
