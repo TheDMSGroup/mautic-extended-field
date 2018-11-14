@@ -39,6 +39,8 @@ class LeadSubscriber extends CommonSubscriber
     public function __construct(ExtendedFieldModel $leadModel)
     {
         $this->leadModel = $leadModel;
+        $this->extendedFields = $leadModel->getExtendedFields();
+        $this->aliases = [];
     }
 
     /**
@@ -60,22 +62,30 @@ class LeadSubscriber extends CommonSubscriber
         $details = $event->getDetails();
         if (isset($details['object']) && 'lead' === $details['object']) {
             $fieldAlias = $details['field'];
-            if (!$this->extendedFields) {
-                $this->extendedFields = $this->leadModel->getExtendedFields();
-            }
             if (isset($this->extendedFields[$fieldAlias])) {
+                //prevent duplicate joins without preventing joins
+                if (in_array($fieldAlias, $this->aliases)) {
+                    $joins = $event->getQueryBuilder()->getQueryPart('join');
+                    if (isset($joins['l'])) {
+                        foreach ($joins['l'] as $join) {
+                            if (in_array($join['joinAlias'], array_keys($this->aliases))) {
+                                return;
+                            }
+                        }
+                    }
+                }
                 // This is an extended field that needs to be modified to use the appropriate xref table.
-                $field         = $this->extendedFields[$fieldAlias];
-                $schema        = $this->leadModel->getSchemaDefinition($fieldAlias, $field['type']);
-                $secure        = 'extendedFieldSecure' === $field['object'] ? '_secure' : '';
-                $extendedTable = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$schema['type'].$secure.'_xref';
-                $joinAlias     = $event->getAlias();
-                $q             = $event->getQueryBuilder();
+                $field = $this->extendedFields[$fieldAlias];
+                $schema = $this->leadModel->getSchemaDefinition($fieldAlias, $field['type']);
+                $secure = 'extendedFieldSecure' === $field['object'] ? '_secure' : '';
+                $extendedTable = MAUTIC_TABLE_PREFIX . 'lead_fields_leads_' . $schema['type'] . $secure . '_xref';
+                $joinAlias = $event->getAlias();
+                $q = $event->getQueryBuilder();
                 $q->leftJoin(
                     'l',
                     $extendedTable,
                     $joinAlias,
-                    $joinAlias.'.lead_id = l.id AND '.$joinAlias.'.lead_field_id = '.(int) $field['id']
+                    $joinAlias . '.lead_id = l.id AND ' . $joinAlias . '.lead_field_id = ' . (int)$field['id']
                 );
                 $this->aliases[$joinAlias] = $fieldAlias;
             }
@@ -94,30 +104,29 @@ class LeadSubscriber extends CommonSubscriber
         $parts        = $q->getQueryParts();
         $changedParts = [];
         $aliases      = [];
-        if (isset($parts['join']['l']) && $this->aliases) {
+        if (isset($parts['join']['l']) && !empty($this->aliases)) {
             // Confirm the aliases are for the current query by present joins.
             foreach ($parts['join']['l'] as $key => $join) {
-                $joinAlias = $join['joinAlias'];
                 if (
                     is_array($join)
                     && isset($join['joinType'])
                     && 'left' === $join['joinType']
-                    && isset($this->aliases[$joinAlias])
+                    && isset($this->aliases[$join['joinAlias']])
                 ) {
-                    $aliases[$joinAlias] = $this->aliases[$joinAlias];
+                    $aliases[$join['joinAlias']] = $this->aliases[$join['joinAlias']];
                 }
             }
-            if (count($aliases)) {
-                foreach ($aliases as $joinAlias => $fieldAlias) {
-                    foreach (['where', 'orWhere', 'andWhere', 'having', 'orHaving', 'andHaving'] as $type) {
-                        if (isset($parts[$type])) {
-                            $changedParts[$type] = $this->partCorrect($parts[$type], $fieldAlias, $joinAlias);
-                        }
+
+            foreach ($aliases as $joinAlias => $fieldAlias) {
+                foreach (['where', 'orWhere', 'andWhere', 'having', 'orHaving', 'andHaving'] as $type) {
+                    if (isset($parts[$type])) {
+                        $changedParts[$type] = $this->partCorrect($parts[$type], $fieldAlias, $joinAlias);
                     }
                 }
-                foreach ($changedParts as $type => $t) {
-                    $q->setQueryPart($type, $parts[$type]);
-                }
+            }
+
+            foreach ($changedParts as $type => $t) {
+                $q->setQueryPart($type, $parts[$type]);
             }
         }
     }
