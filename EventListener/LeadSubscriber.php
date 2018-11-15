@@ -31,6 +31,9 @@ class LeadSubscriber extends CommonSubscriber
     /** @var array */
     protected $aliases;
 
+    /** @var array */
+    protected $seen;
+
     /**
      * LeadSubscriber constructor.
      *
@@ -40,7 +43,7 @@ class LeadSubscriber extends CommonSubscriber
     {
         $this->leadModel = $leadModel;
         $this->extendedFields = $leadModel->getExtendedFields();
-        $this->aliases = [];
+        $this->aliases = $this->seen = [];
     }
 
     /**
@@ -63,17 +66,19 @@ class LeadSubscriber extends CommonSubscriber
         if (isset($details['object']) && 'lead' === $details['object']) {
             $fieldAlias = $details['field'];
             if (isset($this->extendedFields[$fieldAlias])) {
+                /*
                 //prevent duplicate joins without preventing joins
-                if (in_array($fieldAlias, $this->aliases)) {
+                if (in_array($fieldAlias, array_keys($this->seen))) {
                     $joins = $event->getQueryBuilder()->getQueryPart('join');
                     if (isset($joins['l'])) {
                         foreach ($joins['l'] as $join) {
-                            if (in_array($join['joinAlias'], array_keys($this->aliases))) {
+                            if ($join['joinAlias'] === $this->seen[$fieldAlias]) {
                                 return;
                             }
                         }
                     }
                 }
+                */
                 // This is an extended field that needs to be modified to use the appropriate xref table.
                 $field = $this->extendedFields[$fieldAlias];
                 $schema = $this->leadModel->getSchemaDefinition($fieldAlias, $field['type']);
@@ -88,6 +93,7 @@ class LeadSubscriber extends CommonSubscriber
                     $joinAlias . '.lead_id = l.id AND ' . $joinAlias . '.lead_field_id = ' . (int)$field['id']
                 );
                 $this->aliases[$joinAlias] = $fieldAlias;
+                //$this->seen[$fieldAlias] = $joinAlias;
             }
         }
     }
@@ -116,15 +122,16 @@ class LeadSubscriber extends CommonSubscriber
                     $aliases[$join['joinAlias']] = $this->aliases[$join['joinAlias']];
                 }
             }
-
-            foreach ($aliases as $joinAlias => $fieldAlias) {
-                foreach (['where', 'orWhere', 'andWhere', 'having', 'orHaving', 'andHaving'] as $type) {
-                    if (isset($parts[$type])) {
-                        $changedParts[$type] = $this->partCorrect($parts[$type], $fieldAlias, $joinAlias);
+            if (count($aliases)) {
+                foreach ($aliases as $joinAlias => $fieldAlias) {
+                    foreach (['where', 'orWhere', 'andWhere', 'having', 'orHaving', 'andHaving'] as $type) {
+                        if (isset($parts[$type])) {
+//                        $changedParts[$type] = $this->partCorrect($parts[$type], $fieldAlias, $this->seen[$fieldAlias]);
+                            $changedParts[$type] = $this->partCorrect($parts[$type], $fieldAlias, $joinAlias);
+                        }
                     }
                 }
             }
-
             foreach ($changedParts as $type => $t) {
                 $q->setQueryPart($type, $parts[$type]);
             }
