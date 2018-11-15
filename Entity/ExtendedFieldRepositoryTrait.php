@@ -393,17 +393,21 @@ EOSQL;
             $dq->resetQueryPart('groupBy');
         }
 
-        if ($args['withTotalCount']) {
+        $total = 0;
+        $results = [];
+        if (isset($args['withTotalCount']) && $args['withTotalCount']) {
             //get a total count
             $result = $dq->execute()->fetchAll();
-            $total  = ($result) ? $result[0]['count'] : 0;
+            $total  = ($result) ? $result[0]['count'] : $total;
             if (!$total) {
                 return [
                     'count'   => $total,
-                    'results' => [],
+                    'results' => $results,
                 ];
             }
-        } else {
+        }
+
+        if ($total || !(isset($args['withTotalCount']) && $args['withTotalCount'])) {
             if ($groupBy) {
                 $dq->groupBy($groupBy);
             }
@@ -508,7 +512,7 @@ EOSQL;
             }
         }
 
-        return (!empty($args['withTotalCount'])) ?
+        return (isset($args['withTotalCount']) && $args['withTotalCount']) ?
             [
                 'count'   => $total,
                 'results' => $results,
