@@ -393,7 +393,7 @@ EOSQL;
             $dq->resetQueryPart('groupBy');
         }
 
-        $total = 0;
+        $total   = 0;
         $results = [];
         if (isset($args['withTotalCount']) && $args['withTotalCount']) {
             //get a total count

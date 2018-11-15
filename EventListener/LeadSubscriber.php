@@ -91,7 +91,7 @@ class LeadSubscriber extends CommonSubscriber
                     $joinAlias.'.lead_id = l.id AND '.$joinAlias.'.lead_field_id = '.(int) $field['id']
                 );
                 $this->aliases[$joinAlias] = $fieldAlias;
-                $this->seen[$fieldAlias] = $joinAlias;
+                $this->seen[$fieldAlias]   = $joinAlias;
             }
         }
     }
@@ -125,7 +125,7 @@ class LeadSubscriber extends CommonSubscriber
                     foreach (['where', 'orWhere', 'andWhere', 'having', 'orHaving', 'andHaving'] as $type) {
                         if (isset($parts[$type])) {
                             $changedParts[$type] = $this->partCorrect($parts[$type], $fieldAlias, $this->seen[$fieldAlias]);
-                       }
+                        }
                     }
                 }
             }
