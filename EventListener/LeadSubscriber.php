@@ -41,9 +41,8 @@ class LeadSubscriber extends CommonSubscriber
      */
     public function __construct(ExtendedFieldModel $leadModel)
     {
-        $this->leadModel      = $leadModel;
-        $this->extendedFields = $leadModel->getExtendedFields();
-        $this->aliases        = $this->seen        = [];
+        $this->leadModel = $leadModel;
+        $this->aliases   = $this->seen = [];
     }
 
     /**
@@ -65,6 +64,9 @@ class LeadSubscriber extends CommonSubscriber
         $details = $event->getDetails();
         if (isset($details['object']) && 'lead' === $details['object']) {
             $fieldAlias = $details['field'];
+            if (!$this->extendedFields) {
+                $this->extendedFields = $this->leadModel->getExtendedFields();
+            }
             if (isset($this->extendedFields[$fieldAlias])) {
                 //prevent duplicate joins without preventing joins
                 if (in_array($fieldAlias, array_keys($this->seen))) {
