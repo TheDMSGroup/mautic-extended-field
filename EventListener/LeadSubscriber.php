@@ -31,6 +31,9 @@ class LeadSubscriber extends CommonSubscriber
     /** @var array */
     protected $aliases;
 
+    /** @var array */
+    protected $seen;
+
     /**
      * LeadSubscriber constructor.
      *
@@ -39,6 +42,7 @@ class LeadSubscriber extends CommonSubscriber
     public function __construct(ExtendedFieldModel $leadModel)
     {
         $this->leadModel = $leadModel;
+        $this->aliases   = $this->seen = [];
     }
 
     /**
@@ -64,6 +68,17 @@ class LeadSubscriber extends CommonSubscriber
                 $this->extendedFields = $this->leadModel->getExtendedFields();
             }
             if (isset($this->extendedFields[$fieldAlias])) {
+                //prevent duplicate joins without preventing joins
+                if (in_array($fieldAlias, array_keys($this->seen))) {
+                    $joins = $event->getQueryBuilder()->getQueryPart('join');
+                    if (isset($joins['l'])) {
+                        foreach ($joins['l'] as $join) {
+                            if ($join['joinAlias'] === $this->seen[$fieldAlias]) {
+                                return;
+                            }
+                        }
+                    }
+                }
                 // This is an extended field that needs to be modified to use the appropriate xref table.
                 $field         = $this->extendedFields[$fieldAlias];
                 $schema        = $this->leadModel->getSchemaDefinition($fieldAlias, $field['type']);
@@ -78,6 +93,7 @@ class LeadSubscriber extends CommonSubscriber
                     $joinAlias.'.lead_id = l.id AND '.$joinAlias.'.lead_field_id = '.(int) $field['id']
                 );
                 $this->aliases[$joinAlias] = $fieldAlias;
+                $this->seen[$fieldAlias]   = $joinAlias;
             }
         }
     }
@@ -94,30 +110,29 @@ class LeadSubscriber extends CommonSubscriber
         $parts        = $q->getQueryParts();
         $changedParts = [];
         $aliases      = [];
-        if (isset($parts['join']['l']) && $this->aliases) {
+        if (isset($parts['join']['l']) && !empty($this->aliases)) {
             // Confirm the aliases are for the current query by present joins.
             foreach ($parts['join']['l'] as $key => $join) {
-                $joinAlias = $join['joinAlias'];
                 if (
                     is_array($join)
                     && isset($join['joinType'])
                     && 'left' === $join['joinType']
-                    && isset($this->aliases[$joinAlias])
+                    && isset($this->aliases[$join['joinAlias']])
                 ) {
-                    $aliases[$joinAlias] = $this->aliases[$joinAlias];
+                    $aliases[$join['joinAlias']] = $this->aliases[$join['joinAlias']];
                 }
             }
             if (count($aliases)) {
                 foreach ($aliases as $joinAlias => $fieldAlias) {
                     foreach (['where', 'orWhere', 'andWhere', 'having', 'orHaving', 'andHaving'] as $type) {
                         if (isset($parts[$type])) {
-                            $changedParts[$type] = $this->partCorrect($parts[$type], $fieldAlias, $joinAlias);
+                            $changedParts[$type] = $this->partCorrect($parts[$type], $fieldAlias, $this->seen[$fieldAlias]);
                         }
                     }
                 }
-                foreach ($changedParts as $type => $t) {
-                    $q->setQueryPart($type, $parts[$type]);
-                }
+            }
+            foreach ($changedParts as $type => $t) {
+                $q->setQueryPart($type, $parts[$type]);
             }
         }
     }
