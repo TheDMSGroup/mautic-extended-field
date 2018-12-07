@@ -11,13 +11,6 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 
-use Mautic\CategoryBundle\Model\CategoryModel;
-use Mautic\ChannelBundle\Helper\ChannelListHelper;
-use Mautic\CoreBundle\Helper\CookieHelper;
-use Mautic\CoreBundle\Helper\CoreParametersHelper;
-use Mautic\CoreBundle\Helper\IpLookupHelper;
-use Mautic\CoreBundle\Helper\PathsHelper;
-use Mautic\EmailBundle\Helper\EmailValidator;
 use Mautic\LeadBundle\Entity\CompanyChangeLog;
 use Mautic\LeadBundle\Entity\CompanyLead;
 use Mautic\LeadBundle\Entity\Lead;
@@ -26,94 +19,16 @@ use Mautic\LeadBundle\Entity\LeadField;
 use Mautic\LeadBundle\Helper\IdentifyCompanyHelper;
 use Mautic\LeadBundle\Model\IpAddressModel;
 use Mautic\LeadBundle\Model\LeadModel;
-use Mautic\LeadBundle\Model\LegacyLeadModel;
-use Mautic\LeadBundle\Tracker\ContactTracker;
-use Mautic\LeadBundle\Tracker\DeviceTracker;
-use Mautic\PluginBundle\Helper\IntegrationHelper;
-use Mautic\UserBundle\Security\Provider\UserProvider;
-use Symfony\Component\Form\FormFactory;
-use Symfony\Component\HttpFoundation\RequestStack;
-
 /**
  * Class OverrideLeadModel.
  */
 class OverrideLeadModel extends LeadModel
 {
 
-    /** @var IpAddressModel */
-    private $ipAddressModel;
-
-    /** @var ContactTracker */
-    private $contactTracker;
-
-    /** @var DeviceTracker */
-    private $deviceTracker;
-
-    /** @var LegacyLeadModel */
-    private $legacyLeadModel;
-
     /**
-     * Alterations from core:
-     *  Uses ExtendedFieldModel, and is primarily here to get access to the ipAddressModel (which is private).
-     *
-     * @param RequestStack         $requestStack
-     * @param CookieHelper         $cookieHelper
-     * @param IpLookupHelper       $ipLookupHelper
-     * @param PathsHelper          $pathsHelper
-     * @param IntegrationHelper    $integrationHelper
-     * @param ExtendedFieldModel   $leadFieldModel
-     * @param OverrideListModel    $leadListModel
-     * @param FormFactory          $formFactory
-     * @param OverrideCompanyModel $companyModel
-     * @param CategoryModel        $categoryModel
-     * @param ChannelListHelper    $channelListHelper
-     * @param CoreParametersHelper $coreParametersHelper
-     * @param EmailValidator       $emailValidator
-     * @param UserProvider         $userProvider
-     * @param ContactTracker       $contactTracker
-     * @param DeviceTracker        $deviceTracker
-     * @param LegacyLeadModel      $legacyLeadModel
-     * @param IpAddressModel       $ipAddressModel
+     * @var IpAddressModel
      */
-    public function __construct(
-        RequestStack $requestStack,
-        CookieHelper $cookieHelper,
-        IpLookupHelper $ipLookupHelper,
-        PathsHelper $pathsHelper,
-        IntegrationHelper $integrationHelper,
-        ExtendedFieldModel $leadFieldModel,
-        OverrideListModel $leadListModel,
-        FormFactory $formFactory,
-        OverrideCompanyModel $companyModel,
-        CategoryModel $categoryModel,
-        ChannelListHelper $channelListHelper,
-        CoreParametersHelper $coreParametersHelper,
-        EmailValidator $emailValidator,
-        UserProvider $userProvider,
-        ContactTracker $contactTracker,
-        DeviceTracker $deviceTracker,
-        LegacyLeadModel $legacyLeadModel,
-        IpAddressModel $ipAddressModel = null
-    ) {
-        $this->request              = $requestStack->getCurrentRequest();
-        $this->cookieHelper         = $cookieHelper;
-        $this->ipLookupHelper       = $ipLookupHelper;
-        $this->pathsHelper          = $pathsHelper;
-        $this->integrationHelper    = $integrationHelper;
-        $this->leadFieldModel       = $leadFieldModel;
-        $this->leadListModel        = $leadListModel;
-        $this->companyModel         = $companyModel;
-        $this->formFactory          = $formFactory;
-        $this->categoryModel        = $categoryModel;
-        $this->channelListHelper    = $channelListHelper;
-        $this->coreParametersHelper = $coreParametersHelper;
-        $this->emailValidator       = $emailValidator;
-        $this->userProvider         = $userProvider;
-        $this->contactTracker       = $contactTracker;
-        $this->deviceTracker        = $deviceTracker;
-        $this->legacyLeadModel      = $legacyLeadModel;
-        $this->ipAddressModel       = $ipAddressModel;
-    }
+    public $ipAddressModel;
 
     /**
      * Alterations to core:
