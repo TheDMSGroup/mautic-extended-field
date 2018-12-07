@@ -26,6 +26,7 @@ use Mautic\LeadBundle\Entity\LeadField;
 use Mautic\LeadBundle\Helper\IdentifyCompanyHelper;
 use Mautic\LeadBundle\Model\IpAddressModel;
 use Mautic\LeadBundle\Model\LeadModel;
+use Mautic\LeadBundle\Model\LegacyLeadModel;
 use Mautic\LeadBundle\Tracker\ContactTracker;
 use Mautic\LeadBundle\Tracker\DeviceTracker;
 use Mautic\PluginBundle\Helper\IntegrationHelper;
@@ -52,7 +53,8 @@ class OverrideLeadModel extends LeadModel
     private $legacyLeadModel;
 
     /**
-     * An exact copy of the parent construct to get to ipAddressModel (which is private),
+     * Alterations from core:
+     *  Uses ExtendedFieldModel, and is primarily here to get access to the ipAddressModel (which is private).
      *
      * @param RequestStack         $requestStack
      * @param CookieHelper         $cookieHelper
@@ -79,7 +81,7 @@ class OverrideLeadModel extends LeadModel
         IpLookupHelper $ipLookupHelper,
         PathsHelper $pathsHelper,
         IntegrationHelper $integrationHelper,
-        FieldModel $leadFieldModel,
+        ExtendedFieldModel $leadFieldModel,
         ListModel $leadListModel,
         FormFactory $formFactory,
         CompanyModel $companyModel,
