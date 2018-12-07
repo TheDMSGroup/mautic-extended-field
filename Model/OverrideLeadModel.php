@@ -19,12 +19,12 @@ use Mautic\LeadBundle\Entity\LeadField;
 use Mautic\LeadBundle\Helper\IdentifyCompanyHelper;
 use Mautic\LeadBundle\Model\IpAddressModel;
 use Mautic\LeadBundle\Model\LeadModel;
+
 /**
  * Class OverrideLeadModel.
  */
 class OverrideLeadModel extends LeadModel
 {
-
     /**
      * @var IpAddressModel
      */
@@ -97,6 +97,7 @@ class OverrideLeadModel extends LeadModel
      * @param $leadId
      *
      * @return array
+     *
      * @throws \Exception
      */
     public function setPrimaryCompany($companyId, $leadId)

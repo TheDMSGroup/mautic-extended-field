@@ -57,7 +57,6 @@ class OverrideTableSchemaColumnsCache extends TableSchemaColumnsCache
             $columns = $this->entityManager->getConnection()->getSchemaManager()->listTableColumns($tableName);
             if ('leads' === $tableName) {
                 if (!$this->extendedFieldAliases) {
-
                     // Hacked this query into here to avoid a recursive dependency in 2.15.0
                     $fq = $this->entityManager->getConnection()->createQueryBuilder();
                     $fq->select('f.alias')

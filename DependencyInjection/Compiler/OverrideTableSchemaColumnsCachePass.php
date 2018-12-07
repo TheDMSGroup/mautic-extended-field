@@ -14,7 +14,6 @@ namespace MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler;
 use MauticPlugin\MauticExtendedFieldBundle\Segment\OverrideTableSchemaColumnsCache;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Reference;
 
 /**
  * Class OverrideListModelPass.
