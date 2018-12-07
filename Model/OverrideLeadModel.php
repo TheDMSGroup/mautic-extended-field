@@ -18,6 +18,7 @@ use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Entity\LeadEventLog;
 use Mautic\LeadBundle\Entity\LeadField;
 use Mautic\LeadBundle\Helper\IdentifyCompanyHelper;
+use Mautic\LeadBundle\Model\IpAddressModel;
 use Mautic\LeadBundle\Model\LeadModel;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
 
@@ -26,6 +27,10 @@ use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
  */
 class OverrideLeadModel extends LeadModel
 {
+
+    /** @var IpAddressModel */
+    private $ipAddressModel;
+
     /**
      * Alterations to core:
      *  Returns OverrideLeadRepository.
@@ -222,24 +227,17 @@ class OverrideLeadModel extends LeadModel
         $updatedFields = $entity->getUpdatedFields();
         if (isset($updatedFields['company'])) {
             $companyFieldMatches['company']            = $updatedFields['company'];
-            list($company, $leadAdded, $companyEntity) = IdentifyCompanyHelper::identifyLeadsCompany(
-                $companyFieldMatches,
-                $entity,
-                $this->companyModel
-            );
+            list($company, $leadAdded, $companyEntity) = IdentifyCompanyHelper::identifyLeadsCompany($companyFieldMatches, $entity, $this->companyModel);
             if ($leadAdded) {
-                $entity->addCompanyChangeLogEntry(
-                    'form',
-                    'Identify Company',
-                    'Lead added to the company, '.$company['companyname'],
-                    $company['id']
-                );
+                $entity->addCompanyChangeLogEntry('form', 'Identify Company', 'Lead added to the company, '.$company['companyname'], $company['id']);
             }
         }
 
         $this->processManipulator($entity);
 
         $this->setEntityDefaultValues($entity);
+
+        $this->ipAddressModel->saveIpAddressesReferencesForContact($entity);
 
         // Alteration to core start.
         // parent::saveEntity($entity, $unlock);
