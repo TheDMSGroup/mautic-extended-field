@@ -61,10 +61,10 @@ class OverrideLeadModel extends LeadModel
      * @param IpLookupHelper       $ipLookupHelper
      * @param PathsHelper          $pathsHelper
      * @param IntegrationHelper    $integrationHelper
-     * @param FieldModel           $leadFieldModel
-     * @param ListModel            $leadListModel
+     * @param ExtendedFieldModel   $leadFieldModel
+     * @param OverrideListModel    $leadListModel
      * @param FormFactory          $formFactory
-     * @param CompanyModel         $companyModel
+     * @param OverrideCompanyModel $companyModel
      * @param CategoryModel        $categoryModel
      * @param ChannelListHelper    $channelListHelper
      * @param CoreParametersHelper $coreParametersHelper
@@ -82,9 +82,9 @@ class OverrideLeadModel extends LeadModel
         PathsHelper $pathsHelper,
         IntegrationHelper $integrationHelper,
         ExtendedFieldModel $leadFieldModel,
-        ListModel $leadListModel,
+        OverrideListModel $leadListModel,
         FormFactory $formFactory,
-        CompanyModel $companyModel,
+        OverrideCompanyModel $companyModel,
         CategoryModel $categoryModel,
         ChannelListHelper $channelListHelper,
         CoreParametersHelper $coreParametersHelper,
