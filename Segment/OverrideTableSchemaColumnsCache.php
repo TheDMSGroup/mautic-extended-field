@@ -12,7 +12,6 @@
 namespace MauticPlugin\MauticExtendedFieldBundle\Segment;
 
 use Doctrine\ORM\EntityManager;
-use Mautic\LeadBundle\Model\FieldModel;
 use Mautic\LeadBundle\Segment\TableSchemaColumnsCache;
 use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
 
@@ -25,9 +24,6 @@ use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
  */
 class OverrideTableSchemaColumnsCache extends TableSchemaColumnsCache
 {
-    /** @var FieldModel */
-    protected $fieldModel;
-
     /** @var array */
     protected $extendedFieldAliases;
 
@@ -43,11 +39,10 @@ class OverrideTableSchemaColumnsCache extends TableSchemaColumnsCache
      * @param EntityManager      $entityManager
      * @param ExtendedFieldModel $fieldModel
      */
-    public function __construct(EntityManager $entityManager, ExtendedFieldModel $fieldModel)
+    public function __construct(EntityManager $entityManager)
     {
         parent::__construct($entityManager);
         $this->entityManager = $entityManager;
-        $this->fieldModel    = $fieldModel;
         $this->cache         = [];
     }
 
@@ -62,13 +57,23 @@ class OverrideTableSchemaColumnsCache extends TableSchemaColumnsCache
             $columns = $this->entityManager->getConnection()->getSchemaManager()->listTableColumns($tableName);
             if ('leads' === $tableName) {
                 if (!$this->extendedFieldAliases) {
-                    $this->extendedFieldAliases = array_keys($this->fieldModel->getExtendedFields());
+
+                    // Hacked this query into here to avoid a recursive dependency in 2.15.0
+                    $fq = $this->entityManager->getConnection()->createQueryBuilder();
+                    $fq->select('f.alias')
+                        ->from(MAUTIC_TABLE_PREFIX.'lead_fields', 'f')
+                        ->where(
+                            $fq->expr()->orX(
+                                $fq->expr()->eq('f.object', $fq->expr()->literal('extendedField')),
+                                $fq->expr()->eq('f.object', $fq->expr()->literal('extendedFieldSecure'))
+                            )
+                        );
+                    foreach ($fq->execute()->fetchAll() as $result) {
+                        $this->extendedFieldAliases[$result['alias']] = 'extendedField - This is never used as an actual column object';
+                    }
                 }
                 if ($this->extendedFieldAliases) {
-                    foreach ($this->extendedFieldAliases as $alias) {
-                        // This'll tip us off if this is ever used for more than just validating column existence.
-                        $columns[$alias] = 'extendedField - This is never used as an actual column object';
-                    }
+                    $columns = array_merge($columns, $this->extendedFieldAliases);
                 }
             }
             $this->cache[$tableName] = $columns ?: [];

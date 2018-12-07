@@ -28,12 +28,6 @@ class OverrideTableSchemaColumnsCachePass implements CompilerPassInterface
     {
         $container->getDefinition('mautic.lead.model.lead_segment_schema_cache')
             ->setFactory(null)
-            ->setArguments(
-                [
-                    new Reference('doctrine.orm.entity_manager'),
-                    new Reference('mautic.lead.model.field'),
-                ]
-            )
             ->setClass(OverrideTableSchemaColumnsCache::class);
     }
 }
