@@ -11,7 +11,13 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 
-use Doctrine\ORM\Mapping\ClassMetadata;
+use Mautic\CategoryBundle\Model\CategoryModel;
+use Mautic\ChannelBundle\Helper\ChannelListHelper;
+use Mautic\CoreBundle\Helper\CookieHelper;
+use Mautic\CoreBundle\Helper\CoreParametersHelper;
+use Mautic\CoreBundle\Helper\IpLookupHelper;
+use Mautic\CoreBundle\Helper\PathsHelper;
+use Mautic\EmailBundle\Helper\EmailValidator;
 use Mautic\LeadBundle\Entity\CompanyChangeLog;
 use Mautic\LeadBundle\Entity\CompanyLead;
 use Mautic\LeadBundle\Entity\Lead;
@@ -20,7 +26,12 @@ use Mautic\LeadBundle\Entity\LeadField;
 use Mautic\LeadBundle\Helper\IdentifyCompanyHelper;
 use Mautic\LeadBundle\Model\IpAddressModel;
 use Mautic\LeadBundle\Model\LeadModel;
-use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
+use Mautic\LeadBundle\Tracker\ContactTracker;
+use Mautic\LeadBundle\Tracker\DeviceTracker;
+use Mautic\PluginBundle\Helper\IntegrationHelper;
+use Mautic\UserBundle\Security\Provider\UserProvider;
+use Symfony\Component\Form\FormFactory;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Class OverrideLeadModel.
@@ -31,39 +42,75 @@ class OverrideLeadModel extends LeadModel
     /** @var IpAddressModel */
     private $ipAddressModel;
 
+    /** @var ContactTracker */
+    private $contactTracker;
+
+    /** @var DeviceTracker */
+    private $deviceTracker;
+
+    /** @var LegacyLeadModel */
+    private $legacyLeadModel;
+
     /**
-     * Alterations to core:
-     *  Returns OverrideLeadRepository.
+     * An exact copy of the parent construct to get to ipAddressModel (which is private),
      *
-     * @return \MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository
+     * @param RequestStack         $requestStack
+     * @param CookieHelper         $cookieHelper
+     * @param IpLookupHelper       $ipLookupHelper
+     * @param PathsHelper          $pathsHelper
+     * @param IntegrationHelper    $integrationHelper
+     * @param FieldModel           $leadFieldModel
+     * @param ListModel            $leadListModel
+     * @param FormFactory          $formFactory
+     * @param CompanyModel         $companyModel
+     * @param CategoryModel        $categoryModel
+     * @param ChannelListHelper    $channelListHelper
+     * @param CoreParametersHelper $coreParametersHelper
+     * @param EmailValidator       $emailValidator
+     * @param UserProvider         $userProvider
+     * @param ContactTracker       $contactTracker
+     * @param DeviceTracker        $deviceTracker
+     * @param LegacyLeadModel      $legacyLeadModel
+     * @param IpAddressModel       $ipAddressModel
      */
-    public function getRepository()
-    {
-        static $repoSetup;
-
-        $metastart = new ClassMetadata(Lead::class);
-        $repo      = new OverrideLeadRepository($this->em, $metastart, $this->leadFieldModel);
-
-        // The rest of this method functions similar to core (with the exception of avoiding $this->repoSetup):
-        $repo->setDispatcher($this->dispatcher);
-
-        if (!$repoSetup) {
-            $repoSetup = true;
-
-            //set the point trigger model in order to get the color code for the lead
-            $fields = $this->leadFieldModel->getFieldList(true, false);
-
-            $socialFields = (!empty($fields['social'])) ? array_keys($fields['social']) : [];
-            $repo->setAvailableSocialFields($socialFields);
-
-            $searchFields = [];
-            foreach ($fields as $group => $groupFields) {
-                $searchFields = array_merge($searchFields, array_keys($groupFields));
-            }
-            $repo->setAvailableSearchFields($searchFields);
-        }
-
-        return $repo;
+    public function __construct(
+        RequestStack $requestStack,
+        CookieHelper $cookieHelper,
+        IpLookupHelper $ipLookupHelper,
+        PathsHelper $pathsHelper,
+        IntegrationHelper $integrationHelper,
+        FieldModel $leadFieldModel,
+        ListModel $leadListModel,
+        FormFactory $formFactory,
+        CompanyModel $companyModel,
+        CategoryModel $categoryModel,
+        ChannelListHelper $channelListHelper,
+        CoreParametersHelper $coreParametersHelper,
+        EmailValidator $emailValidator,
+        UserProvider $userProvider,
+        ContactTracker $contactTracker,
+        DeviceTracker $deviceTracker,
+        LegacyLeadModel $legacyLeadModel,
+        IpAddressModel $ipAddressModel
+    ) {
+        $this->request              = $requestStack->getCurrentRequest();
+        $this->cookieHelper         = $cookieHelper;
+        $this->ipLookupHelper       = $ipLookupHelper;
+        $this->pathsHelper          = $pathsHelper;
+        $this->integrationHelper    = $integrationHelper;
+        $this->leadFieldModel       = $leadFieldModel;
+        $this->leadListModel        = $leadListModel;
+        $this->companyModel         = $companyModel;
+        $this->formFactory          = $formFactory;
+        $this->categoryModel        = $categoryModel;
+        $this->channelListHelper    = $channelListHelper;
+        $this->coreParametersHelper = $coreParametersHelper;
+        $this->emailValidator       = $emailValidator;
+        $this->userProvider         = $userProvider;
+        $this->contactTracker       = $contactTracker;
+        $this->deviceTracker        = $deviceTracker;
+        $this->legacyLeadModel      = $legacyLeadModel;
+        $this->ipAddressModel       = $ipAddressModel;
     }
 
     /**
@@ -133,6 +180,7 @@ class OverrideLeadModel extends LeadModel
      * @param $leadId
      *
      * @return array
+     * @throws \Exception
      */
     public function setPrimaryCompany($companyId, $leadId)
     {
@@ -190,7 +238,7 @@ class OverrideLeadModel extends LeadModel
      * @param Lead $entity
      * @param bool $unlock
      *
-     * @throws \Doctrine\ORM\ORMException
+     * @throws \Exception
      */
     public function saveEntity($entity, $unlock = true)
     {
