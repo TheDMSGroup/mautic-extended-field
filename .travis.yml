@@ -15,6 +15,7 @@ php:
   - 5.6.19
   - 7.0
   - 7.1
+  - 7.2
 
 before_install:
 
@@ -39,7 +40,7 @@ before_install:
   # TEMPORARY incompatibility with a change beyond 2.15~
   - git clone -b staging https://github.com/mautic/mautic.git /tmp/mautic
   - cd /tmp/mautic
-  - git checkout d27414a2044fed72ecbb39d88ed6a8d80b4fe9eb
+  - git checkout staging
   - cd -
 
   # Combine core with our plugin.

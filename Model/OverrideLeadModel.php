@@ -93,7 +93,7 @@ class OverrideLeadModel extends LeadModel
         ContactTracker $contactTracker,
         DeviceTracker $deviceTracker,
         LegacyLeadModel $legacyLeadModel,
-        IpAddressModel $ipAddressModel
+        IpAddressModel $ipAddressModel = null
     ) {
         $this->request              = $requestStack->getCurrentRequest();
         $this->cookieHelper         = $cookieHelper;
@@ -287,7 +287,10 @@ class OverrideLeadModel extends LeadModel
 
         $this->setEntityDefaultValues($entity);
 
-        $this->ipAddressModel->saveIpAddressesReferencesForContact($entity);
+        // For BC w/ 2.14.2-
+        if ($this->ipAddressModel) {
+            $this->ipAddressModel->saveIpAddressesReferencesForContact($entity);
+        }
 
         // Alteration to core start.
         // parent::saveEntity($entity, $unlock);
