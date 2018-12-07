@@ -12,7 +12,7 @@
 return [
     'name'        => 'Extended Fields',
     'description' => 'Extends custom fields for scalability and HIPAA/PCI compliance.',
-    'version'     => '2.14',
+    'version'     => '2.15',
     'author'      => 'Mautic',
     'parameters'  => [
         // set default to block creation of lead table columns
