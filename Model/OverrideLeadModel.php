@@ -11,15 +11,14 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 
-use Doctrine\ORM\Mapping\ClassMetadata;
 use Mautic\LeadBundle\Entity\CompanyChangeLog;
 use Mautic\LeadBundle\Entity\CompanyLead;
 use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Entity\LeadEventLog;
 use Mautic\LeadBundle\Entity\LeadField;
 use Mautic\LeadBundle\Helper\IdentifyCompanyHelper;
+use Mautic\LeadBundle\Model\IpAddressModel;
 use Mautic\LeadBundle\Model\LeadModel;
-use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
 
 /**
  * Class OverrideLeadModel.
@@ -27,39 +26,9 @@ use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
 class OverrideLeadModel extends LeadModel
 {
     /**
-     * Alterations to core:
-     *  Returns OverrideLeadRepository.
-     *
-     * @return \MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository
+     * @var IpAddressModel
      */
-    public function getRepository()
-    {
-        static $repoSetup;
-
-        $metastart = new ClassMetadata(Lead::class);
-        $repo      = new OverrideLeadRepository($this->em, $metastart, $this->leadFieldModel);
-
-        // The rest of this method functions similar to core (with the exception of avoiding $this->repoSetup):
-        $repo->setDispatcher($this->dispatcher);
-
-        if (!$repoSetup) {
-            $repoSetup = true;
-
-            //set the point trigger model in order to get the color code for the lead
-            $fields = $this->leadFieldModel->getFieldList(true, false);
-
-            $socialFields = (!empty($fields['social'])) ? array_keys($fields['social']) : [];
-            $repo->setAvailableSocialFields($socialFields);
-
-            $searchFields = [];
-            foreach ($fields as $group => $groupFields) {
-                $searchFields = array_merge($searchFields, array_keys($groupFields));
-            }
-            $repo->setAvailableSearchFields($searchFields);
-        }
-
-        return $repo;
-    }
+    public $ipAddressModel;
 
     /**
      * Alterations to core:
@@ -128,6 +97,8 @@ class OverrideLeadModel extends LeadModel
      * @param $leadId
      *
      * @return array
+     *
+     * @throws \Exception
      */
     public function setPrimaryCompany($companyId, $leadId)
     {
@@ -185,7 +156,7 @@ class OverrideLeadModel extends LeadModel
      * @param Lead $entity
      * @param bool $unlock
      *
-     * @throws \Doctrine\ORM\ORMException
+     * @throws \Exception
      */
     public function saveEntity($entity, $unlock = true)
     {
@@ -222,24 +193,20 @@ class OverrideLeadModel extends LeadModel
         $updatedFields = $entity->getUpdatedFields();
         if (isset($updatedFields['company'])) {
             $companyFieldMatches['company']            = $updatedFields['company'];
-            list($company, $leadAdded, $companyEntity) = IdentifyCompanyHelper::identifyLeadsCompany(
-                $companyFieldMatches,
-                $entity,
-                $this->companyModel
-            );
+            list($company, $leadAdded, $companyEntity) = IdentifyCompanyHelper::identifyLeadsCompany($companyFieldMatches, $entity, $this->companyModel);
             if ($leadAdded) {
-                $entity->addCompanyChangeLogEntry(
-                    'form',
-                    'Identify Company',
-                    'Lead added to the company, '.$company['companyname'],
-                    $company['id']
-                );
+                $entity->addCompanyChangeLogEntry('form', 'Identify Company', 'Lead added to the company, '.$company['companyname'], $company['id']);
             }
         }
 
         $this->processManipulator($entity);
 
         $this->setEntityDefaultValues($entity);
+
+        // For BC w/ 2.14.2-
+        if ($this->ipAddressModel) {
+            $this->ipAddressModel->saveIpAddressesReferencesForContact($entity);
+        }
 
         // Alteration to core start.
         // parent::saveEntity($entity, $unlock);
