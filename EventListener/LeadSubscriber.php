@@ -69,7 +69,7 @@ class LeadSubscriber extends CommonSubscriber
             }
             if (isset($this->extendedFields[$fieldAlias])) {
                 //prevent duplicate joins without preventing joins
-                if (in_array($fieldAlias, array_keys($this->seen))) {
+                if (!array_key_exists($fieldAlias, $this->seen)) {
                     $joins = $event->getQueryBuilder()->getQueryPart('join');
                     if (isset($joins['l'])) {
                         foreach ($joins['l'] as $join) {
