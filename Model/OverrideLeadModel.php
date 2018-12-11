@@ -11,6 +11,7 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Model;
 
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Mautic\LeadBundle\Entity\CompanyChangeLog;
 use Mautic\LeadBundle\Entity\CompanyLead;
 use Mautic\LeadBundle\Entity\Lead;
@@ -19,6 +20,7 @@ use Mautic\LeadBundle\Entity\LeadField;
 use Mautic\LeadBundle\Helper\IdentifyCompanyHelper;
 use Mautic\LeadBundle\Model\IpAddressModel;
 use Mautic\LeadBundle\Model\LeadModel;
+use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
 
 /**
  * Class OverrideLeadModel.
@@ -29,6 +31,39 @@ class OverrideLeadModel extends LeadModel
      * @var IpAddressModel
      */
     public $ipAddressModel;
+
+    /**
+     * Alterations to core:
+     *  Returns OverrideLeadRepository.
+     *
+     * @return \MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository
+     */
+    public function getRepository()
+    {
+        static $repoSetup;
+        $metastart = new ClassMetadata(Lead::class);
+        $repo      = new OverrideLeadRepository($this->em, $metastart, $this->leadFieldModel);
+
+        // The rest of this method functions similar to core (with the exception of avoiding $this->repoSetup):
+        $repo->setDispatcher($this->dispatcher);
+        if (!$repoSetup) {
+            $repoSetup = true;
+
+            //set the point trigger model in order to get the color code for the lead
+            $fields = $this->leadFieldModel->getFieldList(true, false);
+
+            $socialFields = (!empty($fields['social'])) ? array_keys($fields['social']) : [];
+            $repo->setAvailableSocialFields($socialFields);
+
+            $searchFields = [];
+            foreach ($fields as $group => $groupFields) {
+                $searchFields = array_merge($searchFields, array_keys($groupFields));
+            }
+            $repo->setAvailableSearchFields($searchFields);
+        }
+
+        return $repo;
+    }
 
     /**
      * Alterations to core:
