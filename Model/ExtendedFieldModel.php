@@ -242,6 +242,9 @@ class ExtendedFieldModel extends FieldModel
     }
 
     /**
+     * Alterations to core:
+     *  Include extended field arrays if the object is not company.
+     *
      * @param string $object
      *
      * @return array
@@ -277,6 +280,9 @@ class ExtendedFieldModel extends FieldModel
     }
 
     /**
+     * Alterations to core:
+     *  Include extended fields.
+     *
      * @return array
      */
     public function getLeadFields()
