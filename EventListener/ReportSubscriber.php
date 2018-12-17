@@ -199,33 +199,41 @@ class ReportSubscriber extends CommonSubscriber
     private function alterSelect()
     {
         foreach ($this->selectParts as $key => $selectPart) {
-            if (0 === strpos($selectPart, 'l.')) {
+            if (false !== strpos($selectPart, 'l.')) {
                 // field from the lead table, so check if its an extended field
                 $partStrings = (explode(' AS ', $selectPart));
                 if (method_exists($this->event, 'getQuery')) {
-                    $fieldAlias = $this->event->getOptions()['columns'][$partStrings[0]]['alias'];
+                    // just in case the select contains an aggregation method like COUNT or MAX
+                    if (false !== strpos($partStrings[0], '(')) {
+                        preg_match('/\((.*?)\)/', $partStrings[0], $string);
+                        $fieldAlias = $this->event->getOptions()['columns'][$string[1]]['alias'];
+                        $realField  = substr($string[1], strrpos($string[1], '.') + 1);
+                    } else {
+                        $fieldAlias = $this->event->getOptions()['columns'][$partStrings[0]]['alias'];
+                        $realField  = substr($partStrings[0], strrpos($partStrings[0], '.') + 1);
+                    }
                 } else {
-                    $fieldAlias = $partStrings[1];
+                    $fieldAlias = $realField = $partStrings[1];
                 }
 
-                if (isset($this->extendedFields[$fieldAlias])) {
+                if (isset($this->extendedFields[$realField])) {
                     // is extended field, so rewrite the SQL part.
                     $dataType  = $this->fieldModel->getSchemaDefinition(
-                        $this->extendedFields[$fieldAlias]['alias'],
-                        $this->extendedFields[$fieldAlias]['type']
+                        $this->extendedFields[$realField]['alias'],
+                        $this->extendedFields[$realField]['type']
                     );
                     $dataType  = $dataType['type'];
-                    $secure    = 'extendedFieldSecure' === $this->extendedFields[$fieldAlias]['object'] ? '_secure' : '';
+                    $secure    = 'extendedFieldSecure' === $this->extendedFields[$realField]['object'] ? '_secure' : '';
                     $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$dataType.$secure.'_xref';
                     ++$this->count;
-                    $fieldId = $this->extendedFields[$fieldAlias]['id'];
+                    $fieldId = $this->extendedFields[$realField]['id'];
 
-                    if (array_key_exists($fieldAlias, $this->fieldTables)) {
-                        $this->selectParts[$key] = $this->fieldTables[$fieldAlias]['alias'].'.value AS '.$fieldAlias;
+                    if (array_key_exists($realField, $this->fieldTables)) {
+                        $this->selectParts[$key] = $this->fieldTables[$realField]['alias'].'.value AS '.$fieldAlias;
                     } else {
                         $this->selectParts[$key] = "t$this->count.value AS $fieldAlias";
 
-                        $this->fieldTables[$fieldAlias] = [
+                        $this->fieldTables[$realField] = [
                             'table' => $tableName,
                             'alias' => 't'.$this->count,
                         ];
@@ -332,7 +340,7 @@ class ReportSubscriber extends CommonSubscriber
 
     private function alterWhere()
     {
-        if (!empty($where)) {
+        if (!empty($this->where)) {
             $where = $this->where->__toString();
             foreach ($this->filters as $filter) {
                 if (0 === strpos($filter['column'], 'l.')) {
