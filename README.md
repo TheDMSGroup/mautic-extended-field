@@ -59,6 +59,7 @@ Choose a release that matches your version of Mautic.
 | -------------- | ------------------------------------------------------------------- |
 | 2.12.x         | `composer require thedmsgroup/mautic-extended-field-bundle "^2.12"` |
 | 2.14.x         | `composer require thedmsgroup/mautic-extended-field-bundle "^2.14"` |
+| 2.15.x         | `composer require thedmsgroup/mautic-extended-field-bundle "^2.15"` |
 
 1. Install by running the command above or by downloading the appropriate version and unpacking the contents into a folder named `/plugins/MauticExtendedFieldBundle`
 2. Go to `/s/plugins/reload`. The Extended Fields plugin should show up. Installation is complete.
@@ -73,38 +74,7 @@ Choose a release that matches your version of Mautic.
 -- Override LeadRepository::getLeadIdsByUniqueFields to join and pivot on columns.
 - Support segmentation by an "empty" extended field (outer join).
 
-# Review and refactor for 2.14.x
-
-Compiler passes to refactor:
-- ExtendedFieldModel - done.
-- OverrideLeadModel - done.
-- OverrideLeadRepository - done
-- OverrideListModel - done
-
-Internal overrides to refactor:
-- ExtendedFieldRepositoryTrait - done
-- EntityExtendedFieldsBuildFormTrait - done (could use more refactoring)
-- OverrideLeadFieldRepository - done
-- LeadTypeExtension - done
-- UpdateLeadActionExtension - done
-- ExtendedFieldExtension - done
-
 # Changes for Report Compatibility
-
-Two Mautic Core PR's have been submitted to facilitate Report compatibility.
-The first, which has been merged into the 2.14.x release, is 
-https://github.com/mautic/mautic/pull/6036 which implements an event
-that the ExtendedField bundle listens for. This event allows 3rd party bundles to
-alter a Report query before execution.
-
-The second PR is 
-https://github.com/mautic/mautic/pull/6330, which 
-moves the dispatch of the event from the first PR, so that optional
-pagination queries execute and return correct Total counts and
-fixes a fatal exception error on certain scenarios. 
-
-    ** NOTE **  PR #6330 is required
-    for Extended Field Bundle versions 2.13.2 through 2.14.x
 
     ** NOTE ** The ReportSubscriber event listener dynamically checks for an edit or
     view request of reports and dynanically sets priority of the REPORT_ON_BUILD.
