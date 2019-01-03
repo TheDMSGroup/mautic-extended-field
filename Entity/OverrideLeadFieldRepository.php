@@ -103,7 +103,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             // Alterations to core start.
             // We already know this is an extended field, so add out join and override the property.
             $secure    = 'extendedFieldSecure' === $extendedField['object'] ? '_secure' : '';
-            $schema    = $this->fieldModel::getSchemaDefinition($extendedField['alias'], $extendedField['type']);
+            $schema    = $this->fieldModel->getSchemaDefinition($extendedField['alias'], $extendedField['type']);
             $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$schema['type'].$secure.'_xref';
             $q->join('l', $tableName, 'x', 'l.id = x.lead_id AND '.$extendedField['id'].' = x.lead_field_id');
             $property = 'x.value';
