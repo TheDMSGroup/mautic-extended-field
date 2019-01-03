@@ -103,29 +103,30 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             // Alterations to core start.
             // We already know this is an extended field, so add out join and override the property.
             $secure    = 'extendedFieldSecure' === $extendedField['object'] ? '_secure' : '';
-            $schema    = $this->fieldModel->getSchemaDefinition($extendedField['alias'], $extendedField['type']);
+            $schema    = $this->fieldModel::getSchemaDefinition($extendedField['alias'], $extendedField['type']);
             $tableName = MAUTIC_TABLE_PREFIX.'lead_fields_leads_'.$schema['type'].$secure.'_xref';
             $q->join('l', $tableName, 'x', 'l.id = x.lead_id AND '.$extendedField['id'].' = x.lead_field_id');
             $property = 'x.value';
             // Alterations to core end.
 
             if ('empty' === $operatorExpr || 'notEmpty' === $operatorExpr) {
-                $q->where(
-                    $q->expr()->andX(
-                        $q->expr()->eq('l.id', ':lead'),
-                        ('empty' === $operatorExpr) ?
-                            $q->expr()->orX(
-                                $q->expr()->isNull($property),
-                                $q->expr()->eq($property, $q->expr()->literal(''))
-                            )
-                            :
-                            $q->expr()->andX(
-                                $q->expr()->isNotNull($property),
-                                $q->expr()->neq($property, $q->expr()->literal(''))
-                            )
+                //use a left join to pick up nulls
+                $q->resetQueryPart('join')
+                    ->leftJoin('l', $tableName, 'x', 'l.id = x.lead_id AND '.$extendedField['id'].' = x.lead_field_id');
+                $valueExpr = 'empty' === $operatorExpr
+                    ? $q->expr()->orX(
+                        $q->expr()->isNull($property),
+                        $q->expr()->eq($property, "''")
                     )
+                    : $q->expr()->andX(
+                        $q->expr()->isNotNull($property),
+                        $q->expr()->neq($property, "''")
+                    );
+                $q->where(
+                    $q->expr()->eq('l.id', ':lead'),
+                    $valueExpr
                 )
-                    ->setParameter('lead', (int) $lead);
+                ->setParameter('lead', (int) $lead);
             } elseif ('regexp' === $operatorExpr || 'notRegexp' === $operatorExpr || 'like' === $operatorExpr || 'notLike' === $operatorExpr) {
                 if ('regexp' === $operatorExpr || 'like' === $operatorExpr) {
                     $where = $property.' REGEXP  :value';
@@ -134,10 +135,8 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                 }
 
                 $q->where(
-                    $q->expr()->andX(
-                        $q->expr()->eq('l.id', ':lead'),
-                        $q->expr()->andX($where)
-                    )
+                    $q->expr()->eq('l.id', ':lead'),
+                    $where
                 )
                     ->setParameter('lead', (int) $lead)
                     ->setParameter('value', $value);
