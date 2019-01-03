@@ -116,11 +116,11 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                 $valueExpr = 'empty' === $operatorExpr
                     ? $q->expr()->orX(
                         $q->expr()->isNull($property),
-                        $q->expr()->eq($property, "''")
+                        "$property = ''"
                     )
                     : $q->expr()->andX(
                         $q->expr()->isNotNull($property),
-                        $q->expr()->neq($property, "''")
+                        "$property != ''"
                     );
                 $q->where(
                     $q->expr()->eq('l.id', ':lead'),
