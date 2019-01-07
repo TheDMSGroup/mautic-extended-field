@@ -110,22 +110,23 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             // Alterations to core end.
 
             if ('empty' === $operatorExpr || 'notEmpty' === $operatorExpr) {
-                $q->where(
-                    $q->expr()->andX(
-                        $q->expr()->eq('l.id', ':lead'),
-                        ('empty' === $operatorExpr) ?
-                            $q->expr()->orX(
-                                $q->expr()->isNull($property),
-                                $q->expr()->eq($property, $q->expr()->literal(''))
-                            )
-                            :
-                            $q->expr()->andX(
-                                $q->expr()->isNotNull($property),
-                                $q->expr()->neq($property, $q->expr()->literal(''))
-                            )
+                //use a left join to pick up nulls
+                $q->resetQueryPart('join')
+                    ->leftJoin('l', $tableName, 'x', 'l.id = x.lead_id AND '.$extendedField['id'].' = x.lead_field_id');
+                $valueExpr = 'empty' === $operatorExpr
+                    ? $q->expr()->orX(
+                        $q->expr()->isNull($property),
+                        "$property = ''"
                     )
+                    : $q->expr()->andX(
+                        $q->expr()->isNotNull($property),
+                        "$property != ''"
+                    );
+                $q->where(
+                    $q->expr()->eq('l.id', ':lead'),
+                    $valueExpr
                 )
-                    ->setParameter('lead', (int) $lead);
+                ->setParameter('lead', (int) $lead);
             } elseif ('regexp' === $operatorExpr || 'notRegexp' === $operatorExpr || 'like' === $operatorExpr || 'notLike' === $operatorExpr) {
                 if ('regexp' === $operatorExpr || 'like' === $operatorExpr) {
                     $where = $property.' REGEXP  :value';
@@ -134,10 +135,8 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                 }
 
                 $q->where(
-                    $q->expr()->andX(
-                        $q->expr()->eq('l.id', ':lead'),
-                        $q->expr()->andX($where)
-                    )
+                    $q->expr()->eq('l.id', ':lead'),
+                    $where
                 )
                     ->setParameter('lead', (int) $lead)
                     ->setParameter('value', $value);
