@@ -3,11 +3,10 @@
  * Created by PhpStorm.
  * User: nbush
  * Date: 1/4/19
- * Time: 3:36 PM
+ * Time: 3:36 PM.
  */
 
 namespace MauticPlugin\MauticExtendedFieldBundle\EventListener;
-
 
 use Mautic\CoreBundle\EventListener\CommonSubscriber;
 use Mautic\LeadBundle\Event\ImportEvent;
@@ -32,7 +31,7 @@ class ImportListener extends CommonSubscriber
     public static function getSubscribedEvents()
     {
         return [
-            LeadEvents::IMPORT_BATCH_PROCESSED => 'clearExtendedFieldEntities'
+            LeadEvents::IMPORT_BATCH_PROCESSED => 'clearExtendedFieldEntities',
         ];
     }
 
