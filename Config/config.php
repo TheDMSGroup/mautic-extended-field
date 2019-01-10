@@ -35,6 +35,11 @@ return [
                     'mautic.lead.model.field',
                 ],
             ],
+            'mautic.extended_field.import_subscriber'   => [
+                'class'     => 'MauticPlugin\MauticExtendedFieldBundle\EventListener\ImportSubscriber',
+                'arguments' => [
+                ],
+            ],
         ],
         'forms'  => [
             'mautic.extended_field.form.config' => [
