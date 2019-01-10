@@ -26,7 +26,7 @@ use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldTextSecure;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldTime;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldTimeSecure;
 
-class ImportListener extends CommonSubscriber
+class ImportSubscriber extends CommonSubscriber
 {
     public static function getSubscribedEvents()
     {
