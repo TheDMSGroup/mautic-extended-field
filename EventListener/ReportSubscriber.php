@@ -199,6 +199,7 @@ class ReportSubscriber extends CommonSubscriber
     private function alterSelect()
     {
         foreach ($this->selectParts as $key => $selectPart) {
+            $aggregate = false;
             if (false !== strpos($selectPart, 'l.')) {
                 // field from the lead table, so check if its an extended field
                 $partStrings = (explode(' AS ', $selectPart));
@@ -208,6 +209,7 @@ class ReportSubscriber extends CommonSubscriber
                         preg_match('/\((.*?)\)/', $partStrings[0], $string);
                         $fieldAlias = $this->event->getOptions()['columns'][$string[1]]['alias'];
                         $realField  = substr($string[1], strrpos($string[1], '.') + 1);
+                        $aggregate  = true;
                     } else {
                         $fieldAlias = $this->event->getOptions()['columns'][$partStrings[0]]['alias'];
                         $realField  = substr($partStrings[0], strrpos($partStrings[0], '.') + 1);
@@ -229,9 +231,17 @@ class ReportSubscriber extends CommonSubscriber
                     $fieldId = $this->extendedFields[$realField]['id'];
 
                     if (array_key_exists($realField, $this->fieldTables)) {
-                        $this->selectParts[$key] = $this->fieldTables[$realField]['alias'].'.value AS '.$fieldAlias;
+                        if ($aggregate) {
+                            $this->selectParts[$key] = preg_replace("/$string[1]/", $this->fieldTables[$realField]['alias'].'.value', $selectPart, 1);
+                        } else {
+                            $this->selectParts[$key] = $this->fieldTables[$realField]['alias'].'.value AS '.$fieldAlias;
+                        }
                     } else {
-                        $this->selectParts[$key] = "t$this->count.value AS $fieldAlias";
+                        if ($aggregate) {
+                            $this->selectParts[$key] = preg_replace("/$string[1]/", "t$this->count.value", $selectPart, 1);
+                        } else {
+                            $this->selectParts[$key] = "t$this->count.value AS $fieldAlias";
+                        }
 
                         $this->fieldTables[$realField] = [
                             'table' => $tableName,
