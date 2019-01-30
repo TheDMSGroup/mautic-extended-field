@@ -23,6 +23,13 @@ use Mautic\LeadBundle\Helper\IdentifyCompanyHelper;
 use Mautic\LeadBundle\Model\IpAddressModel;
 use Mautic\LeadBundle\Model\LeadModel;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
+use Mautic\CoreBundle\Helper\DateTimeHelper;
+use Mautic\CoreBundle\Entity\IpAddress;
+use Mautic\LeadBundle\Entity\PointsChangeLog;
+use Mautic\StageBundle\Entity\Stage;
+use Mautic\LeadBundle\Entity\StagesChangeLog;
+use Mautic\LeadBundle\Entity\DoNotContact as DNC;
+use Doctrine\ORM\NonUniqueResultException;
 
 /**
  * Class OverrideLeadModel.
