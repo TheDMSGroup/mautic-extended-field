@@ -98,9 +98,10 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
             return $entity;
         }
 
-        if (!empty($this->triggerModel)) {
-            $entity->setColor($this->triggerModel->getColorForLeadPoints($entity->getPoints()));
-        }
+        // triggerModel is private in LeadModel. Not really an error bur not really proper either.
+        //  if (!empty($this->triggerModel)) {
+        //      $entity->setColor($this->triggerModel->getColorForLeadPoints($entity->getPoints()));
+        //  }
 
         // Alterations to core start.
         $fieldValues = $this->getExtendedFieldValues($id, true, 'lead');
