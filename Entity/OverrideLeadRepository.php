@@ -378,7 +378,6 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
             );
         }
 
-
         return $this->addStandardCatchAllWhereClause($q, $filter, $columns);
     }
 
@@ -393,7 +392,7 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
 
         if (
             (isset($filter->string) && preg_match('^\d{5}(?:[-\s]\d{4})?$', $filter->string))
-            || strpos(serialize($filter), 'zipcode') !== false
+            || false !== strpos(serialize($filter), 'zipcode')
         ) {
             $return = ['l.zipcode'];
         }
@@ -414,25 +413,22 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
         if (isset($filter->string)) {
             if (
                 // if the '+' was in original string, it gets dropped. the result on E.164 would be an 11 digit number (US numbers)
-                strlen($filter->string) == 11
+                11 == strlen($filter->string)
                 && is_numeric($filter->string)
             ) {
                 $return           = ['l.phone'];
-                $filter->string = '+'.$filter->string; // add a second '+' to apply the plus as a E.164 phone format back
-                $filter->strict = 1; // set filter to strict so it doesnt use wildcards, ie, doesnt do a begins with syntax.
-
+                $filter->string   = '+'.$filter->string; // add a second '+' to apply the plus as a E.164 phone format back
+                $filter->strict   = 1; // set filter to strict so it doesnt use wildcards, ie, doesnt do a begins with syntax.
             }
 
             // backwards compatible (non E.164) and other $filter array key structures
-            if(strlen($filter->string) == 10
+            if (10 == strlen($filter->string)
                 && is_numeric($filter->string)
-            )
-            {
+            ) {
                 $return           = ['l.phone'];
-                $filter->strict = 1; // set filter to strict so it doesnt use wildcards, ie, doesnt do a begins with syntax.
+                $filter->strict   = 1; // set filter to strict so it doesnt use wildcards, ie, doesnt do a begins with syntax.
             }
-
-        } elseif (strpos(serialize($filter), 'phone') !== false
+        } elseif (false !== strpos(serialize($filter), 'phone')
         ) {
             $return = ['l.phone'];
         }
@@ -451,7 +447,7 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
 
         if (
             (isset($filter->string) && filter_var($filter->string, FILTER_VALIDATE_EMAIL))
-            || strpos(serialize($filter), 'email') !== false
+            || false !== strpos(serialize($filter), 'email')
         ) {
             $return = ['l.email'];
         }
