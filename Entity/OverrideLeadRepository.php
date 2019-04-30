@@ -344,6 +344,117 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
         }
     }
 
+    /**
+     * Adds the "catch all" where clause to the QueryBuilder.
+     *
+     * @param \Doctrine\ORM\QueryBuilder|\Doctrine\DBAL\Query\QueryBuilder $q
+     * @param                                                              $filter
+     *
+     * @return array
+     */
+    protected function addCatchAllWhereClause($q, $filter)
+    {
+        $filterContainsPhone = $this->filterContainsPhone($filter); // might need to add a '+' so pass by reference
+        $filterContainsEmail = $this->filterContainsEmail($filter);
+        $filterContainsZip   = $this->filterContainsZip($filter);
+
+        $columns = array_merge(
+            $filterContainsPhone,
+            $filterContainsEmail,
+            $filterContainsZip
+        );
+
+        if (empty($columns)) {
+            $columns = array_merge(
+                [
+                    'l.firstname',
+                    'l.lastname',
+                    'l.company',
+                    'l.city',
+                    'l.state',
+                    'l.country',
+                ],
+                $this->availableSocialFields
+            );
+        }
+
+        return $this->addStandardCatchAllWhereClause($q, $filter, $columns);
+    }
+
+    /**
+     * @param $filter
+     *
+     * @return array
+     */
+    protected function filterContainsZip($filter)
+    {
+        $return = [];
+
+        if (
+            (isset($filter->string) && preg_match('^\d{5}(?:[-\s]\d{4})?$', $filter->string))
+            || false !== strpos(serialize($filter), 'zipcode')
+        ) {
+            $return = ['l.zipcode'];
+        }
+
+        return $return;
+    }
+
+    /**
+     * @param $filter
+     *
+     * @return array
+     */
+    protected function filterContainsPhone(&$filter)
+    {
+        $return = [];
+
+        // detect e.164 and 10 digit phone number specs. Deal with the '+' sign in the string as phone not mautic's Strict filter char
+        if (isset($filter->string)) {
+            if (
+                // if the '+' was in original string, it gets dropped. the result on E.164 would be an 11 digit number (US numbers)
+                11 == strlen($filter->string)
+                && is_numeric($filter->string)
+            ) {
+                $return           = ['l.phone'];
+                $filter->string   = '+'.$filter->string; // add a second '+' to apply the plus as a E.164 phone format back
+                $filter->strict   = 1; // set filter to strict so it doesnt use wildcards, ie, doesnt do a begins with syntax.
+            }
+
+            // backwards compatible (non E.164) and other $filter array key structures
+            if (10 == strlen($filter->string)
+                && is_numeric($filter->string)
+            ) {
+                $return           = ['l.phone'];
+                $filter->strict   = 1; // set filter to strict so it doesnt use wildcards, ie, doesnt do a begins with syntax.
+            }
+        } elseif (false !== strpos(serialize($filter), 'phone')
+        ) {
+            $return = ['l.phone'];
+        }
+
+        return $return;
+    }
+
+    /**
+     * @param $filter
+     *
+     * @return array
+     */
+    protected function filterContainsEmail($filter)
+    {
+        $return = [];
+
+        if (
+            (isset($filter->string) && filter_var($filter->string, FILTER_VALIDATE_EMAIL))
+            || false !== strpos(serialize($filter), 'email')
+        ) {
+            $return = ['l.email'];
+        }
+
+        return $return;
+    }
+
     /*
      * @todo - Support retrieving leads by unique IDs that are also extended fields.
      *
