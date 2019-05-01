@@ -391,7 +391,7 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
         $return = [];
 
         if (
-            (isset($filter->string) && preg_match('^\d{5}(?:[-\s]\d{4})?$', $filter->string))
+            (isset($filter->string) && preg_match('/^\d{5}(?:[-\s]\d{4})?$/', $filter->string))
             || false !== strpos(serialize($filter), 'zipcode')
         ) {
             $return = ['l.zipcode'];
