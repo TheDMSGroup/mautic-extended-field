@@ -14,6 +14,7 @@ namespace MauticPlugin\MauticExtendedFieldBundle\Form;
 use Mautic\CoreBundle\Factory\MauticFactory;
 use Mautic\LeadBundle\Form\Type\EntityFieldsBuildFormTrait;
 use Mautic\LeadBundle\Form\Type\UpdateLeadActionType;
+use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
 use Symfony\Component\Form\AbstractTypeExtension;
 use Symfony\Component\Form\FormBuilderInterface;
 
@@ -59,8 +60,26 @@ class UpdateLeadActionExtension extends AbstractTypeExtension
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $this->getFormFieldsExtended($builder, $options, 'extendedField');
-        $this->getFormFieldsExtended($builder, $options, 'extendedFieldSecure');
+        /** @var ExtendedFieldModel $extendedFieldModel */
+        $extendedFieldModel =  $this->factory->getModel('lead.field');
+        $leadFields         = $extendedFieldModel->getEntities(
+            [
+                'force' => [
+                    [
+                        'column' => 'f.isPublished',
+                        'expr'   => 'eq',
+                        'value'  => true,
+                    ],
+                ],
+                'hydration_mode' => 'HYDRATE_ARRAY',
+            ]
+        );
+
+        $options['fields']                      = $leadFields;
+        $options['ignore_required_constraints'] = true;
+
+        $this->getFormFields($builder, $options, 'extendedField');
+        $this->getFormFields($builder, $options, 'extendedFieldSecure');
     }
 
     /**
