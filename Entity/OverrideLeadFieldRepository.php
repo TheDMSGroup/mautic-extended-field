@@ -11,6 +11,7 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
+use Doctrine\DBAL\Cache\QueryCacheProfile;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Mautic\CoreBundle\Helper\InputHelper;
@@ -234,7 +235,16 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             )
             ->setParameter('alias', $alias);
 
-        return $qf->execute()->fetch();
+        $stmt = $qf->getConnection()->executeCacheQuery(
+            $qf->getSQL(),
+            $qf->getParameters(),
+            $qf->getParameterTypes(),
+            new QueryCacheProfile(60, 'get-extended-field')
+        );
+        $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $stmt->closeCursor();
+
+        return $data;
     }
 
     /**
