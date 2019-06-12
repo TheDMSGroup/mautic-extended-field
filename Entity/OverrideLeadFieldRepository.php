@@ -217,7 +217,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
      *
      * @param string $alias
      *
-     * @return null|array
+     * @return array|null
      */
     private function getExtendedField($alias)
     {
