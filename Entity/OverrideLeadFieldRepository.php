@@ -239,7 +239,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             $qf->getSQL(),
             $qf->getParameters(),
             $qf->getParameterTypes(),
-            new QueryCacheProfile(60, 'get-extended-field')
+            new QueryCacheProfile(60, 'get-extended-field'.$alias)
         );
         $data = $stmt->fetch();
         $stmt->closeCursor();
