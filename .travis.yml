@@ -40,7 +40,7 @@ before_install:
   # TEMPORARY incompatibility with a change beyond 2.15~
   - git clone -b staging https://github.com/mautic/mautic.git /tmp/mautic
   - cd /tmp/mautic
-  - git checkout staging
+  - git checkout 6d201acec18815ba274130e9ad8d34d1ae3bf5ce
   - cd -
 
   # Combine core with our plugin.
