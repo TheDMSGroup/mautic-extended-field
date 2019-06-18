@@ -73,7 +73,7 @@ class LeadSubscriber extends CommonSubscriber
                     $joins = $event->getQueryBuilder()->getQueryPart('join');
                     if (isset($joins['l'])) {
                         foreach ($joins['l'] as $join) {
-                            if ($join['joinAlias'] === $this->seen[$fieldAlias]) {
+                            if (isset($this->seen[$fieldAlias]) && $join['joinAlias'] === $this->seen[$fieldAlias]) {
                                 return;
                             }
                         }
