@@ -232,7 +232,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
     {
         $cacheHelper     = new CacheStorageHelper(
             CacheStorageHelper::ADAPTOR_FILESYSTEM,
-            'ExtendedField',
+            'extendedFieldConfiguration',
             null,
             $this->coreParametersHelper->getParameter('mautic.cache_path'),
             60
