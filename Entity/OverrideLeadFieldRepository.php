@@ -19,13 +19,12 @@ use Mautic\CoreBundle\Helper\InputHelper;
 use Mautic\LeadBundle\Entity\LeadFieldRepository;
 use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
 
-
 class OverrideLeadFieldRepository extends LeadFieldRepository
 {
     /** @var ExtendedFieldModel */
     protected $fieldModel;
 
-    /** @var array  */
+    /** @var array */
     protected $extendedFieldConfigurations;
 
     /** @var CoreParametersHelper */
@@ -44,10 +43,9 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
     public function __construct(EntityManager $em, ClassMetadata $class, ExtendedFieldModel $fieldModel, CoreParametersHelper $coreParametersHelper)
     {
         parent::__construct($em, $class);
-        $this->fieldModel = $fieldModel;
-        $this->coreParametersHelper = $coreParametersHelper;
+        $this->fieldModel                  = $fieldModel;
+        $this->coreParametersHelper        = $coreParametersHelper;
         $this->extendedFieldConfigurations = $this->getExtendedFieldConfigurations();
-
     }
 
     /**
@@ -240,8 +238,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
             60
         );
 
-        if(empty($extendedFieldConfigurations = $cacheHelper->get('extendedFieldConfiguration', 60)))
-        {
+        if (empty($extendedFieldConfigurations = $cacheHelper->get('extendedFieldConfiguration', 60))) {
             $qf = $this->_em->getConnection()->createQueryBuilder();
             $qf->select('lf.alias, lf.id, lf.object, lf.type, lf.field_group as "group", lf.object, lf.label')
                 ->from(MAUTIC_TABLE_PREFIX.'lead_fields', 'lf', 'lf.alias')
@@ -253,8 +250,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                 );
             $results = $qf->execute()->fetchAll(0);
 
-            foreach($results as $field)
-            {
+            foreach ($results as $field) {
                 $extendedFieldConfigurations[$field['alias']] = $field;
             }
 
@@ -344,6 +340,3 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
         return $results;
     }
 }
-
-
-
