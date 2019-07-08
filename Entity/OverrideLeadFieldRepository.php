@@ -28,6 +28,11 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
     protected $coreParametersHelper;
 
     /**
+     * @var array
+     */
+    protected $extendedFieldConfigurations;
+
+    /**
      * OverrideLeadFieldRepository constructor.
      *
      * @param EntityManager        $em
@@ -61,8 +66,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
     {
         // Alterations to core start.
         // Run the standard compareValue if not an extended field for better BC.
-        $extendedFieldConfigurations = $this->getExtendedFieldConfigurations();
-        $extendedField               = isset($extendedFieldConfigurations[$field]) ? $extendedFieldConfigurations[$field] : null;
+        $extendedField               = $this->getExtendedFieldConfigurations($field);
         if (!$extendedField) {
             return parent::compareValue($lead, $field, $value, $operatorExpr);
         }
@@ -217,42 +221,46 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
     }
 
     /**
-     * Get an extended field given the field alias.
+     * @param $fieldAlias
      *
-     * @param string $alias
-     *
-     * @return null|array
+     * @return array|bool|mixed|null
      */
-    private function getExtendedFieldConfigurations()
+    private function getExtendedFieldConfigurations($fieldAlias)
     {
-        $cacheHelper     = new CacheStorageHelper(
-            CacheStorageHelper::ADAPTOR_FILESYSTEM,
-            'extendedFieldConfiguration',
-            null,
-            $this->coreParametersHelper->getParameter('mautic.cache_path'),
-            60
-        );
+        if (!$this->extendedFieldConfigurations) {
+            $cacheHelper     = new CacheStorageHelper(
+                CacheStorageHelper::ADAPTOR_FILESYSTEM,
+                'extendedFieldConfiguration',
+                null,
+                $this->coreParametersHelper->getParameter('mautic.cache_path'),
+                60
+            );
+            if (empty($extendedFieldConfigurations = $cacheHelper->get('extendedFieldConfiguration', 60))) {
+                $qf = $this->_em->getConnection()->createQueryBuilder();
+                $qf->select('lf.alias, lf.id, lf.object, lf.type, lf.field_group as "group", lf.object, lf.label')
+                    ->from(MAUTIC_TABLE_PREFIX.'lead_fields', 'lf', 'lf.alias')
+                    ->where(
+                        $qf->expr()->orX(
+                            $qf->expr()->eq('lf.object', $qf->expr()->literal('extendedField')),
+                            $qf->expr()->eq('lf.object', $qf->expr()->literal('extendedFieldSecure'))
+                        )
+                    );
+                $results = $qf->execute()->fetchAll(0);
 
-        if (empty($extendedFieldConfigurations = $cacheHelper->get('extendedFieldConfiguration', 60))) {
-            $qf = $this->_em->getConnection()->createQueryBuilder();
-            $qf->select('lf.alias, lf.id, lf.object, lf.type, lf.field_group as "group", lf.object, lf.label')
-                ->from(MAUTIC_TABLE_PREFIX.'lead_fields', 'lf', 'lf.alias')
-                ->where(
-                    $qf->expr()->orX(
-                        $qf->expr()->eq('lf.object', $qf->expr()->literal('extendedField')),
-                        $qf->expr()->eq('lf.object', $qf->expr()->literal('extendedFieldSecure'))
-                    )
-                );
-            $results = $qf->execute()->fetchAll(0);
+                foreach ($results as $field) {
+                    $extendedFieldConfigurations[$field['alias']] = $field;
+                }
 
-            foreach ($results as $field) {
-                $extendedFieldConfigurations[$field['alias']] = $field;
+                $cacheHelper->set('extendedFieldConfiguration', $extendedFieldConfigurations, 60);
             }
-
-            $cacheHelper->set('extendedFieldConfiguration', $extendedFieldConfigurations, 60);
+            $this->extendedFieldConfigurations = $extendedFieldConfigurations;
         }
 
-        return $extendedFieldConfigurations;
+        if ($fieldAlias) {
+            return isset($this->extendedFieldConfigurations[$fieldAlias]) ? $this->extendedFieldConfigurations[$fieldAlias] : null;
+        } else {
+            return $this->extendedFieldConfigurations;
+        }
     }
 
     /**
@@ -273,8 +281,7 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
         $fieldModel = $this->fieldModel;
 
         // get list of extendedFields
-        $extendedFieldConfigurations = $this->getExtendedFieldConfigurations();
-        $extendedField               = isset($extendedFieldConfigurations[$field]) ? $extendedFieldConfigurations[$field] : null;
+        $extendedField               = $this->getExtendedFieldConfigurations($field);
         if ($extendedField) {
             $dataType   = $fieldModel->getSchemaDefinition(
                 $extendedField['alias'],
