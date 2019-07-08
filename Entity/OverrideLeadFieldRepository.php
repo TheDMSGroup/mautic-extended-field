@@ -24,28 +24,22 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
     /** @var ExtendedFieldModel */
     protected $fieldModel;
 
-    /** @var array */
-    protected $extendedFieldConfigurations;
-
     /** @var CoreParametersHelper */
     protected $coreParametersHelper;
 
     /**
      * OverrideLeadFieldRepository constructor.
      *
-     * Alterations to core:
-     *  Includes fieldModel for later use in discerning schema types of fields.
-     *
-     * @param EntityManager      $em
-     * @param ClassMetadata      $class
-     * @param ExtendedFieldModel $fieldModel
+     * @param EntityManager        $em
+     * @param ClassMetadata        $class
+     * @param ExtendedFieldModel   $fieldModel
+     * @param CoreParametersHelper $coreParametersHelper
      */
     public function __construct(EntityManager $em, ClassMetadata $class, ExtendedFieldModel $fieldModel, CoreParametersHelper $coreParametersHelper)
     {
         parent::__construct($em, $class);
         $this->fieldModel                  = $fieldModel;
         $this->coreParametersHelper        = $coreParametersHelper;
-        $this->extendedFieldConfigurations = $this->getExtendedFieldConfigurations();
     }
 
     /**
@@ -67,7 +61,8 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
     {
         // Alterations to core start.
         // Run the standard compareValue if not an extended field for better BC.
-        $extendedField = $this->extendedFieldConfigurations[$field];
+        $extendedFieldConfigurations = $this->getExtendedFieldConfigurations();
+        $extendedField               = isset($extendedFieldConfigurations[$field]) ? $extendedFieldConfigurations[$field] : null;
         if (!$extendedField) {
             return parent::compareValue($lead, $field, $value, $operatorExpr);
         }
@@ -278,7 +273,9 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
         $fieldModel = $this->fieldModel;
 
         // get list of extendedFields
-        if ($extendedField = $this->extendedFieldConfigurations[$field]) {
+        $extendedFieldConfigurations = $this->getExtendedFieldConfigurations();
+        $extendedField               = isset($extendedFieldConfigurations[$field]) ? $extendedFieldConfigurations[$field] : null;
+        if ($extendedField) {
             $dataType   = $fieldModel->getSchemaDefinition(
                 $extendedField['alias'],
                 $extendedField['type']
