@@ -235,7 +235,8 @@ class OverrideLeadFieldRepository extends LeadFieldRepository
                 $this->coreParametersHelper->getParameter('mautic.cache_path'),
                 60
             );
-            if (empty($extendedFieldConfigurations = $cacheHelper->get('extendedFieldConfiguration', 60))) {
+            $extendedFieldConfigurations = $cacheHelper->get('extendedFieldConfiguration', 60);
+            if (empty($extendedFieldConfigurations)) {
                 $qf = $this->_em->getConnection()->createQueryBuilder();
                 $qf->select('lf.alias, lf.id, lf.object, lf.type, lf.field_group as "group", lf.object, lf.label')
                     ->from(MAUTIC_TABLE_PREFIX.'lead_fields', 'lf', 'lf.alias')
