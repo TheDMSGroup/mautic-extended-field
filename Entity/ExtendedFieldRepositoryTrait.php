@@ -144,6 +144,7 @@ trait ExtendedFieldRepositoryTrait
      * @param array $leadIds
      *
      * @return array
+     *
      * @throws \Doctrine\DBAL\DBALException
      */
     private function getExtendedFieldValuesMultiple(
@@ -217,7 +218,7 @@ EOSQL;
         // Group results by leadId.
         $leads = [];
         foreach ($results as $row => $result) {
-            /**
+            /*
              * 0 = lead_id
              * 1 = alias
              * 2 = value
