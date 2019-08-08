@@ -2,6 +2,7 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Entity;
 
+use Doctrine\DBAL\Connections\MasterSlaveConnection;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\ORM\EntityManager;
 use Mautic\LeadBundle\Entity\CustomFieldEntityTrait;
@@ -143,6 +144,7 @@ trait ExtendedFieldRepositoryTrait
      * @param array $leadIds
      *
      * @return array
+     * @throws \Doctrine\DBAL\DBALException
      */
     private function getExtendedFieldValuesMultiple(
         $extendedFieldList = [],
@@ -151,7 +153,13 @@ trait ExtendedFieldRepositoryTrait
         /** @var EntityManager $em */
         $em = $this->getEntityManager();
 
-        $leadIdsStr = "'".implode("','", $leadIds)."'";
+        // Attempt to use a slave connection as this can become a heavy query.
+        $connection = $em->getConnection();
+        if ($connection instanceof MasterSlaveConnection) {
+            $connection->connect('slave');
+        }
+
+        $leadIdsStr = implode(',', $leadIds);
 
         $selects = [];
         foreach (['string', 'float', 'boolean', 'date', 'datetime', 'time', 'text'] as $data_type) {
@@ -159,9 +167,10 @@ trait ExtendedFieldRepositoryTrait
                 $xrefTable = MAUTIC_TABLE_PREFIX."lead_fields_leads_{$data_type}{$secure}_xref";
 
                 $selects[] = <<<EOSQL
-SELECT lead_id, lead_field_id, value, '{$data_type}' AS data_type 
+SELECT lead_id, lead_field_id, `value`
 FROM  {$xrefTable}
 WHERE lead_id IN ({$leadIdsStr})
+AND `value` IS NOT NULL
 EOSQL;
             }
         }
@@ -176,16 +185,16 @@ EOSQL;
         if (!empty($extendedFieldList)) {
             $ids             = array_map(
                 function ($e) {
-                    return $e['id'];
+                    return (int) $e['id'];
                 },
                 $extendedFieldList
             );
-            $leadFiieldIdStr = "'".implode("','", $ids)."'";
+            $leadFiieldIdStr = implode(',', $ids);
             $where           = "{$lft}.id IN ({$leadFiieldIdStr}) ";
         }
 
         $sql = <<<EOSQL
-SELECT x.lead_id, x.alias, v.value, v.data_type
+SELECT x.lead_id, x.alias, v.value
 FROM
 (
     SELECT {$lt}.id AS lead_id,
@@ -199,16 +208,24 @@ LEFT JOIN
 (
     {$xrefQuery}
 ) v USING (lead_id, lead_field_id)
+WHERE v.value IS NOT NULL
 EOSQL;
 
-        $query = $em->getConnection()->prepare($sql);
-        $query->execute();
-        $results = $query->fetchAll();
+        // Using executeQuery to ensure this can be executed on a slave MySQL.
+        $results = $connection->executeQuery($sql)->fetch(\PDO::FETCH_NUM);
 
         // Group results by leadId.
         $leads = [];
         foreach ($results as $row => $result) {
-            $leads[$result['lead_id']][$result['alias']] = $result['value'];
+            /**
+             * 0 = lead_id
+             * 1 = alias
+             * 2 = value
+             */
+            if (!isset($leads[$result[0]])) {
+                $leads[$result[0]] = [];
+            }
+            $leads[$result[0]][$result[1]] = $result[2];
             unset($results[$row]);
         }
 
