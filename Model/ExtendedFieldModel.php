@@ -184,7 +184,7 @@ class ExtendedFieldModel extends FieldModel
     {
         $metastart = new ClassMetadata(LeadField::class);
 
-        return new OverrideLeadFieldRepository($this->em, $metastart, $this);
+        return new OverrideLeadFieldRepository($this->em, $metastart, $this, $this->coreParametersHelper);
     }
 
     /**
