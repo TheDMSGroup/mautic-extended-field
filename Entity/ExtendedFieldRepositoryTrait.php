@@ -217,17 +217,19 @@ EOSQL;
 
         // Group results by leadId.
         $leads = [];
-        foreach ($results as $row => $result) {
-            /*
-             * 0 = lead_id
-             * 1 = alias
-             * 2 = value
-             */
-            if (!isset($leads[$result[0]])) {
-                $leads[$result[0]] = [];
+        if ($results) {
+            foreach ($results as $row => $result) {
+                /*
+                 * 0 = lead_id
+                 * 1 = alias
+                 * 2 = value
+                 */
+                if (!isset($leads[$result[0]])) {
+                    $leads[$result[0]] = [];
+                }
+                $leads[$result[0]][$result[1]] = $result[2];
+                unset($results[$row]);
             }
-            $leads[$result[0]][$result[1]] = $result[2];
-            unset($results[$row]);
         }
 
         return $leads;
