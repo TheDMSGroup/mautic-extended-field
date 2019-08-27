@@ -151,6 +151,10 @@ trait ExtendedFieldRepositoryTrait
         $extendedFieldList = [],
         $leadIds = []
     ) {
+        if (!$leadIds) {
+            return [];
+        }
+
         /** @var EntityManager $em */
         $em = $this->getEntityManager();
 
