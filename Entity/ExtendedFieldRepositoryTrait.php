@@ -151,8 +151,10 @@ trait ExtendedFieldRepositoryTrait
         $extendedFieldList = [],
         $leadIds = []
     ) {
+        $leads = [];
+
         if (!$leadIds) {
-            return [];
+            return $leads;
         }
 
         /** @var EntityManager $em */
@@ -217,23 +219,12 @@ WHERE v.value IS NOT NULL
 EOSQL;
 
         // Using executeQuery to ensure this can be executed on a slave MySQL.
-        $results = $connection->executeQuery($sql)->fetch(\PDO::FETCH_NUM);
-
-        // Group results by leadId.
-        $leads = [];
-        if ($results) {
-            foreach ($results as $row => $result) {
-                /*
-                 * 0 = lead_id
-                 * 1 = alias
-                 * 2 = value
-                 */
-                if (!isset($leads[$result[0]])) {
-                    $leads[$result[0]] = [];
-                }
-                $leads[$result[0]][$result[1]] = $result[2];
-                unset($results[$row]);
+        $stmt = $connection->executeQuery($sql);
+        while ($result = $stmt->fetch()) {
+            if (!isset($leads[$result['lead_id']])) {
+                $leads[$result['lead_id']] = [];
             }
+            $leads[$result['lead_id']][$result['alias']] = $result['value'];
         }
 
         return $leads;
