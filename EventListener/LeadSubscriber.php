@@ -11,7 +11,7 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\EventListener;
 
-use Mautic\CoreBundle\EventListener\CommonSubscriber;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Mautic\LeadBundle\Event\LeadListFilteringEvent;
 use Mautic\LeadBundle\Event\LeadListQueryBuilderGeneratedEvent;
 use Mautic\LeadBundle\LeadEvents;
@@ -20,7 +20,7 @@ use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
 /**
  * Class LeadSubscriber.
  */
-class LeadSubscriber extends CommonSubscriber
+class LeadSubscriber implements EventSubscriberInterface
 {
     /** @var ExtendedFieldModel */
     protected $leadModel;

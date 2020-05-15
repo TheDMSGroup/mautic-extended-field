@@ -27,6 +27,7 @@ return [
                 'class'     => 'MauticPlugin\MauticExtendedFieldBundle\EventListener\ReportSubscriber',
                 'arguments' => [
                     'mautic.lead.reportbundle.fields_builder',
+                    'event_dispatcher'
                 ],
             ],
             'mautic.extended_field.lead_subscriber'   => [
@@ -38,6 +39,7 @@ return [
             'mautic.extended_field.import_subscriber'   => [
                 'class'     => 'MauticPlugin\MauticExtendedFieldBundle\EventListener\ImportSubscriber',
                 'arguments' => [
+                  'doctrine.orm.entity_manager',
                 ],
             ],
         ],

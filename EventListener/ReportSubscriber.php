@@ -20,7 +20,8 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\EventListener;
 
-use Mautic\CoreBundle\EventListener\CommonSubscriber;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Mautic\LeadBundle\Report\FieldsBuilder;
 use Mautic\ReportBundle\Event\ReportBuilderEvent;
 use Mautic\ReportBundle\Event\ReportGeneratorEvent;
@@ -30,7 +31,7 @@ use Mautic\ReportBundle\ReportEvents;
 /**
  * Class ConfigSubscriber.
  */
-class ReportSubscriber extends CommonSubscriber
+class ReportSubscriber implements EventSubscriberInterface
 {
     /**
      * @var
@@ -92,15 +93,22 @@ class ReportSubscriber extends CommonSubscriber
      */
     private $fieldsBuilder;
 
+    /**
+     * @var EventDispatcherInterface
+     */
+    private $dispatcher;
+
     const SEGMENT_MEMBERSHIP = 'segment.membership';
     const GROUP_CONTACTS     = 'contacts';
 
     /**
      * @param FieldsBuilder $fieldsBuilder
+     * @param EventDispatcherInterface $dispatcher
      */
-    public function __construct(FieldsBuilder $fieldsBuilder)
+    public function __construct(FieldsBuilder $fieldsBuilder, EventDispatcherInterface $dispatcher)
     {
-        $this->fieldsBuilder     = $fieldsBuilder;
+        $this->fieldsBuilder    = $fieldsBuilder;
+        $this->dispatcher       = $dispatcher;
     }
 
     /**
@@ -193,9 +201,6 @@ class ReportSubscriber extends CommonSubscriber
         }
     }
 
-    /**
-     * @return mixed
-     */
     private function alterSelect()
     {
         foreach ($this->selectParts as $key => $selectPart) {
@@ -259,9 +264,6 @@ class ReportSubscriber extends CommonSubscriber
         }
     }
 
-    /**
-     * @return mixed
-     */
     private function alterOrderBy()
     {
         foreach ($this->orderByParts as $key => $orderByPart) {
@@ -305,9 +307,6 @@ class ReportSubscriber extends CommonSubscriber
         }
     }
 
-    /**
-     * @return mixed
-     */
     private function alterGroupBy()
     {
         foreach ($this->groupByParts as $key => $groupByPart) {
