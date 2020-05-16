@@ -11,6 +11,7 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\Form;
 
+use Mautic\CoreBundle\Form\Type\YesNoButtonGroupType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 
@@ -27,7 +28,7 @@ class ConfigType extends AbstractType
     {
         $builder->add(
             'disable_lead_table_fields',
-            'yesno_button_group',
+            YesNoButtonGroupType::class,
             [
                 'label' => 'mautic.extendedField.disable_lead_table_fields',
                 'data'  => $options['data']['disable_lead_table_fields'],

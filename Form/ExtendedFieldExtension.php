@@ -15,6 +15,7 @@ use Mautic\CoreBundle\Factory\MauticFactory;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\LeadBundle\Form\Type\FieldType;
 use Symfony\Component\Form\AbstractTypeExtension;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 
 /**
@@ -63,7 +64,7 @@ class ExtendedFieldExtension extends AbstractTypeExtension
 
         $builder->add(
             'object',
-            'choice',
+            ChoiceType::class,
             [
                 'choices'           => [
                     'mautic.lead.contact'             => 'lead',
@@ -72,7 +73,7 @@ class ExtendedFieldExtension extends AbstractTypeExtension
                     'mautic.lead.extendedFieldSecure' => 'extendedFieldSecure',
                 ],
                 'choices_as_values' => true,
-                'choice_attr'       => function ($key, $val, $index) use ($disallowLead) {
+                'choice_attr'       => function ($key) use ($disallowLead) {
                     // set "Contact" option disabled to true based on key or index of the choice.
                     if ('lead' === $key && $disallowLead) {
                         return ['disabled' => 'disabled'];
@@ -96,7 +97,7 @@ class ExtendedFieldExtension extends AbstractTypeExtension
         // Add a bunch more 'custom' groups beside the original 4
         $builder->add(
             'group',
-            'choice',
+            ChoiceType::class,
             [
                 'choices' => [
                     'core'         => 'mautic.lead.field.group.core', // Personally Identifiable
