@@ -100,19 +100,19 @@ class ExtendedFieldExtension extends AbstractTypeExtension
             ChoiceType::class,
             [
                 'choices' => [
-                    'core'         => 'mautic.lead.field.group.core', // Personally Identifiable
-                    'auto'         => 'mautic.lead.field.group.auto',
-                    'client'       => 'mautic.lead.field.group.client',
-                    'consent'      => 'mautic.lead.field.group.consent',
-                    'education'    => 'mautic.lead.field.group.education',
-                    'enhancement'  => 'mautic.lead.field.group.enhancement',
-                    'finance'      => 'mautic.lead.field.group.finance',
-                    'personal'     => 'mautic.lead.field.group.personal', // Health
-                    'home'         => 'mautic.lead.field.group.home',
-                    'politics'     => 'mautic.lead.field.group.politics',
-                    'professional' => 'mautic.lead.field.group.professional',
-                    'social'       => 'mautic.lead.field.group.social',
-                    'system'       => 'mautic.lead.field.group.system',
+                    'core'         => 'core', // Personally Identifiable
+                    'auto'         => 'auto',
+                    'client'       => 'client',
+                    'consent'      => 'consent',
+                    'education'    => 'education',
+                    'enhancement'  => 'enhancement',
+                    'finance'      => 'finance',
+                    'personal'     => 'personal', // Health
+                    'home'         => 'home',
+                    'politics'     => 'politics',
+                    'professional' => 'professional',
+                    'social'       => 'social',
+                    'system'       => 'system',
                 ],
                 'attr' => [
                     'class'   => 'form-control',
