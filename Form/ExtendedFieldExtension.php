@@ -84,7 +84,7 @@ class ExtendedFieldExtension extends AbstractTypeExtension
                 'expanded'          => false,
                 'multiple'          => false,
                 'label'             => 'mautic.lead.field.object',
-                'empty_value'       => false,
+                'placeholder'       => false,
                 'attr'              => [
                     'class' => 'form-control',
                 ],
@@ -121,7 +121,7 @@ class ExtendedFieldExtension extends AbstractTypeExtension
                 'expanded'    => false,
                 'multiple'    => false,
                 'label'       => 'mautic.lead.field.group',
-                'empty_value' => false,
+                'placeholder' => false,
                 'required'    => false,
                 'disabled'    => $disabled,
             ]
