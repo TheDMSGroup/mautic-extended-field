@@ -21,36 +21,38 @@ return [
     'services'    => [
         'events' => [
             'mautic.extended_field.config.subscriber' => [
-                'class' => 'MauticPlugin\MauticExtendedFieldBundle\EventListener\ConfigSubscriber',
+                'class' => \MauticPlugin\MauticExtendedFieldBundle\EventListener\ConfigSubscriber::class,
             ],
             'mautic.extended_field.report.subscriber' => [
-                'class'     => 'MauticPlugin\MauticExtendedFieldBundle\EventListener\ReportSubscriber',
+                'class'     => \MauticPlugin\MauticExtendedFieldBundle\EventListener\ReportSubscriber::class,
                 'arguments' => [
                     'mautic.lead.reportbundle.fields_builder',
+                    'event_dispatcher'
                 ],
             ],
             'mautic.extended_field.lead_subscriber'   => [
-                'class'     => 'MauticPlugin\MauticExtendedFieldBundle\EventListener\LeadSubscriber',
+                'class'     => \MauticPlugin\MauticExtendedFieldBundle\EventListener\LeadSubscriber::class,
                 'arguments' => [
                     'mautic.lead.model.field',
                 ],
             ],
             'mautic.extended_field.import_subscriber'   => [
-                'class'     => 'MauticPlugin\MauticExtendedFieldBundle\EventListener\ImportSubscriber',
+                'class'     => \MauticPlugin\MauticExtendedFieldBundle\EventListener\ImportSubscriber::class,
                 'arguments' => [
+                  'doctrine.orm.entity_manager',
                 ],
             ],
         ],
         'forms'  => [
             'mautic.extended_field.form.config' => [
-                'class' => 'MauticPlugin\MauticExtendedFieldBundle\Form\ConfigType',
+                'class' => \MauticPlugin\MauticExtendedFieldBundle\Form\ConfigType::class,
                 'alias' => 'extendedField_config',
             ],
         ],
         'other'  => [
             // Form extensions
             'mautic.form.extension.updatelead_action' => [
-                'class'        => 'MauticPlugin\MauticExtendedFieldBundle\Form\UpdateLeadActionExtension',
+                'class'        => \MauticPlugin\MauticExtendedFieldBundle\Form\UpdateLeadActionExtension::class,
                 'arguments'    => ['mautic.factory'],
                 'tag'          => 'form.type_extension',
                 'tagArguments' => [
@@ -58,7 +60,7 @@ return [
                 ],
             ],
             'mautic.form.extension.extended_field'    => [
-                'class'        => 'MauticPlugin\MauticExtendedFieldBundle\Form\ExtendedFieldExtension',
+                'class'        => \MauticPlugin\MauticExtendedFieldBundle\Form\ExtendedFieldExtension::class,
                 'arguments'    => ['mautic.factory'],
                 'tag'          => 'form.type_extension',
                 'tagArguments' => [
@@ -66,7 +68,7 @@ return [
                 ],
             ],
             'mautic.form.extension.extended_lead'     => [
-                'class'        => 'MauticPlugin\MauticExtendedFieldBundle\Form\LeadTypeExtension',
+                'class'        => \MauticPlugin\MauticExtendedFieldBundle\Form\LeadTypeExtension::class,
                 'arguments'    => ['mautic.factory', 'mautic.lead.model.company'],
                 'tag'          => 'form.type_extension',
                 'tagArguments' => [
@@ -74,7 +76,7 @@ return [
                 ],
             ],
             'mautic.form.extension.extended_list'     => [
-                'class'        => 'MauticPlugin\MauticExtendedFieldBundle\Form\ListTypeExtension',
+                'class'        => \MauticPlugin\MauticExtendedFieldBundle\Form\ListTypeExtension::class,
                 'arguments'    => [
                     'translator',
                     'mautic.lead.model.list',
@@ -93,7 +95,7 @@ return [
         ],
         'models' => [
             'mautic.lead.model.extended_field' => [
-                'class'     => 'MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel',
+                'class'     => \MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel::class,
                 'arguments' => [
                     'mautic.lead.model.field',
                 ],

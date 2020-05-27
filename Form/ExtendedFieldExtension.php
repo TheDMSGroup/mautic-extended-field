@@ -15,6 +15,7 @@ use Mautic\CoreBundle\Factory\MauticFactory;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\LeadBundle\Form\Type\FieldType;
 use Symfony\Component\Form\AbstractTypeExtension;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 
 /**
@@ -63,7 +64,7 @@ class ExtendedFieldExtension extends AbstractTypeExtension
 
         $builder->add(
             'object',
-            'choice',
+            ChoiceType::class,
             [
                 'choices'           => [
                     'mautic.lead.contact'             => 'lead',
@@ -72,7 +73,7 @@ class ExtendedFieldExtension extends AbstractTypeExtension
                     'mautic.lead.extendedFieldSecure' => 'extendedFieldSecure',
                 ],
                 'choices_as_values' => true,
-                'choice_attr'       => function ($key, $val, $index) use ($disallowLead) {
+                'choice_attr'       => function ($key) use ($disallowLead) {
                     // set "Contact" option disabled to true based on key or index of the choice.
                     if ('lead' === $key && $disallowLead) {
                         return ['disabled' => 'disabled'];
@@ -83,7 +84,7 @@ class ExtendedFieldExtension extends AbstractTypeExtension
                 'expanded'          => false,
                 'multiple'          => false,
                 'label'             => 'mautic.lead.field.object',
-                'empty_value'       => false,
+                'placeholder'       => false,
                 'attr'              => [
                     'class' => 'form-control',
                 ],
@@ -96,22 +97,22 @@ class ExtendedFieldExtension extends AbstractTypeExtension
         // Add a bunch more 'custom' groups beside the original 4
         $builder->add(
             'group',
-            'choice',
+            ChoiceType::class,
             [
                 'choices' => [
-                    'core'         => 'mautic.lead.field.group.core', // Personally Identifiable
-                    'auto'         => 'mautic.lead.field.group.auto',
-                    'client'       => 'mautic.lead.field.group.client',
-                    'consent'      => 'mautic.lead.field.group.consent',
-                    'education'    => 'mautic.lead.field.group.education',
-                    'enhancement'  => 'mautic.lead.field.group.enhancement',
-                    'finance'      => 'mautic.lead.field.group.finance',
-                    'personal'     => 'mautic.lead.field.group.personal', // Health
-                    'home'         => 'mautic.lead.field.group.home',
-                    'politics'     => 'mautic.lead.field.group.politics',
-                    'professional' => 'mautic.lead.field.group.professional',
-                    'social'       => 'mautic.lead.field.group.social',
-                    'system'       => 'mautic.lead.field.group.system',
+                    'core'         => 'core', // Personally Identifiable
+                    'auto'         => 'auto',
+                    'client'       => 'client',
+                    'consent'      => 'consent',
+                    'education'    => 'education',
+                    'enhancement'  => 'enhancement',
+                    'finance'      => 'finance',
+                    'personal'     => 'personal', // Health
+                    'home'         => 'home',
+                    'politics'     => 'politics',
+                    'professional' => 'professional',
+                    'social'       => 'social',
+                    'system'       => 'system',
                 ],
                 'attr' => [
                     'class'   => 'form-control',
@@ -120,7 +121,7 @@ class ExtendedFieldExtension extends AbstractTypeExtension
                 'expanded'    => false,
                 'multiple'    => false,
                 'label'       => 'mautic.lead.field.group',
-                'empty_value' => false,
+                'placeholder' => false,
                 'required'    => false,
                 'disabled'    => $disabled,
             ]

@@ -8,8 +8,7 @@
 
 namespace MauticPlugin\MauticExtendedFieldBundle\EventListener;
 
-use Mautic\CoreBundle\EventListener\CommonSubscriber;
-use Mautic\LeadBundle\Event\ImportEvent;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Mautic\LeadBundle\LeadEvents;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldBoolean;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldBooleanSecure;
@@ -25,9 +24,23 @@ use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldText;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldTextSecure;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldTime;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\ExtendedFieldTimeSecure;
+use Doctrine\ORM\EntityManager;
 
-class ImportSubscriber extends CommonSubscriber
+class ImportSubscriber implements EventSubscriberInterface
 {
+
+    /**
+     * @var \Doctrine\ORM\EntityManager
+     */
+    protected $em;
+
+    /**
+     * @param EntityManager $em
+     */
+    public function __construct(EntityManager $em) {
+        $this->em = $em;
+    }
+
     public static function getSubscribedEvents()
     {
         return [
@@ -35,7 +48,7 @@ class ImportSubscriber extends CommonSubscriber
         ];
     }
 
-    public function clearExtendedFieldEntities(ImportEvent $event)
+    public function clearExtendedFieldEntities()
     {
         $this->em->clear(ExtendedFieldBoolean::class);
         $this->em->clear(ExtendedFieldBooleanSecure::class);

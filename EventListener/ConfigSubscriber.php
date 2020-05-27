@@ -13,12 +13,13 @@ namespace MauticPlugin\MauticExtendedFieldBundle\EventListener;
 
 use Mautic\ConfigBundle\ConfigEvents;
 use Mautic\ConfigBundle\Event\ConfigBuilderEvent;
-use Mautic\CoreBundle\EventListener\CommonSubscriber;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use MauticPlugin\MauticExtendedFieldBundle\Form\ConfigType;
 
 /**
  * Class ConfigSubscriber.
  */
-class ConfigSubscriber extends CommonSubscriber
+class ConfigSubscriber implements EventSubscriberInterface
 {
     /**
      * @var
@@ -52,6 +53,7 @@ class ConfigSubscriber extends CommonSubscriber
                 'bundle'     => 'MauticExtendedFieldBundle',
                 'formAlias'  => 'extendedField_config',
                 'formTheme'  => 'MauticExtendedFieldBundle:Config',
+                'formType'   => ConfigType::class,
                 'parameters' => $params,
             ]
         );
