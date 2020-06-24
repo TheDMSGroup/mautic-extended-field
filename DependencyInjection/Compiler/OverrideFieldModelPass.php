@@ -14,6 +14,7 @@ namespace MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
 use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
 use MauticPlugin\MauticExtendedFieldBundle\Model\OverrideLeadModel;
+use MauticPlugin\MauticExtendedFieldBundle\Tracker\OverrideContactTracker;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
@@ -35,6 +36,10 @@ class OverrideFieldModelPass implements CompilerPassInterface
         $container->getDefinition('mautic.lead.model.lead')
             ->setFactory(null)
             ->setClass(OverrideLeadModel::class);
+
+        $container->getDefinition('mautic.lead.tracker.contactracker')
+          ->setFactory(null)
+          ->setClass(OverrideContactTracker::class);
 
         $container->getDefinition('mautic.lead.repository.lead')
             ->setFactory(null)
