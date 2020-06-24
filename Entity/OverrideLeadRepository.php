@@ -114,6 +114,18 @@ class OverrideLeadRepository extends LeadRepository implements CustomFieldReposi
     }
 
     /**
+     * @param        $id
+     * @param bool   $byGroup
+     * @param string $object
+     *
+     * @return array
+     */
+    public function getFieldValues($id, $byGroup = true, $object = 'lead')
+    {
+        return $this->getExtendedFieldValues($id, $byGroup, $object);
+    }
+
+    /**
      * Duplicates CommonRepository::buildWhereClause but with extended field capability.
      *
      * Alterations to core:

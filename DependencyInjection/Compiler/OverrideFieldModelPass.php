@@ -37,10 +37,6 @@ class OverrideFieldModelPass implements CompilerPassInterface
             ->setFactory(null)
             ->setClass(OverrideLeadModel::class);
 
-        $container->getDefinition('mautic.lead.tracker.contactracker')
-          ->setFactory(null)
-          ->setClass(OverrideContactTracker::class);
-
         $container->getDefinition('mautic.lead.repository.lead')
             ->setFactory(null)
             ->setArguments(
