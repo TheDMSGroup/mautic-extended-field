@@ -14,7 +14,6 @@ namespace MauticPlugin\MauticExtendedFieldBundle\DependencyInjection\Compiler;
 use MauticPlugin\MauticExtendedFieldBundle\Entity\OverrideLeadRepository;
 use MauticPlugin\MauticExtendedFieldBundle\Model\ExtendedFieldModel;
 use MauticPlugin\MauticExtendedFieldBundle\Model\OverrideLeadModel;
-use MauticPlugin\MauticExtendedFieldBundle\Tracker\OverrideContactTracker;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
