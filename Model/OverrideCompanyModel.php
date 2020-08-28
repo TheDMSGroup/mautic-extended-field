@@ -97,7 +97,8 @@ class OverrideCompanyModel extends CompanyModel
 
             if (null != $companyLead) {
                 // @deprecated support to be removed in 3.0
-                if ($companyLead->wasManuallyRemoved()) {
+                //if ($companyLead->wasManuallyRemoved()) {
+                if (method_exists(companyLead,"wasManuallyRemoved")) {
                     $companyLead->setManuallyRemoved(false);
                     $companyLead->setManuallyAdded(false);
                     $contactAdded     = true;
