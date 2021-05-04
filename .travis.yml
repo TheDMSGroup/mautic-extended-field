@@ -48,16 +48,11 @@ before_install:
   - rsync -r --delete-after --quiet /tmp/mautic/ $TRAVIS_BUILD_DIR/
 
 install:
-  # Install core dependencies.
-  - composer install  
-  # Clobber is needed because PCOV normally only works with PHPUnit 8+. Needed only to run test coverage.
-  - pecl install pcov
-  - composer require --dev pcov/clobber
-  - bin/pcov clobber
+  - composer install --no-suggest
         
 script:
   # Run PHPUnit including core tests to find potential BC breaks.
-  - composer test -- --coverage-clover=coverage.xml && bash <(curl -s https://codecov.io/bash); 
+  - composer test
 
   # Run PHPSTAN analysis for PHP 7+ only in the scope of this plugin.
   - if [[ ${TRAVIS_PHP_VERSION:0:3} == "7.3" ]]; then ~/.composer/vendor/phpstan/phpstan-shim/phpstan.phar analyse plugins/$MAUTIC_PLUGIN; fi
