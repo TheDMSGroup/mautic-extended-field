@@ -12,15 +12,17 @@ services:
   - mysql
 
 php:
-  - 5.6.19
-  - 7.0
-  - 7.1
-  - 7.2
+  # Only test on PHP 7.3
+  - 7.3
 
 before_install:
-
-  # Create mautictest database.
+  # Create mautictest database
+  - mysql -e 'DROP DATABASE IF EXISTS mautictest;'
   - mysql -e 'CREATE DATABASE mautictest;'
+  - mysql -u root -e 'CREATE USER IF NOT EXISTS travis@localhost; GRANT ALL ON *.* TO travis@localhost;'
+  
+  # Rollback to Composer 1
+  - composer self-update --1
 
   # Turn off XDebug.
   - phpenv config-rm xdebug.ini || return
@@ -32,15 +34,13 @@ before_install:
   - export SYMFONY_ENV="test"
 
   # Install PHPSTAN for PHP 7+
-  - if [[ ${TRAVIS_PHP_VERSION:0:3} != "5.6" ]]; then composer global require phpstan/phpstan-shim:0.8.5; fi
+  - composer global require phpstan/phpstan-shim:0.8.5
 
-  # Clone the latest core release.
-  #  - git clone -b staging --single-branch --depth 1 https://github.com/mautic/mautic.git /tmp/mautic
-
-  # TEMPORARY incompatibility with a change beyond 2.15~
-  - git clone -b staging https://github.com/mautic/mautic.git /tmp/mautic
+  # Get latest 3.x mautic
+  - git clone -b 3.3 https://github.com/mautic/mautic.git /tmp/mautic
   - cd /tmp/mautic
-  - git checkout staging
+  - cp .env.dist .env
+  - git checkout 3.3
   - cd -
 
   # Combine core with our plugin.
@@ -49,22 +49,22 @@ before_install:
   - rsync -r --delete-after --quiet /tmp/mautic/ $TRAVIS_BUILD_DIR/
 
 install:
-
-  # Install core dependencies.
-  - composer install
-  
-  # Install plugin dependencies (if any).
-  # - composer require wikimedia/composer-merge-plugin
-  # - composer config extra.merge-plugin.include plugins/$MAUTIC_PLUGIN/composer.json
-  # - composer install
-
+  - composer install --no-suggest
+        
 script:
-
   # Run PHPUnit including core tests to find potential BC breaks.
-  - bin/phpunit -d memory_limit=2048M --bootstrap vendor/autoload.php --configuration app/phpunit.xml.dist
+  - composer test
 
   # Run PHPSTAN analysis for PHP 7+ only in the scope of this plugin.
-  - if [[ ${TRAVIS_PHP_VERSION:0:3} != "5.6" ]]; then ~/.composer/vendor/phpstan/phpstan-shim/phpstan.phar analyse plugins/$MAUTIC_PLUGIN; fi
+  - if [[ ${TRAVIS_PHP_VERSION:0:3} == "7.3" ]]; then ~/.composer/vendor/phpstan/phpstan-shim/phpstan.phar analyse plugins/$MAUTIC_PLUGIN; fi
 
-  # Check code standards for PHP 7.2 only in the scope of this plugin.
-  - if [[ ${TRAVIS_PHP_VERSION:0:3} == "7.2" ]]; then bin/php-cs-fixer fix -v --dry-run --diff plugins/$MAUTIC_PLUGIN; fi
+  # Check code standards for PHP 7.3 only in the scope of this plugin.
+  - if [[ ${TRAVIS_PHP_VERSION:0:3} == "7.3" ]]; then bin/php-cs-fixer fix -v --dry-run --diff plugins/$MAUTIC_PLUGIN; fi
+
+jobs:
+  include:
+    - stage: test
+      php: 7.3
+      env: DB=mariadb
+      addons:
+        mariadb: '10.2'
