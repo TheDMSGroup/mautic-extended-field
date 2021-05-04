@@ -63,11 +63,6 @@ script:
 jobs:
   include:
     - stage: test
-      php: 7.2
-      env: DB=mariadb
-      addons:
-        mariadb: '10.2'
-    - 
       php: 7.3
       env: DB=mariadb
       addons:
