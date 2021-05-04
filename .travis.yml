@@ -16,7 +16,11 @@ php:
   - 7.3
 
 before_install:
-
+  # Create mautictest database
+  - mysql -e 'DROP DATABASE IF EXISTS mautictest;'
+  - mysql -e 'CREATE DATABASE mautictest;'
+  - mysql -u root -e 'CREATE USER IF NOT EXISTS travis@localhost; GRANT ALL ON *.* TO travis@localhost;'
+  
   # Rollback to Composer 1
   - composer self-update --1
 
@@ -49,7 +53,11 @@ before_install:
 install:
   # Install core dependencies.
   - composer install  
-
+  # Clobber is needed because PCOV normally only works with PHPUnit 8+. Needed only to run test coverage.
+  - pecl install pcov
+  - composer require --dev pcov/clobber
+  - bin/pcov clobber
+        
 script:
   # Run PHPUnit including core tests to find potential BC breaks.
   - composer test -- --coverage-clover=coverage.xml && bash <(curl -s https://codecov.io/bash); 
