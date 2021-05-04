@@ -39,6 +39,7 @@ before_install:
   # Get latest 3.x mautic
   - git clone -b 3.3 https://github.com/mautic/mautic.git /tmp/mautic
   - cd /tmp/mautic
+  - cp .env.dist .env
   - git checkout 3.3
   - cd -
 
