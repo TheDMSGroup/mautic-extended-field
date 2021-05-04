@@ -33,7 +33,7 @@ before_install:
   - export SYMFONY_ENV="test"
 
   # Install PHPSTAN for PHP 7+
-  - composer global require phpstan/phpstan-shim:0.8.5; fi
+  - composer global require phpstan/phpstan-shim:0.8.5
 
   # Get latest 3.x mautic
   - git clone -b 3.3 https://github.com/mautic/mautic.git /tmp/mautic
