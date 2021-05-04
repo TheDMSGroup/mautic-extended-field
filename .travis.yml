@@ -24,9 +24,6 @@ before_install:
   # Rollback to Composer 1
   - composer self-update --1
 
-  # Create mautictest database.
-  - mysql -e 'CREATE DATABASE mautictest;'
-
   # Turn off XDebug.
   - phpenv config-rm xdebug.ini || return
 
