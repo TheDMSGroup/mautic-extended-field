@@ -15,7 +15,7 @@ namespace MauticPlugin\MauticExtendedFieldBundle\Field;
 
 use Mautic\LeadBundle\Field\FieldList;
 
-class ExtendedFieldList extends FieldList
+class OverrideFieldList extends FieldList
 {
     public function getFieldList(bool $byGroup = true, bool $alphabetical = true, array $filters = ['isPublished' => true, 'object' => 'lead']): array
     {

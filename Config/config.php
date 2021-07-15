@@ -100,13 +100,6 @@ return [
                     'mautic.lead.model.field',
                 ],
             ],
-            'mautic.lead.field.field_list' => [
-                'class'     => MauticPlugin\MauticExtendedFieldBundle\Field\ExtendedFieldList::class,
-                'arguments' => [
-                    'mautic.lead.repository.field',
-                    'translator',
-                ],
-            ],
         ],
     ],
 ];
