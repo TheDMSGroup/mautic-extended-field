@@ -4,7 +4,7 @@
     "keywords": ["mautic","marketing","marketing automation","plugin"],
     "type": "mautic-plugin",
     "require": {
-        "mautic/composer-plugin": "^1.0"
+        "unikrn/mautic-composer-plugin": "^2.1.0"
     },
     "license": "GPL-3.0-only",
     "authors": [

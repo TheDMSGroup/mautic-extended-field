@@ -85,6 +85,30 @@ trait ExtendedFieldRepositoryTrait
     }
 
     /**
+     * @param $id
+     * @param bool $byGroup
+     * @param string $object
+     * @return mixed
+     */
+    protected function _getFieldValues($id, $byGroup = true, $object = 'lead')
+    {
+        //use DBAL to get entity fields
+        $q = $this->getEntitiesDbalQueryBuilder();
+
+        if (is_array($id)) {
+            $this->buildSelectClause($q, $id);
+            $id = $id['id'];
+        } else {
+            $q->select($this->getTableAlias().'.*');
+        }
+
+        $q->where($this->getTableAlias().'.id = '.(int) $id);
+        $values = $q->execute()->fetch();
+
+        return $this->formatFieldValues($values, $byGroup, $object);
+    }
+
+    /**
      * Extends:
      *  getFieldValues to include extended field values.
      *
@@ -100,10 +124,10 @@ trait ExtendedFieldRepositoryTrait
         $object = 'lead'
     ) {
         if ('lead' !== $object) {
-            return $this->getFieldValues($id, $byGroup, $object);
+            return $this->_getFieldValues($id, $byGroup, $object);
         }
 
-        $fields = $this->getFieldValues($id, false, $object);
+        $fields = $this->_getFieldValues($id, false, $object);
 
         $values = [];
         foreach ($fields as $key => $value) {
